@@ -3,6 +3,8 @@
 const swaggerJsdoc = require("swagger-jsdoc");
 const env = require("./env");
 
+const isProduction = env.NODE_ENV === "production";
+
 const options = {
   definition: {
     openapi: "3.0.3",
@@ -20,8 +22,12 @@ const options = {
     },
     servers: [
       {
-        url: `https://osteosense.onrender.com/api/v1`,
-        description: "Local development server",
+        url: isProduction
+          ? "https://osteosense.onrender.com/api/v1"
+          : "http://localhost:5000/api/v1",
+        description: isProduction
+          ? "Production server"
+          : "Local development server",
       },
     ],
     components: {
