@@ -55,6 +55,10 @@ app.*.map.json
 # Widget Preview related
 .widget_preview/
 
+
+.env
+node_modules/
+
 # Android local config (machine-specific)
 android/local.properties
 android/.gradle/
@@ -67,3 +71,4 @@ ios/.symlinks/
 .env
 .env.local
 backend/.env*
+
