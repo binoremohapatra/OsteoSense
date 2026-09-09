@@ -50,10 +50,14 @@ const getOverview = asyncHandler(async (req, res) => {
  */
 const getTrends = asyncHandler(async (req, res) => {
   const agentId = req.user._id;
-  const period = req.query.period || '30d';
+  const rawPeriod = req.query.period;
+  const period = typeof rawPeriod === 'string' ? rawPeriod.trim() : '30d';
 
   const match = period.match(/^(\d+)d$/);
-  const days = match ? parseInt(match[1], 10) : 30;
+  if (!match) {
+    throw ApiError.badRequest('period must be one of: 7d, 30d, 90d');
+  }
+  const days = parseInt(match[1], 10);
   if (![7, 30, 90].includes(days)) {
     throw ApiError.badRequest('period must be one of: 7d, 30d, 90d');
   }
@@ -118,6 +122,7 @@ const getLocations = asyncHandler(async (req, res) => {
       },
     },
     { $unwind: '$patient' },
+    { $match: { 'patient.isDeleted': false } },
     {
       $group: {
         _id: { $ifNull: ['$patient.village', 'Unknown'] },

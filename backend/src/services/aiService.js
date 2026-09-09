@@ -6,16 +6,11 @@ const logger = require('../utils/logger');
 
 const AI_REQUEST_TIMEOUT_MS = 5000;
 
-/**
- * Parses free-text stiffness duration strings like "30 minutes", "1 hour",
- * "45 mins", "2 hrs" into a numeric minute value. Defaults to 0 if it can't
- * confidently parse anything (better to under-score than crash the pipeline).
- */
-function parseStiffnessDuration(stiffnessDuration) {
-  if (!stiffnessDuration || typeof stiffnessDuration !== 'string') return 0;
+function parseStiffnessDuration(raw) {
+  if (!raw || typeof raw !== 'string') return 0;
+  const str = raw.toLowerCase().trim();
 
-  const str = stiffnessDuration.toLowerCase().trim();
-  const numberMatch = str.match(/(\d+(\.\d+)?)/);
+  const numberMatch = str.match(/(\d+(?:\.\d+)?)/);
   if (!numberMatch) return 0;
 
   const value = parseFloat(numberMatch[1]);
@@ -23,14 +18,9 @@ function parseStiffnessDuration(stiffnessDuration) {
   if (str.includes('hour') || str.includes('hr')) {
     return value * 60;
   }
-  return value; // assume minutes by default
+  return value;
 }
 
-/**
- * Computes a crude variance measure across gait sensor features as a proxy
- * for gait irregularity. Higher variance ~ more irregular gait pattern,
- * which correlates with higher OA risk in the fallback heuristic.
- */
 function computeGaitVariance(gaitFeatures) {
   if (!Array.isArray(gaitFeatures) || gaitFeatures.length < 2) return 0;
 
@@ -44,24 +34,10 @@ function computeGaitVariance(gaitFeatures) {
   return variance;
 }
 
-/**
- * Rule-based clinical triage fallback, used whenever the ML microservice
- * is unreachable or errors out. Mirrors the weighting style of a typical
- * clinical rule-based OA triage checklist:
- *   - pain level is the dominant signal (weight 0.3, scaled to 0-1 range)
- *   - prolonged morning stiffness (>30 min) is a classic OA red flag
- *   - swelling and past joint injury are established risk multipliers
- *   - irregular gait (high variance in sensor readings) adds further signal
- *
- * Produces a 0-1 risk score bucketed into low/medium/high, plus a
- * confidence value (fallback is inherently less confident than the ML model)
- * and human-readable contributing factors for clinician review.
- */
 function fallbackRuleBasedPredict({ painLevel, stiffnessMinutes, swelling, pastInjury, gaitFeatures }) {
   const contributingFactors = [];
   let score = 0;
 
-  // Pain level: dominant weighted factor (0-10 scale -> 0-1, weighted 0.3 of max 1.0 contribution)
   const painComponent = (painLevel / 10) * 0.3;
   score += painComponent;
   if (painLevel >= 7) {
@@ -70,7 +46,6 @@ function fallbackRuleBasedPredict({ painLevel, stiffnessMinutes, swelling, pastI
     contributingFactors.push('Moderate pain level reported');
   }
 
-  // Morning stiffness thresholds (classic OA clinical indicator)
   if (stiffnessMinutes > 30) {
     score += 0.25;
     contributingFactors.push('Prolonged joint stiffness (>30 minutes)');
@@ -79,21 +54,18 @@ function fallbackRuleBasedPredict({ painLevel, stiffnessMinutes, swelling, pastI
     contributingFactors.push('Moderate joint stiffness (>15 minutes)');
   }
 
-  // Swelling
   if (swelling) {
     score += 0.15;
     contributingFactors.push('Joint swelling present');
   }
 
-  // Past injury
   if (pastInjury) {
     score += 0.15;
     contributingFactors.push('History of joint injury');
   }
 
-  // Gait irregularity (sensor-derived, normalized against an empirical ceiling)
   const gaitVariance = computeGaitVariance(gaitFeatures);
-  const GAIT_VARIANCE_CEILING = 4.0; // empirical normalization constant
+  const GAIT_VARIANCE_CEILING = 4.0;
   const gaitComponent = Math.min(gaitVariance / GAIT_VARIANCE_CEILING, 1) * 0.15;
   score += gaitComponent;
   if (gaitComponent > 0.08) {
@@ -102,9 +74,6 @@ function fallbackRuleBasedPredict({ painLevel, stiffnessMinutes, swelling, pastI
 
   score = Math.min(score, 1);
 
-  // Threshold chosen so that a single strong signal alone (e.g. severe pain with
-  // no other symptoms) is not silently bucketed as "low" -- verified against
-  // several boundary cases (severe pain alone, moderate pain + moderate stiffness).
   let riskLevel;
   if (score >= 0.6) riskLevel = 'high';
   else if (score >= 0.25) riskLevel = 'medium';
@@ -118,8 +87,6 @@ function fallbackRuleBasedPredict({ painLevel, stiffnessMinutes, swelling, pastI
 
   return {
     riskLevel,
-    // Fallback heuristic is deliberately reported with lower confidence
-    // than a trained model would be, since it's a simpler rule-based approximation.
     confidence: Math.round((0.55 + score * 0.15) * 100) / 100,
     contributingFactors,
     aiReasoning:
@@ -140,40 +107,65 @@ function buildRecommendation(riskLevel) {
   }
 }
 
-/**
- * Calls the Python FastAPI ML microservice to get an OA risk prediction.
- * Falls back to a deterministic rule-based prediction if the service is
- * unreachable, times out, or returns an error -- ensuring the screening
- * flow (the core demo path) never hard-fails due to an AI service outage.
- *
- * Every returned object includes a `source` field ('ml_model' | 'fallback_rules')
- * so downstream analytics can track how often each path was used.
- */
+function mapStiffnessToCategory(stiffnessDuration, stiffnessMinutes) {
+  if (typeof stiffnessDuration === 'string') {
+    const s = stiffnessDuration.toLowerCase();
+    if (s.includes('under') || s.includes('<') || s.includes('15 min')) return '<30';
+    if (s.includes('30') || s.includes('45')) return '30-60';
+    if (s.includes('hour') || s.includes('hr') || s.includes('>60')) return '>60';
+    if (s.includes('none') || s.includes('no')) return 'none';
+  }
+  if (stiffnessMinutes > 60) return '>60';
+  if (stiffnessMinutes >= 30) return '30-60';
+  if (stiffnessMinutes > 0) return '<30';
+  return 'none';
+}
+
 async function predictRisk({ painLevel, stiffnessDuration, swelling, pastInjury, gaitFeatures }) {
   const stiffnessMinutes = parseStiffnessDuration(stiffnessDuration);
-  const normalizedPayload = {
-    painLevel,
-    stiffnessMinutes,
-    swelling: !!swelling,
-    pastInjury: !!(pastInjury && pastInjury.length),
-    gaitFeatures: gaitFeatures || [],
+  const variance = computeGaitVariance(gaitFeatures);
+
+  const fastApiPayload = {
+    pain_level: Number(painLevel),
+    stiffness_duration: mapStiffnessToCategory(stiffnessDuration, stiffnessMinutes),
+    swelling: Boolean(swelling),
+    past_injury: Boolean(pastInjury && pastInjury.toString().trim().length > 0),
+    gait_data: JSON.stringify({ variance }),
   };
 
   try {
-    const response = await axios.post(`${env.AI_SERVICE_URL}/predict`, normalizedPayload, {
+    const response = await axios.post(`${env.AI_SERVICE_URL}/predict`, fastApiPayload, {
       timeout: AI_REQUEST_TIMEOUT_MS,
     });
 
-    return { ...response.data, source: 'ml_model' };
+    const data = response.data || {};
+    const riskLevel = data.risk_level || data.riskLevel;
+    if (!riskLevel) {
+      throw new Error('Malformed AI response: missing risk level');
+    }
+
+    const confidence = typeof data.confidence === 'number' ? data.confidence : 0.75;
+    const contributingFactors = data.contributing_factors || data.contributingFactors || [];
+    const aiReasoning = data.reasoning || data.aiReasoning || 'AI prediction based on clinical symptoms and gait analysis.';
+    const doctorRecommendations = data.doctorRecommendations || buildRecommendation(riskLevel);
+
+    return {
+      riskLevel,
+      confidence,
+      contributingFactors,
+      aiReasoning,
+      doctorRecommendations,
+      source: 'ml_model',
+    };
   } catch (err) {
     logger.warn('AI microservice unreachable, using fallback', { error: err.message });
 
     const fallbackResult = fallbackRuleBasedPredict({
       painLevel,
       stiffnessMinutes,
-      swelling: normalizedPayload.swelling,
-      pastInjury: normalizedPayload.pastInjury,
-      gaitFeatures: normalizedPayload.gaitFeatures,
+      swelling: Boolean(swelling),
+      pastInjury: Boolean(pastInjury && pastInjury.toString().trim().length > 0),
+      gaitFeatures: gaitFeatures || [],
     });
 
     return { ...fallbackResult, source: 'fallback_rules' };
@@ -185,4 +177,6 @@ module.exports = {
   fallbackRuleBasedPredict,
   parseStiffnessDuration,
   computeGaitVariance,
+  buildRecommendation,
+  mapStiffnessToCategory,
 };
