@@ -273,8 +273,20 @@ class SyncService {
         );
       } catch (e) {
         debugPrint('Push API failed: $e');
-        
-        // Increment retry counts
+
+        // Check if this is an authentication error
+        if (e.toString().contains('401') || e.toString().contains('Unauthorized')) {
+          debugPrint('Authentication error - sync will be retried when user logs in');
+          _isSyncing = false;
+          return SyncResult(
+            success: false,
+            syncedCount: syncedCount,
+            failedCount: failedCount,
+            message: 'Authentication required. Please login to sync data.',
+          );
+        }
+
+        // Increment retry counts for other errors
         for (var item in syncQueue) {
           final retryCount = (item['retry_count'] as int) + 1;
           if (retryCount >= AppConstants.maxRetryCount) {
@@ -289,7 +301,7 @@ class SyncService {
             );
           }
         }
-        
+
         _isSyncing = false;
         return SyncResult(
           success: false,

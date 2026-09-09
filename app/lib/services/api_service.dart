@@ -144,6 +144,10 @@ class ApiService {
       final response = await _dio.get('/auth/me');
       return response.data;
     } on DioException catch (e) {
+      // If 401, the token is missing or invalid - this is expected for offline/demo mode
+      if (e.response?.statusCode == 401) {
+        throw ApiException('No valid authentication token. Please login.', statusCode: 401);
+      }
       throw _handleError(e);
     }
   }

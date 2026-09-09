@@ -34,7 +34,8 @@ class AuthProvider with ChangeNotifier {
           final userId = _currentUser!.id;
           if (userId != null) await prefs.setInt('current_user_id', userId);
         } catch (e) {
-          // Fallback to local DB
+          debugPrint('API auth failed, falling back to local DB: $e');
+          // Fallback to local DB - this handles 401 errors gracefully
           final userId = prefs.getInt('current_user_id');
           if (userId != null) {
             final db = DatabaseHelper();
@@ -45,6 +46,7 @@ class AuthProvider with ChangeNotifier {
             );
             if (users.isNotEmpty) {
               _currentUser = User.fromMap(users.first);
+              debugPrint('Loaded user from local DB fallback');
             }
           }
         }

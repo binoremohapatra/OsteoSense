@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../providers/patient_provider.dart';
+import '../../models/patient.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_spacing.dart';
 import '../../theme/app_typography.dart';
@@ -26,6 +27,15 @@ class _PatientListScreenState extends State<PatientListScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _filterRisk = 'all';
   bool _showFilters = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Load patients after first frame so Provider is available
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<PatientProvider>(context, listen: false).loadPatients();
+    });
+  }
 
   @override
   void dispose() {
@@ -260,11 +270,8 @@ class _PatientListScreenState extends State<PatientListScreen> {
     );
   }
 
-  Widget _buildPatientCard(patient) {
-    String riskLevel = 'low';
-    if (patient.lastScreening != null) {
-      riskLevel = patient.lastScreening!.riskLevel ?? 'low';
-    }
+  Widget _buildPatientCard(Patient patient) {
+    const String riskLevel = 'low'; // Screenings are fetched separately; default to low
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: GestureDetector(

@@ -177,16 +177,18 @@ class _CustomCardState extends State<CustomCard>
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // 4px left accent strip — risk level as signal
-              Container(
-                width: 4,
-                color: colors.accentColor,
-              ),
-              Expanded(child: child),
-            ],
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // 4px left accent strip — risk level as signal
+                Container(
+                  width: 4,
+                  color: colors.accentColor,
+                ),
+                Expanded(child: child),
+              ],
+            ),
           ),
         ),
       );

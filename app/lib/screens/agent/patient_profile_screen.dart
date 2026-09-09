@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:go_router/go_router.dart';
 import '../../models/screening.dart';
 import '../../providers/patient_provider.dart';
 import '../../providers/screening_provider.dart';
@@ -47,8 +48,13 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: CustomAppBar(
-        title: patient?.name ?? 'Patient Profile',
+        title: 'Patient Details',
         centerTitle: false,
+        showBackButton: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new),
+          onPressed: () => context.go('/agent/patients'),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.edit_rounded, color: AppColors.primary),

@@ -24,7 +24,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 4,
+      version: 6,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -112,6 +112,7 @@ class DatabaseHelper {
         action TEXT NOT NULL,
         data TEXT NOT NULL,
         created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
         retry_count INTEGER DEFAULT 0
       )
     ''');
@@ -210,6 +211,55 @@ class DatabaseHelper {
         // Column might already exist, ignore error
       }
     }
+
+    if (oldVersion < 5) {
+      // Add updated_at column to sync_queue table if it doesn't exist
+      try {
+        await db.execute('ALTER TABLE sync_queue ADD COLUMN updated_at TEXT DEFAULT CURRENT_TIMESTAMP');
+      } catch (e) {
+        // Column might already exist, ignore error
+      }
+    }
+
+    if (oldVersion < 6) {
+      // Recreate sync_queue with the full schema to ensure all columns exist.
+      // Backup existing data first, then drop and recreate.
+      try {
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS sync_queue_backup AS SELECT * FROM sync_queue
+        ''');
+      } catch (e) {
+        // ignore if backup fails
+      }
+      try {
+        await db.execute('DROP TABLE IF EXISTS sync_queue');
+        await db.execute('''
+          CREATE TABLE sync_queue (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            table_name TEXT NOT NULL,
+            record_id INTEGER NOT NULL,
+            action TEXT NOT NULL,
+            data TEXT NOT NULL,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            retry_count INTEGER DEFAULT 0
+          )
+        ''');
+        // Restore backed-up rows (only columns that exist in old schema)
+        await db.execute('''
+          INSERT OR IGNORE INTO sync_queue (id, table_name, record_id, action, data, created_at, retry_count)
+          SELECT id, table_name, record_id, action, data, created_at, retry_count
+          FROM sync_queue_backup
+        ''');
+      } catch (e) {
+        // ignore errors during recreation
+      }
+      try {
+        await db.execute('DROP TABLE IF EXISTS sync_queue_backup');
+      } catch (e) {
+        // ignore
+      }
+    }
   }
 
   // Generic CRUD operations
@@ -293,11 +343,15 @@ class DatabaseHelper {
 
   // Sync queue operations
   Future<int> addToSyncQueue(String tableName, int recordId, String action, Map<String, dynamic> data) async {
-    return await insert('sync_queue', {
+    final db = await database;
+    final now = DateTime.now().toIso8601String();
+    return await db.insert('sync_queue', {
       'table_name': tableName,
       'record_id': recordId,
       'action': action,
       'data': jsonEncode(data),
+      'created_at': now,
+      'updated_at': now,
     });
   }
 

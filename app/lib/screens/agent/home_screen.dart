@@ -29,6 +29,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
   late final List<Widget> _screens;
+  GoRouter? _router; // saved reference to avoid calling of(context) in dispose()
 
   @override
   void initState() {
@@ -43,16 +44,16 @@ class _HomeScreenState extends State<HomeScreen> {
     
     // Listen to route changes
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final router = GoRouter.of(context);
-      router.routerDelegate.addListener(_onRouteChanged);
+      if (!mounted) return;
+      _router = GoRouter.of(context);
+      _router!.routerDelegate.addListener(_onRouteChanged);
       _handleTabFromRoute();
     });
   }
 
   @override
   void dispose() {
-    final router = GoRouter.of(context);
-    router.routerDelegate.removeListener(_onRouteChanged);
+    _router?.routerDelegate.removeListener(_onRouteChanged);
     super.dispose();
   }
 

@@ -11,6 +11,7 @@ import '../screens/shared/login_screen.dart';
 import '../screens/shared/signup_screen.dart';
 import '../screens/agent/home_screen.dart';
 import '../screens/agent/patient_list_screen.dart';
+import '../screens/agent/patient_profile_screen.dart';
 import '../screens/agent/profile_screen.dart';
 import '../screens/user/user_home_screen.dart';
 import '../screens/shared/onboarding_screen.dart';
@@ -284,6 +285,16 @@ final appRouter = GoRouter(
         key: state.pageKey,
         child: const PatientListScreen(),
       ),
+    ),
+    GoRoute(
+      path: '/agent/patient/:id',
+      pageBuilder: (context, state) {
+        final patientId = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
+        return SharedAxisTransition(
+          key: state.pageKey,
+          child: PatientProfileScreen(patientId: patientId),
+        );
+      },
     ),
     GoRoute(
       path: '/user/home',
