@@ -6,7 +6,7 @@ class AppConstants {
   // API Configuration (environment-switchable for emulator/device)
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'https://osteosense.onrender.com/api/v1',
+    defaultValue: 'https://osteosense-tt0q.onrender.com/api/v1',
   );
   // No longer need apiVersion separately since it's in baseUrl
   
