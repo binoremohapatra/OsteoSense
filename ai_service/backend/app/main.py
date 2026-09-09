@@ -26,7 +26,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
 from .database import init_db, get_db, Device, SensorSession
-from .schemas import SensorWindowIn, SessionResult, TrendResponse, HealthResponse, TopFeature
+from .schemas import SensorWindowIn, SessionResult, TrendResponse, HealthResponse, TopFeature, ClinicalPredictionRequest, ClinicalPredictionResponse
 from .inference_service import inference_service
 
 app = FastAPI(
@@ -65,6 +65,97 @@ def health():
         status="ok",
         model_loaded=inference_service.model is not None,
         model_trained_on=inference_service.trained_on_note,
+    )
+
+
+@app.post("/predict", response_model=ClinicalPredictionResponse)
+def predict_clinical_risk(payload: ClinicalPredictionRequest):
+    """
+    Clinical OA risk prediction endpoint for Node.js backend.
+    Uses rule-based scoring for clinical symptoms since the ML model
+    is trained on sensor data (gyro + piezo), not clinical data.
+    """
+    import json
+
+    # Parse gait data
+    try:
+        gait_features = json.loads(payload.gait_data)
+        variance = gait_features.get("variance", 0)
+    except:
+        variance = 0
+
+    # Rule-based scoring
+    score = 0
+    contributing_factors = []
+
+    # Pain component (30% weight)
+    pain_component = (payload.pain_level / 10) * 0.3
+    score += pain_component
+    if payload.pain_level >= 7:
+        contributing_factors.append("Severe pain level reported")
+    elif payload.pain_level >= 4:
+        contributing_factors.append("Moderate pain level reported")
+
+    # Stiffness component (25% weight)
+    if payload.stiffness_duration == ">60":
+        score += 0.25
+        contributing_factors.append("Prolonged joint stiffness (>60 minutes)")
+    elif payload.stiffness_duration == "30-60":
+        score += 0.25
+        contributing_factors.append("Prolonged joint stiffness (30-60 minutes)")
+    elif payload.stiffness_duration == "<30":
+        score += 0.12
+        contributing_factors.append("Moderate joint stiffness (<30 minutes)")
+
+    # Swelling component (15% weight)
+    if payload.swelling:
+        score += 0.15
+        contributing_factors.append("Joint swelling present")
+
+    # Past injury component (15% weight)
+    if payload.past_injury:
+        score += 0.15
+        contributing_factors.append("History of joint injury")
+
+    # Gait variance component (15% weight)
+    gait_component = min(variance / 4.0, 1) * 0.15
+    score += gait_component
+    if gait_component > 0.08:
+        contributing_factors.append("Irregular gait pattern detected")
+
+    # Cap score at 1.0
+    score = min(score, 1.0)
+
+    # Determine risk level
+    if score >= 0.6:
+        risk_level = "high"
+    elif score >= 0.25:
+        risk_level = "medium"
+    else:
+        risk_level = "low"
+
+    # Build reasoning
+    reasoning = f"Clinical triage score {score:.2f} derived from pain level, stiffness duration, swelling, injury history, and gait variance."
+
+    # Build recommendations
+    if risk_level == "high":
+        doctor_recommendations = "Refer to an orthopedic specialist for clinical evaluation and imaging (X-ray/MRI) as soon as possible."
+    elif risk_level == "medium":
+        doctor_recommendations = "Recommend follow-up screening in 4-6 weeks; advise preventive exercises and weight management in the meantime."
+    else:
+        doctor_recommendations = "No immediate referral needed; share preventive care guidance and re-screen at next camp visit."
+
+    # Add contributing factors if empty
+    if not contributing_factors:
+        contributing_factors.append("No significant risk factors identified")
+
+    return ClinicalPredictionResponse(
+        risk_level=risk_level,
+        confidence=round(0.55 + score * 0.15, 2),
+        contributing_factors=contributing_factors,
+        reasoning=reasoning,
+        doctorRecommendations=doctor_recommendations,
+        model_version="1.0.0"
     )
 
 

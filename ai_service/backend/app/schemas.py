@@ -68,3 +68,27 @@ class HealthResponse(BaseModel):
     status: str
     model_loaded: bool
     model_trained_on: str
+
+
+class ClinicalPredictionRequest(BaseModel):
+    """
+    Clinical data prediction request from Node.js backend.
+    Used for OA risk prediction based on symptoms and basic gait variance.
+    """
+    pain_level: int = Field(..., ge=0, le=10, description="Pain level 0-10")
+    stiffness_duration: str = Field(..., description="Stiffness duration category: <30, 30-60, >60, none")
+    swelling: bool = Field(..., description="Joint swelling present")
+    past_injury: bool = Field(..., description="History of joint injury")
+    gait_data: str = Field(..., description="JSON string with gait features like variance")
+
+
+class ClinicalPredictionResponse(BaseModel):
+    """
+    Clinical prediction response for Node.js backend.
+    """
+    risk_level: str = Field(..., description="Risk level: low, medium, high")
+    confidence: float = Field(..., ge=0, le=1, description="Prediction confidence")
+    contributing_factors: list[str] = Field(default_factory=list, description="Factors contributing to risk")
+    reasoning: str = Field(..., description="AI reasoning for the prediction")
+    doctorRecommendations: str = Field(..., description="Doctor recommendations based on risk level")
+    model_version: str = Field(default="1.0.0", description="Model version")
