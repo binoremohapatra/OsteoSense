@@ -69,8 +69,6 @@ const userSchema = new Schema(
   }
 );
 
-userSchema.index({ phoneNumber: 1 }, { unique: true });
-
 userSchema.methods.comparePassword = async function comparePassword(candidatePassword) {
   return bcrypt.compare(candidatePassword, this.passwordHash);
 };

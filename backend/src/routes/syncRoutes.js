@@ -18,7 +18,7 @@ const syncItemSchema = z.object({
 });
 
 const batchSyncSchema = z.object({
-  items: z.array(syncItemSchema).min(1).max(200),
+  items: z.array(syncItemSchema).min(0).max(200).default([]),
 });
 
 /**

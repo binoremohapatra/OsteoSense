@@ -35,7 +35,8 @@ const register = asyncHandler(async (req, res) => {
 
   res.status(201).json({
     success: true,
-    data: { user, accessToken, refreshToken },
+    data: { user, accessToken, refreshToken, token: accessToken },
+    token: accessToken,
   });
 });
 
@@ -64,7 +65,8 @@ const login = asyncHandler(async (req, res) => {
 
   res.status(200).json({
     success: true,
-    data: { user, accessToken, refreshToken },
+    data: { user, accessToken, refreshToken, token: accessToken },
+    token: accessToken,
   });
 });
 
@@ -98,7 +100,8 @@ const refresh = asyncHandler(async (req, res) => {
 
   res.status(200).json({
     success: true,
-    data: { accessToken, refreshToken: newRefreshToken },
+    data: { accessToken, refreshToken: newRefreshToken, token: accessToken },
+    token: accessToken,
   });
 });
 

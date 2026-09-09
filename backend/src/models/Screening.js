@@ -10,7 +10,6 @@ const screeningSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: 'Patient',
       required: true,
-      index: true,
     },
     agentId: {
       type: Schema.Types.ObjectId,
@@ -46,7 +45,6 @@ const screeningSchema = new Schema(
       type: String,
       enum: ['low', 'medium', 'high'],
       required: true,
-      index: true,
     },
     confidence: {
       type: Number,
@@ -88,5 +86,6 @@ const screeningSchema = new Schema(
 
 screeningSchema.index({ patientId: 1, screeningDate: -1 });
 screeningSchema.index({ riskLevel: 1, createdAt: -1 });
+screeningSchema.index({ agentId: 1, screeningDate: -1 });
 
 module.exports = mongoose.model('Screening', screeningSchema);

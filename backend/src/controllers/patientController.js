@@ -88,25 +88,59 @@ const listPatients = asyncHandler(async (req, res) => {
   });
 });
 
+function escapeRegex(text) {
+  return text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
+}
+
 /**
  * GET /api/v1/patients/search?q=
  * Scoped to req.user's own patients only.
+ * Supports partial matching across name and village and attaches latestScreening.
  */
 const searchPatients = asyncHandler(async (req, res) => {
   const { q } = req.query;
+  const escaped = escapeRegex(q);
+  const regex = new RegExp(escaped, 'i');
 
-  const patients = await Patient.find(
+  const pipeline = [
     {
-      agentId: req.user._id, // IDOR guard: scope search to this agent's patients only
-      isDeleted: false,
-      $text: { $search: q },
+      $match: {
+        agentId: req.user._id,
+        isDeleted: false,
+        $or: [{ name: regex }, { village: regex }],
+      },
     },
-    { score: { $meta: 'textScore' } }
-  )
-    .sort({ score: { $meta: 'textScore' } })
-    .limit(20);
+    { $sort: { createdAt: -1 } },
+    { $limit: 20 },
+    {
+      $lookup: {
+        from: 'screenings',
+        let: { patientId: '$_id' },
+        pipeline: [
+          { $match: { $expr: { $eq: ['$patientId', '$$patientId'] } } },
+          { $sort: { screeningDate: -1 } },
+          { $limit: 1 },
+          { $project: { riskLevel: 1, screeningDate: 1, confidence: 1, _id: 0 } },
+        ],
+        as: 'latestScreening',
+      },
+    },
+    {
+      $addFields: {
+        latestScreening: { $arrayElemAt: ['$latestScreening', 0] },
+      },
+    },
+  ];
 
-  res.status(200).json({ success: true, data: patients });
+  const results = await Patient.aggregate(pipeline);
+  const data = results.map((doc) => {
+    doc.id = doc._id;
+    delete doc._id;
+    delete doc.__v;
+    return doc;
+  });
+
+  res.status(200).json({ success: true, data });
 });
 
 /**
@@ -145,10 +179,15 @@ const updatePatient = asyncHandler(async (req, res) => {
     throw ApiError.notFound('Patient not found');
   }
 
+  const updateData = { ...req.body };
+  delete updateData.agentId;
+  delete updateData._id;
+  delete updateData.id;
+
   // IDOR guard: only update if it belongs to req.user
   const patient = await Patient.findOneAndUpdate(
     { _id: id, agentId: req.user._id, isDeleted: false },
-    { $set: req.body },
+    { $set: updateData },
     { new: true, runValidators: true }
   );
 

@@ -57,7 +57,7 @@ router.get('/trends', analyticsController.getTrends);
  *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: { low, medium, high } counts
+ *         description: Counts for low, medium, and high risk levels
  */
 router.get('/risk-distribution', analyticsController.getRiskDistribution);
 

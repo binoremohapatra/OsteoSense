@@ -59,6 +59,7 @@ const env = {
     parseInt(process.env.MAX_REFRESH_TOKENS_PER_USER, 10) || 5,
   isProduction: process.env.NODE_ENV === 'production',
   isTest: process.env.NODE_ENV === 'test',
+  isDevelopment: process.env.NODE_ENV === 'development' || !process.env.NODE_ENV,
 };
 
 module.exports = env;

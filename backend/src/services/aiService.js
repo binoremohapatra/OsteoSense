@@ -149,31 +149,75 @@ function buildRecommendation(riskLevel) {
  * Every returned object includes a `source` field ('ml_model' | 'fallback_rules')
  * so downstream analytics can track how often each path was used.
  */
+function mapStiffnessToCategory(stiffnessDuration, stiffnessMinutes) {
+  if (typeof stiffnessDuration === 'string') {
+    const s = stiffnessDuration.toLowerCase();
+    if (s.includes('under') || s.includes('<') || s.includes('15 min')) return '<30';
+    if (s.includes('30') || s.includes('45')) return '30-60';
+    if (s.includes('hour') || s.includes('hr') || s.includes('>60')) return '>60';
+    if (s.includes('none') || s.includes('no')) return 'none';
+  }
+  if (stiffnessMinutes > 60) return '>60';
+  if (stiffnessMinutes >= 30) return '30-60';
+  if (stiffnessMinutes > 0) return '<30';
+  return 'none';
+}
+
+/**
+ * Calls the Python FastAPI ML microservice to get an OA risk prediction.
+ * Falls back to a deterministic rule-based prediction if the service is
+ * unreachable, times out, or returns an error -- ensuring the screening
+ * flow (the core demo path) never hard-fails due to an AI service outage.
+ *
+ * Every returned object includes a `source` field ('ml_model' | 'fallback_rules')
+ * so downstream analytics can track how often each path was used.
+ */
 async function predictRisk({ painLevel, stiffnessDuration, swelling, pastInjury, gaitFeatures }) {
   const stiffnessMinutes = parseStiffnessDuration(stiffnessDuration);
-  const normalizedPayload = {
-    painLevel,
-    stiffnessMinutes,
-    swelling: !!swelling,
-    pastInjury: !!(pastInjury && pastInjury.length),
-    gaitFeatures: gaitFeatures || [],
+  const variance = computeGaitVariance(gaitFeatures);
+
+  // FastAPI ScreeningInput schema: pain_level, stiffness_duration, swelling, past_injury, gait_data
+  const fastApiPayload = {
+    pain_level: Number(painLevel),
+    stiffness_duration: mapStiffnessToCategory(stiffnessDuration, stiffnessMinutes),
+    swelling: Boolean(swelling),
+    past_injury: Boolean(pastInjury && pastInjury.toString().trim().length > 0),
+    gait_data: JSON.stringify({ variance }),
   };
 
   try {
-    const response = await axios.post(`${env.AI_SERVICE_URL}/predict`, normalizedPayload, {
+    const response = await axios.post(`${env.AI_SERVICE_URL}/predict`, fastApiPayload, {
       timeout: AI_REQUEST_TIMEOUT_MS,
     });
 
-    return { ...response.data, source: 'ml_model' };
+    const data = response.data || {};
+    const riskLevel = data.risk_level || data.riskLevel;
+    if (!riskLevel) {
+      throw new Error('Malformed AI response: missing risk level');
+    }
+
+    const confidence = typeof data.confidence === 'number' ? data.confidence : 0.75;
+    const contributingFactors = data.contributing_factors || data.contributingFactors || [];
+    const aiReasoning = data.reasoning || data.aiReasoning || 'AI prediction based on clinical symptoms and gait analysis.';
+    const doctorRecommendations = data.doctorRecommendations || buildRecommendation(riskLevel);
+
+    return {
+      riskLevel,
+      confidence,
+      contributingFactors,
+      aiReasoning,
+      doctorRecommendations,
+      source: 'ml_model',
+    };
   } catch (err) {
     logger.warn('AI microservice unreachable, using fallback', { error: err.message });
 
     const fallbackResult = fallbackRuleBasedPredict({
       painLevel,
       stiffnessMinutes,
-      swelling: normalizedPayload.swelling,
-      pastInjury: normalizedPayload.pastInjury,
-      gaitFeatures: normalizedPayload.gaitFeatures,
+      swelling: Boolean(swelling),
+      pastInjury: Boolean(pastInjury && pastInjury.toString().trim().length > 0),
+      gaitFeatures: gaitFeatures || [],
     });
 
     return { ...fallbackResult, source: 'fallback_rules' };

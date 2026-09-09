@@ -9,8 +9,10 @@ const env = require('../config/env');
 // sharing one `app` instance -- that's a test-runner artifact, not something
 // we want to police. Skip enforcement entirely in test env so status-code
 // assertions reflect actual handler behavior rather than incidental request volume.
-const skipInTest = () => env.isTest;
-
+const skipInTest = () => {
+  if (env.isProduction) return false;
+  return Boolean(env.isTest || env.isDevelopment);
+};
 /**
  * Strict limiter for auth endpoints prone to brute-force / credential
  * stuffing (login, register): 5 requests per 15 minutes per IP.
