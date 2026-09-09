@@ -130,7 +130,7 @@ class _PatientListScreenState extends State<PatientListScreen> {
                     ? _buildEmptyState()
                     : _buildPatientList(patientProvider),
           ).animate().fadeIn(duration: 400.ms, delay: 100.ms).slideY(begin: 0.05, end: 0, duration: 400.ms, delay: 100.ms),
-          const SizedBox(height: 120), // clearance for bottom nav
+          const SizedBox(height: 80), // Proper spacing for bottom nav
         ],
       ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.1, end: 0, duration: 400.ms),
         ],
@@ -218,13 +218,16 @@ class _PatientListScreenState extends State<PatientListScreen> {
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: AppSpacing.xxxl),
-          CustomButton(
-            text: 'Add Patient',
-            onPressed: () => context.go('/agent/add-patient'),
-            variant: ButtonVariant.primary,
-            size: ButtonSize.medium,
-            icon: const Icon(Icons.add),
+          const SizedBox(height: AppSpacing.xl),
+          SizedBox(
+            width: 180,
+            child: CustomButton(
+              text: 'Add Patient',
+              onPressed: () => context.go('/agent/add-patient'),
+              variant: ButtonVariant.primary,
+              size: ButtonSize.small,
+              icon: const Icon(Icons.add),
+            ),
           ),
         ],
       ),

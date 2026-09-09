@@ -647,8 +647,8 @@ class _CenteredFabBottomNavState extends State<CenteredFabBottomNav>
                     ),
                     child: Center(
                       child: Container(
-                        width: 48,
-                        height: 48,
+                        width: 40,
+                        height: 40,
                         decoration: BoxDecoration(
                           gradient: AppColors.primaryGradient,
                           shape: BoxShape.circle,
@@ -663,7 +663,7 @@ class _CenteredFabBottomNavState extends State<CenteredFabBottomNav>
                         child: Icon(
                           widget.fabIcon,
                           color: Colors.white,
-                          size: 30,
+                          size: 24,
                         ),
                       ),
                     ),

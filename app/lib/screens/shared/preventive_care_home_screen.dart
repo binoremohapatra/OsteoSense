@@ -267,9 +267,9 @@ class _CategoryCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text(category.title, style: AppTypography.titleMedium.copyWith(color: Colors.white, fontWeight: AppTypography.bold)),
+                        Text(category.title, style: AppTypography.titleMedium.copyWith(color: Colors.white, fontWeight: AppTypography.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
                         const SizedBox(height: 4),
-                        Text(category.subtitle, style: AppTypography.bodySmall.copyWith(color: Colors.white.withValues(alpha: 0.85))),
+                        Text(category.subtitle, style: AppTypography.bodySmall.copyWith(color: Colors.white.withValues(alpha: 0.85)), maxLines: 2, overflow: TextOverflow.ellipsis),
                         const SizedBox(height: 8),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -282,6 +282,7 @@ class _CategoryCard extends StatelessWidget {
                       ],
                     ),
                   ),
+                  const SizedBox(width: AppSpacing.sm),
                   const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 16),
                 ],
               ),

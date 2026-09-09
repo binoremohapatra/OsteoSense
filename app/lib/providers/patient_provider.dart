@@ -49,16 +49,24 @@ class PatientProvider with ChangeNotifier {
         // This would require matching by serverId or localId to avoid duplicates
 
       } catch (apiError) {
-        // Fallback to local DB
+        // Fallback to local DB on any API error (including 401 auth errors)
+        if (kDebugMode) {
+          debugPrint('API call failed, falling back to local DB: $apiError');
+        }
         final db = DatabaseHelper();
         final patientsData = await db.query(
           'patients',
+          where: 'deleted = ?',
+          whereArgs: [0],
           orderBy: 'created_at DESC',
         );
         _patients = patientsData.map((data) => Patient.fromMap(data)).toList();
       }
     } catch (e) {
       _errorMessage = e.toString();
+      if (kDebugMode) {
+        debugPrint('Error loading patients: $e');
+      }
     } finally {
       _isLoading = false;
       notifyListeners();

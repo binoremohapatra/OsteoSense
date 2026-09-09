@@ -62,10 +62,12 @@ class _QuickActionWidgetState extends State<QuickActionWidget>
   void _handleTap() {
     HapticFeedback.selectionClick();
     final action = widget.onTap.trim();
+    debugPrint('QuickAction: Button clicked - Action: $action');
     if (action.isEmpty) return;
 
     if (action.startsWith('navigate:')) {
       final target = action.substring('navigate:'.length).toLowerCase();
+      debugPrint('QuickAction: Navigating to: $target');
       _navigateTo(target);
     }
   }
@@ -79,6 +81,7 @@ class _QuickActionWidgetState extends State<QuickActionWidget>
       case 'reports':
       case 'analytics':
         // Navigate to analytics tab (index 2 in home)
+        debugPrint('QuickAction: Navigating to /agent/home?tab=analytics');
         context.go('/agent/home?tab=analytics');
         break;
       case 'screening':

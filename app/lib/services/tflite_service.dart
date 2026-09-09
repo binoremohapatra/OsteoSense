@@ -26,8 +26,8 @@ class TFLiteService {
       _isModelLoaded = true;
       debugPrint('TFLite model loaded successfully');
     } catch (e) {
-      debugPrint('Error loading TFLite model: $e');
-      // For development, we'll use a fallback rule-based approach
+      // Model file is a placeholder or not available - use rule-based fallback
+      debugPrint('TFLite model not available, using rule-based prediction: $e');
       _isModelLoaded = false;
     }
   }

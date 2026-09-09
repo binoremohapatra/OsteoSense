@@ -19,7 +19,9 @@ async function registerAndLogin() {
     password: 'SecurePass123',
     role: 'agent',
   });
-  return registerRes.body.token || registerRes.body.data?.accessToken;
+
+  return registerRes.body.token;
+
 }
 
 async function createPatient(token) {
@@ -118,7 +120,8 @@ describe('POST /screenings', () => {
       password: 'SecurePass123',
       role: 'agent',
     });
-    const tokenB = registerB.body.token || registerB.body.data?.accessToken;
+
+    const tokenB = registerB.body.token;
 
     const res = await request(app)
       .post(SCREENING_BASE)

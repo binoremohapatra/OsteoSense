@@ -89,6 +89,7 @@ class AuthProvider with ChangeNotifier {
       if (token != null) await prefs.setString('auth_token', token);
       if (refreshToken != null) await prefs.setString('refresh_token', refreshToken);
       await prefs.setInt('current_user_id', _currentUser!.id!);
+      await prefs.setString('user_role', _currentUser!.healthCenterId != null ? 'agent' : 'user');
       
       _isLoading = false;
       notifyListeners();
@@ -107,6 +108,7 @@ class AuthProvider with ChangeNotifier {
           _currentUser = User.fromMap(users.first);
           final prefs = await SharedPreferences.getInstance();
           await prefs.setInt('current_user_id', _currentUser!.id!);
+          await prefs.setString('user_role', _currentUser!.healthCenterId != null ? 'agent' : 'user');
 
           _isLoading = false;
           notifyListeners();
@@ -144,6 +146,7 @@ class AuthProvider with ChangeNotifier {
       if (token != null) await prefs.setString('auth_token', token);
       if (refreshToken != null) await prefs.setString('refresh_token', refreshToken);
       await prefs.setInt('current_user_id', _currentUser!.id!);
+      await prefs.setString('user_role', _currentUser!.healthCenterId != null ? 'agent' : 'user');
       
       // Save locally as well for offline fallback
       final db = DatabaseHelper();
@@ -177,6 +180,7 @@ class AuthProvider with ChangeNotifier {
 
         final prefs = await SharedPreferences.getInstance();
         await prefs.setInt('current_user_id', _currentUser!.id!);
+        await prefs.setString('user_role', _currentUser!.healthCenterId != null ? 'agent' : 'user');
 
         // Note: Ideally queue this signup for sync when online
         
@@ -207,7 +211,7 @@ class AuthProvider with ChangeNotifier {
       phoneNumber: '9999999999',
       password: '',
       healthCenterId: role == 'agent' ? 'HC-001' : null,
-      location: 'Northeast India',
+      location: 'Your Location',
     );
 
     try {

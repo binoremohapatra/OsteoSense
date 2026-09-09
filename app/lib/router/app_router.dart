@@ -11,6 +11,7 @@ import '../screens/shared/login_screen.dart';
 import '../screens/shared/signup_screen.dart';
 import '../screens/agent/home_screen.dart';
 import '../screens/agent/patient_list_screen.dart';
+import '../screens/agent/profile_screen.dart';
 import '../screens/user/user_home_screen.dart';
 import '../screens/shared/onboarding_screen.dart';
 import '../screens/agent/add_patient_screen.dart';
@@ -263,14 +264,18 @@ final appRouter = GoRouter(
         child: const AgentHomeScreen(),
       ),
       redirect: (context, state) {
-        final authProvider = context.read<AuthProvider>();
-        if (!authProvider.isAuthenticated) {
+        try {
+          final authProvider = context.read<AuthProvider>();
+          if (!authProvider.isAuthenticated) {
+            return '/role';
+          }
+          if (authProvider.userRole != 'agent') {
+            return '/user/home';
+          }
+          return null;
+        } catch (e) {
           return '/role';
         }
-        if (authProvider.userRole != 'agent') {
-          return '/user/home';
-        }
-        return null;
       },
     ),
     GoRoute(
@@ -287,14 +292,18 @@ final appRouter = GoRouter(
         child: const UserHomeScreen(),
       ),
       redirect: (context, state) {
-        final authProvider = context.read<AuthProvider>();
-        if (!authProvider.isAuthenticated) {
+        try {
+          final authProvider = context.read<AuthProvider>();
+          if (!authProvider.isAuthenticated) {
+            return '/role';
+          }
+          if (authProvider.userRole != 'user') {
+            return '/agent/home';
+          }
+          return null;
+        } catch (e) {
           return '/role';
         }
-        if (authProvider.userRole != 'user') {
-          return '/agent/home';
-        }
-        return null;
       },
     ),
     GoRoute(
@@ -313,6 +322,13 @@ final appRouter = GoRouter(
           child: EditPatientScreen(patient: patient),
         );
       },
+    ),
+    GoRoute(
+      path: '/agent/profile',
+      pageBuilder: (context, state) => SharedAxisTransition(
+        key: state.pageKey,
+        child: const ProfileScreen(),
+      ),
     ),
     GoRoute(
       path: '/screening/symptoms',

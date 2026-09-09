@@ -19,11 +19,17 @@ void main() async {
     DeviceOrientation.portraitDown,
   ]);
   
-  runApp(const JointSaathiApp());
+  // Initialize settings
+  final settingsProvider = SettingsProvider();
+  await settingsProvider.loadSettings();
+  
+  runApp(JointSaathiApp(settingsProvider: settingsProvider));
 }
 
 class JointSaathiApp extends StatelessWidget {
-  const JointSaathiApp({super.key});
+  final SettingsProvider settingsProvider;
+  
+  const JointSaathiApp({super.key, required this.settingsProvider});
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +38,7 @@ class JointSaathiApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => PatientProvider()),
         ChangeNotifierProvider(create: (_) => ScreeningProvider()),
-        ChangeNotifierProvider(create: (_) => SettingsProvider()),
+        ChangeNotifierProvider.value(value: settingsProvider),
       ],
       child: MaterialApp.router(
         title: 'JointSaathi',

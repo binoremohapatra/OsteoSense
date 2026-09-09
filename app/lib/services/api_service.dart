@@ -23,8 +23,9 @@ class ApiService {
   ApiService._internal() {
     _dio = Dio(BaseOptions(
       baseUrl: AppConstants.baseUrl,
-      connectTimeout: const Duration(seconds: 15),
-      receiveTimeout: const Duration(seconds: 15),
+      connectTimeout: const Duration(seconds: 30),
+      receiveTimeout: const Duration(seconds: 30),
+      sendTimeout: const Duration(seconds: 30),
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
@@ -62,10 +63,12 @@ class ApiService {
               );
               return handler.resolve(response);
             } catch (retryErr) {
+              // Refresh succeeded but retry failed - clear auth and let caller handle
+              await _clearAuth();
               return handler.next(e);
             }
           } else {
-            // Refresh failed, user needs to login again.
+            // Refresh failed, clear auth and let caller handle fallback
             await _clearAuth();
           }
         }

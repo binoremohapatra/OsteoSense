@@ -24,14 +24,14 @@ describe('POST /auth/register', () => {
 
     expect(res.status).toBe(201);
     expect(res.body.success).toBe(true);
-    const user = res.body.user || res.body.data?.user;
-    const token = res.body.token || res.body.data?.accessToken;
-    const refreshToken = res.body.refreshToken || res.body.data?.refreshToken;
-    expect(user).toBeDefined();
-    expect(user.phoneNumber).toBe('9876543210');
-    expect(user.passwordHash).toBeUndefined();
-    expect(token).toEqual(expect.any(String));
-    expect(refreshToken).toEqual(expect.any(String));
+
+
+    expect(res.body.user).toBeDefined();
+    expect(res.body.user.phoneNumber).toBe('9876543210');
+    expect(res.body.user.passwordHash).toBeUndefined();
+    expect(res.body.token).toEqual(expect.any(String));
+    expect(res.body.refreshToken).toEqual(expect.any(String));
+
   });
 
   it('rejects duplicate phone number registration with 409', async () => {
@@ -67,10 +67,10 @@ describe('POST /auth/login', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
-    const token = res.body.token || res.body.data?.accessToken;
-    const refreshToken = res.body.refreshToken || res.body.data?.refreshToken;
-    expect(token).toEqual(expect.any(String));
-    expect(refreshToken).toEqual(expect.any(String));
+
+    expect(res.body.token).toEqual(expect.any(String));
+    expect(res.body.refreshToken).toEqual(expect.any(String));
+
   });
 
   it('rejects login with wrong password using generic message', async () => {
@@ -97,7 +97,9 @@ describe('POST /auth/login', () => {
 describe('GET /auth/me', () => {
   it('returns the authenticated user profile with a valid token', async () => {
     const registerRes = await request(app).post(`${BASE}/register`).send(validRegisterBody());
-    const token = registerRes.body.token || registerRes.body.data?.accessToken;
+
+    const token = registerRes.body.token;
+
 
     const res = await request(app).get(`${BASE}/me`).set('Authorization', `Bearer ${token}`);
 
