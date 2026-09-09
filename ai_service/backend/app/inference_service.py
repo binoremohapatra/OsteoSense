@@ -11,7 +11,7 @@ import joblib
 import numpy as np
 from pathlib import Path
 
-from feature_extraction import extract_features
+from .feature_extraction import extract_features
 
 MODEL_DIR = Path(__file__).parent.parent / "models"
 

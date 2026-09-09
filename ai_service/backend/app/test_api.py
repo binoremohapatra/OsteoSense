@@ -14,8 +14,8 @@ import os
 sys.path.insert(0, os.path.dirname(__file__))
 
 from fastapi.testclient import TestClient
-from main import app
-from simulate_data import simulate_subject
+from .main import app
+from .simulate_data import simulate_subject
 
 # TestClient must be used as a context manager so FastAPI's startup event
 # (which calls init_db()) actually fires before requests are made.
