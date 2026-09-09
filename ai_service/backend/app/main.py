@@ -25,9 +25,9 @@ from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
-from database import init_db, get_db, Device, SensorSession
-from schemas import SensorWindowIn, SessionResult, TrendResponse, HealthResponse, TopFeature
-from inference_service import inference_service
+from .database import init_db, get_db, Device, SensorSession
+from .schemas import SensorWindowIn, SessionResult, TrendResponse, HealthResponse, TopFeature
+from .inference_service import inference_service
 
 app = FastAPI(
     title="OA Risk Wearable API",
