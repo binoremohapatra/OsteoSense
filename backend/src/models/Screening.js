@@ -10,13 +10,11 @@ const screeningSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: 'Patient',
       required: true,
-      index: true,
     },
     agentId: {
       type: Schema.Types.ObjectId,
       ref: 'User',
       required: true,
-      index: true,
     },
     screeningDate: {
       type: Date,
@@ -30,23 +28,26 @@ const screeningSchema = new Schema(
       max: 10,
     },
     stiffnessDuration: {
-      type: String, // e.g. "30 minutes"
+      type: String,
+      trim: true,
     },
     swelling: {
       type: Boolean,
       default: false,
     },
     pastInjury: {
-      type: String, // free-text description or empty
+      type: String,
     },
     gaitData: {
-      type: Schema.Types.Mixed, // raw sensor feature array, stored as-is
+      type: Schema.Types.Mixed,
+    },
+    gaitRawData: {
+      type: Schema.Types.Mixed,
     },
     riskLevel: {
       type: String,
       enum: ['low', 'medium', 'high'],
       required: true,
-      index: true,
     },
     confidence: {
       type: Number,
@@ -59,26 +60,31 @@ const screeningSchema = new Schema(
     },
     aiReasoning: {
       type: String,
+      default: '',
     },
     doctorRecommendations: {
       type: String,
+      default: '',
     },
     source: {
-      // 'ml_model' | 'fallback_rules' - which prediction path produced this result
       type: String,
       enum: ['ml_model', 'fallback_rules'],
+      required: true,
     },
     synced: {
       type: Boolean,
-      default: true, // false for offline-queued records synced later
+      default: true,
     },
   },
   {
     timestamps: true,
     toJSON: {
       transform: (_doc, ret) => {
-        ret.id = ret._id;
-        delete ret._id;
+        const idStr = ret._id ? ret._id.toString() : '';
+        ret.id = idStr;
+        ret._id = idStr;
+        ret.server_id = idStr;
+        ret.serverId = idStr;
         delete ret.__v;
         return ret;
       },
@@ -88,5 +94,6 @@ const screeningSchema = new Schema(
 
 screeningSchema.index({ patientId: 1, screeningDate: -1 });
 screeningSchema.index({ riskLevel: 1, createdAt: -1 });
+screeningSchema.index({ agentId: 1, screeningDate: -1 });
 
 module.exports = mongoose.model('Screening', screeningSchema);

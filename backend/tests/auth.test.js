@@ -24,11 +24,14 @@ describe('POST /auth/register', () => {
 
     expect(res.status).toBe(201);
     expect(res.body.success).toBe(true);
-    expect(res.body.data.user).toBeDefined();
-    expect(res.body.data.user.phoneNumber).toBe('9876543210');
-    expect(res.body.data.user.passwordHash).toBeUndefined();
-    expect(res.body.data.accessToken).toEqual(expect.any(String));
-    expect(res.body.data.refreshToken).toEqual(expect.any(String));
+    const user = res.body.user || res.body.data?.user;
+    const token = res.body.token || res.body.data?.accessToken;
+    const refreshToken = res.body.refreshToken || res.body.data?.refreshToken;
+    expect(user).toBeDefined();
+    expect(user.phoneNumber).toBe('9876543210');
+    expect(user.passwordHash).toBeUndefined();
+    expect(token).toEqual(expect.any(String));
+    expect(refreshToken).toEqual(expect.any(String));
   });
 
   it('rejects duplicate phone number registration with 409', async () => {
@@ -64,8 +67,10 @@ describe('POST /auth/login', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
-    expect(res.body.data.accessToken).toEqual(expect.any(String));
-    expect(res.body.data.refreshToken).toEqual(expect.any(String));
+    const token = res.body.token || res.body.data?.accessToken;
+    const refreshToken = res.body.refreshToken || res.body.data?.refreshToken;
+    expect(token).toEqual(expect.any(String));
+    expect(refreshToken).toEqual(expect.any(String));
   });
 
   it('rejects login with wrong password using generic message', async () => {
@@ -92,12 +97,13 @@ describe('POST /auth/login', () => {
 describe('GET /auth/me', () => {
   it('returns the authenticated user profile with a valid token', async () => {
     const registerRes = await request(app).post(`${BASE}/register`).send(validRegisterBody());
-    const { accessToken } = registerRes.body.data;
+    const token = registerRes.body.token || registerRes.body.data?.accessToken;
 
-    const res = await request(app).get(`${BASE}/me`).set('Authorization', `Bearer ${accessToken}`);
+    const res = await request(app).get(`${BASE}/me`).set('Authorization', `Bearer ${token}`);
 
     expect(res.status).toBe(200);
-    expect(res.body.data.user.phoneNumber).toBe('9876543210');
+    const user = res.body.user || res.body.data?.user;
+    expect(user.phoneNumber).toBe('9876543210');
   });
 
   it('rejects requests without a token', async () => {

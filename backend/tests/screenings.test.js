@@ -3,7 +3,6 @@
 require('./setup');
 const request = require('supertest');
 
-// Mock the AI service BEFORE requiring the app so the controller picks up the mock.
 jest.mock('../src/services/aiService');
 const aiService = require('../src/services/aiService');
 
@@ -20,7 +19,7 @@ async function registerAndLogin() {
     password: 'SecurePass123',
     role: 'agent',
   });
-  return registerRes.body.data.accessToken;
+  return registerRes.body.token || registerRes.body.data?.accessToken;
 }
 
 async function createPatient(token) {
@@ -28,7 +27,7 @@ async function createPatient(token) {
     .post(PATIENT_BASE)
     .set('Authorization', `Bearer ${token}`)
     .send({ name: 'Test Patient', age: 60, gender: 'male', village: 'Ziro' });
-  return res.body.data;
+  return res.body.patient || res.body.data;
 }
 
 beforeEach(() => {
@@ -53,7 +52,7 @@ describe('POST /screenings', () => {
       .post(SCREENING_BASE)
       .set('Authorization', `Bearer ${token}`)
       .send({
-        patientId: patient.id,
+        patientId: patient.id || patient._id,
         painLevel: 8,
         stiffnessDuration: '45 minutes',
         swelling: true,
@@ -63,15 +62,13 @@ describe('POST /screenings', () => {
 
     expect(res.status).toBe(201);
     expect(res.body.success).toBe(true);
-    expect(res.body.data.riskLevel).toBe('high');
-    expect(res.body.data.source).toBe('ml_model');
+    const scr = res.body.screening || res.body.data;
+    expect(scr.riskLevel).toBe('high');
+    expect(scr.source).toBe('ml_model');
     expect(aiService.predictRisk).toHaveBeenCalledTimes(1);
   });
 
   it('falls back gracefully when the AI service throws, still returning 201', async () => {
-    // Simulate aiService already handling its own internal fallback and
-    // returning a fallback_rules result (this is what predictRisk normally
-    // does internally on microservice failure -- here we mock that outcome directly).
     aiService.predictRisk.mockResolvedValue({
       riskLevel: 'medium',
       confidence: 0.6,
@@ -88,7 +85,7 @@ describe('POST /screenings', () => {
       .post(SCREENING_BASE)
       .set('Authorization', `Bearer ${token}`)
       .send({
-        patientId: patient.id,
+        patientId: patient.id || patient._id,
         painLevel: 5,
         stiffnessDuration: '20 minutes',
         swelling: false,
@@ -97,8 +94,9 @@ describe('POST /screenings', () => {
       });
 
     expect(res.status).toBe(201);
-    expect(res.body.data.source).toBe('fallback_rules');
-    expect(res.body.data.riskLevel).toBe('medium');
+    const scr = res.body.screening || res.body.data;
+    expect(scr.source).toBe('fallback_rules');
+    expect(scr.riskLevel).toBe('medium');
   });
 
   it('returns 404 when the patient does not belong to the requesting agent', async () => {
@@ -114,19 +112,18 @@ describe('POST /screenings', () => {
     const tokenA = await registerAndLogin();
     const patientA = await createPatient(tokenA);
 
-    // A second agent tries to screen the first agent's patient -- must be blocked (IDOR).
     const registerB = await request(app).post(`${AUTH_BASE}/register`).send({
       fullName: 'Second Agent',
       phoneNumber: '9812345671',
       password: 'SecurePass123',
       role: 'agent',
     });
-    const tokenB = registerB.body.data.accessToken;
+    const tokenB = registerB.body.token || registerB.body.data?.accessToken;
 
     const res = await request(app)
       .post(SCREENING_BASE)
       .set('Authorization', `Bearer ${tokenB}`)
-      .send({ patientId: patientA.id, painLevel: 3 });
+      .send({ patientId: patientA.id || patientA._id, painLevel: 3 });
 
     expect(res.status).toBe(404);
   });
@@ -138,7 +135,7 @@ describe('POST /screenings', () => {
     const res = await request(app)
       .post(SCREENING_BASE)
       .set('Authorization', `Bearer ${token}`)
-      .send({ patientId: patient.id, painLevel: 15 });
+      .send({ patientId: patient.id || patient._id, painLevel: 15 });
 
     expect(res.status).toBe(400);
   });

@@ -18,7 +18,9 @@ const syncItemSchema = z.object({
 });
 
 const batchSyncSchema = z.object({
-  items: z.array(syncItemSchema).min(1).max(200),
+  items: z.array(syncItemSchema).min(0).max(200).optional().default([]),
+  patients: z.array(z.record(z.any())).max(200).optional(),
+  screenings: z.array(z.record(z.any())).max(200).optional(),
 });
 
 /**

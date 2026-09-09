@@ -8,21 +8,35 @@ const asyncHandler = require('../utils/asyncHandler');
 const aiService = require('../services/aiService');
 const { generateScreeningReportPdf } = require('../services/pdfService');
 
+function formatScreeningForApp(screening) {
+  const obj = screening.toJSON ? screening.toJSON() : { ...screening };
+  const idStr = (screening._id || obj._id || '').toString();
+
+  let factors = obj.contributingFactors;
+  if (!Array.isArray(factors)) {
+    factors = factors ? String(factors).split(',').map((s) => s.trim()).filter(Boolean) : [];
+  }
+
+  return {
+    ...obj,
+    _id: idStr,
+    id: idStr,
+    server_id: idStr,
+    serverId: idStr,
+    contributingFactors: factors,
+  };
+}
+
 /**
  * POST /api/v1/screenings
- * The single most important endpoint in the system -- creates a new
- * screening by combining clinical inputs with an AI (or fallback) risk
- * prediction. Response time matters here (AI call is capped at 5s
- * inside aiService, with automatic fallback).
  */
 const createScreening = asyncHandler(async (req, res) => {
-  const { patientId, painLevel, stiffnessDuration, swelling, pastInjury, gaitFeatures } = req.body;
+  const { patientId, painLevel, stiffnessDuration, swelling, pastInjury, gaitFeatures, gaitData } = req.body;
 
   if (!mongoose.Types.ObjectId.isValid(patientId)) {
     throw ApiError.badRequest('Invalid patientId');
   }
 
-  // IDOR guard: the patient must belong to the requesting agent.
   const patient = await Patient.findOne({
     _id: patientId,
     agentId: req.user._id,
@@ -32,12 +46,14 @@ const createScreening = asyncHandler(async (req, res) => {
     throw ApiError.notFound('Patient not found');
   }
 
+  const rawGait = gaitFeatures || gaitData || [];
+
   const prediction = await aiService.predictRisk({
     painLevel,
     stiffnessDuration,
     swelling,
     pastInjury,
-    gaitFeatures,
+    gaitFeatures: rawGait,
   });
 
   const screening = await Screening.create({
@@ -47,7 +63,7 @@ const createScreening = asyncHandler(async (req, res) => {
     stiffnessDuration,
     swelling,
     pastInjury,
-    gaitData: gaitFeatures,
+    gaitData: rawGait,
     riskLevel: prediction.riskLevel,
     confidence: prediction.confidence,
     contributingFactors: prediction.contributingFactors,
@@ -57,7 +73,13 @@ const createScreening = asyncHandler(async (req, res) => {
     synced: true,
   });
 
-  res.status(201).json({ success: true, screening: screening });
+  const screeningObj = formatScreeningForApp(screening);
+
+  res.status(201).json({
+    success: true,
+    screening: screeningObj,
+    data: screeningObj,
+  });
 });
 
 /**
@@ -66,7 +88,6 @@ const createScreening = asyncHandler(async (req, res) => {
 const listScreenings = asyncHandler(async (req, res) => {
   const { page, limit, riskLevel, startDate, endDate, patientId } = req.query;
 
-  // IDOR guard: always scope to req.user's own screenings.
   const filter = { agentId: req.user._id };
   if (riskLevel) filter.riskLevel = riskLevel;
   if (patientId) filter.patientId = patientId;
@@ -76,18 +97,21 @@ const listScreenings = asyncHandler(async (req, res) => {
     if (endDate) filter.screeningDate.$lte = endDate;
   }
 
+  const pNum = Number(page) || 1;
+  const lNum = Number(limit) || 20;
+
   const [data, total] = await Promise.all([
     Screening.find(filter)
       .sort({ screeningDate: -1 })
-      .skip((page - 1) * limit)
-      .limit(limit),
+      .skip((pNum - 1) * lNum)
+      .limit(lNum),
     Screening.countDocuments(filter),
   ]);
 
   res.status(200).json({
     success: true,
     data,
-    pagination: { page, limit, total, totalPages: Math.ceil(total / limit) || 0 },
+    pagination: { page: pNum, limit: lNum, total, totalPages: Math.ceil(total / lNum) || 0 },
   });
 });
 
@@ -100,7 +124,6 @@ const getScreeningById = asyncHandler(async (req, res) => {
     throw ApiError.notFound('Screening not found');
   }
 
-  // IDOR guard: scope to req.user's own screenings.
   const screening = await Screening.findOne({ _id: id, agentId: req.user._id }).populate(
     'patientId',
     'name age village gender'
@@ -110,7 +133,7 @@ const getScreeningById = asyncHandler(async (req, res) => {
     throw ApiError.notFound('Screening not found');
   }
 
-  res.status(200).json({ success: true, data: screening });
+  res.status(200).json({ success: true, data: screening, screening: formatScreeningForApp(screening) });
 });
 
 /**
@@ -119,7 +142,6 @@ const getScreeningById = asyncHandler(async (req, res) => {
 const getScreeningsByPatient = asyncHandler(async (req, res) => {
   const { patientId } = req.params;
 
-  // IDOR guard: verify the patient belongs to req.user before returning any screenings.
   const patient = await Patient.findOne({
     _id: patientId,
     agentId: req.user._id,
@@ -136,7 +158,6 @@ const getScreeningsByPatient = asyncHandler(async (req, res) => {
 
 /**
  * GET /api/v1/screenings/:id/report
- * Streams a generated PDF directly in the response (no disk persistence).
  */
 const getScreeningReport = asyncHandler(async (req, res) => {
   const { id } = req.params;
@@ -144,7 +165,6 @@ const getScreeningReport = asyncHandler(async (req, res) => {
     throw ApiError.notFound('Screening not found');
   }
 
-  // IDOR guard: scope to req.user's own screenings.
   const screening = await Screening.findOne({ _id: id, agentId: req.user._id }).populate(
     'patientId',
     'name age village gender'
