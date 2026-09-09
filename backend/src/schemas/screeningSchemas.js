@@ -15,10 +15,13 @@ const createScreeningSchema = z.object({
     .number({ required_error: 'painLevel is required' })
     .min(0, 'painLevel must be between 0 and 10')
     .max(10, 'painLevel must be between 0 and 10'),
-  stiffnessDuration: z.string().trim().optional(),
-  swelling: z.coerce.boolean().optional().default(false),
-  pastInjury: z.string().trim().optional().default(''),
-  gaitFeatures: z.array(z.number()).optional().default([]),
+  stiffnessDuration: z.string().trim().nullish().transform((v) => v || ''),
+  swelling: z
+    .preprocess((val) => (val === true || val === 1 || val === '1' || val === 'true' ? true : false), z.boolean())
+    .optional()
+    .default(false),
+  pastInjury: z.string().trim().nullish().transform((v) => v || ''),
+  gaitFeatures: z.array(z.coerce.number()).optional().default([]),
 });
 
 const listScreeningsQuerySchema = z.object({

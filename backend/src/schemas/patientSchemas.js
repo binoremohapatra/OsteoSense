@@ -9,7 +9,19 @@ const contactSchema = z
   .optional()
   .or(z.literal('').transform(() => undefined));
 
-const createPatientSchema = z.object({
+const preprocessPatient = (data) => {
+  if (data && typeof data === 'object') {
+    if (!data.name && data.fullName) {
+      data.name = data.fullName;
+    }
+    if (typeof data.gender === 'string') {
+      data.gender = data.gender.trim().toLowerCase();
+    }
+  }
+  return data;
+};
+
+const patientBaseSchema = z.object({
   name: z.string({ required_error: 'Name is required' }).trim().min(1, 'Name is required'),
   age: z.coerce
     .number({ required_error: 'Age is required' })
@@ -25,13 +37,16 @@ const createPatientSchema = z.object({
   occupation: z.string().trim().optional(),
   height: z.coerce.number().positive().optional(),
   weight: z.coerce.number().positive().optional(),
+  localId: z.any().optional(),
 });
 
-const updatePatientSchema = createPatientSchema.partial();
+const createPatientSchema = z.preprocess(preprocessPatient, patientBaseSchema);
+
+const updatePatientSchema = z.preprocess(preprocessPatient, patientBaseSchema.partial());
 
 const listPatientsQuerySchema = z.object({
-  page: z.coerce.number().int().positive().optional().default(1),
-  limit: z.coerce.number().int().positive().max(100).optional().default(20),
+  page: z.coerce.number().int().positive().optional(),
+  limit: z.coerce.number().int().positive().max(100).optional(),
   village: z.string().trim().optional(),
   riskLevel: z.enum(['low', 'medium', 'high']).optional(),
 });

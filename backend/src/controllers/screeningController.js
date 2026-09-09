@@ -57,7 +57,29 @@ const createScreening = asyncHandler(async (req, res) => {
     synced: true,
   });
 
-  res.status(201).json({ success: true, data: screening });
+  const factors = Array.isArray(screening.contributingFactors)
+    ? screening.contributingFactors
+    : (screening.contributingFactors ? [screening.contributingFactors] : []);
+
+  const screeningObj = {
+    _id: screening._id.toString(),
+    id: screening._id.toString(),
+    server_id: screening._id.toString(),
+    serverId: screening._id.toString(),
+    riskLevel: screening.riskLevel,
+    confidence: screening.confidence,
+    contributingFactors: factors,
+    aiReasoning: screening.aiReasoning,
+    doctorRecommendations: screening.doctorRecommendations,
+    ...screening.toObject(),
+    contributingFactors: factors,
+  };
+
+  res.status(201).json({
+    success: true,
+    data: screening,
+    screening: screeningObj,
+  });
 });
 
 /**

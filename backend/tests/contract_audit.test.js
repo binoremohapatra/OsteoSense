@@ -160,7 +160,8 @@ describe('End-to-End Workflow Audit & Contract Verification', () => {
       const afterList = await request(app)
         .get(PATIENT_BASE)
         .set('Authorization', `Bearer ${token}`);
-      expect(afterList.body.data).toHaveLength(0);
+      const listData = Array.isArray(afterList.body) ? afterList.body : afterList.body.data;
+      expect(listData).toHaveLength(0);
 
       const afterGet = await request(app)
         .get(`${PATIENT_BASE}/${patient.id}`)
@@ -434,6 +435,216 @@ describe('End-to-End Workflow Audit & Contract Verification', () => {
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
       expect(res.body.results).toEqual([]);
+    });
+
+    it('processes Flutter app native batch sync payload { patients, screenings }', async () => {
+      const flutterSyncPayload = {
+        patients: [
+          {
+            localId: 101,
+            name: 'Kalsang Doma',
+            age: 52,
+            gender: 'female',
+            village: 'Bomdila',
+            _sync_action: 'insert',
+          },
+        ],
+        screenings: [
+          {
+            localId: 201,
+            patient_id: 101, // references local patient ID
+            user_id: 1,
+            screening_date: new Date().toISOString(),
+            pain_level: 7,
+            stiffness_duration: '45 minutes',
+            swelling: 1,
+            past_injury: 'Prior fall',
+            gait_data: '[0.4, 0.6, 0.5]',
+            _sync_action: 'insert',
+          },
+        ],
+      };
+
+      const res = await request(app)
+        .post(`${SYNC_BASE}/batch`)
+        .set('Authorization', `Bearer ${token}`)
+        .send(flutterSyncPayload);
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.results.patients).toHaveLength(1);
+      expect(res.body.results.screenings).toHaveLength(1);
+
+      const pSync = res.body.results.patients[0];
+      expect(pSync.localId).toBe(101);
+      expect(pSync.serverId).toBeDefined();
+      expect(pSync.success).toBe(true);
+
+      const sSync = res.body.results.screenings[0];
+      expect(sSync.localId).toBe(201);
+      expect(sSync.serverId).toBeDefined();
+      expect(sSync.success).toBe(true);
+
+      // Verify screening references the created patient
+      const scr = await request(app)
+        .get(`${SCREENING_BASE}/${sSync.serverId}`)
+        .set('Authorization', `Bearer ${token}`);
+      expect(scr.status).toBe(200);
+      expect(scr.body.data.patientId._id).toBe(pSync.serverId);
+    });
+  });
+
+  // Dedicated Mobile App Contract Verification Suite
+  describe('Flutter Mobile App Strict Contract Verification', () => {
+    let appUserToken;
+    let appPatientServerId;
+
+    beforeEach(async () => {
+      const regRes = await request(app).post(`${AUTH_BASE}/register`).send({
+        full_name: 'Mobile Health Worker',
+        phone_number: '9876543299',
+        password: 'Password123!',
+        health_center_id: 'HC-BOMDILA-01',
+        location: 'West Kameng',
+      });
+      appUserToken = regRes.body.token;
+
+      const pRes = await request(app)
+        .post(PATIENT_BASE)
+        .set('Authorization', `Bearer ${appUserToken}`)
+        .send({
+          localId: 42,
+          fullName: 'Dorjee Khandu',
+          age: 65,
+          gender: 'male',
+          contact: '9876500099',
+          village: 'Dirang',
+          address: 'Main Market',
+          occupation: 'Artisan',
+        });
+      appPatientServerId = pRes.body.patient._id;
+    });
+
+    it('satisfies AuthProvider login and register contracts', async () => {
+      // 1. Signup with user.toMap() payload (snake_case from Flutter)
+      const signupPayload = {
+        full_name: 'Fresh Worker',
+        phone_number: '9876543288',
+        password: 'Password123!',
+        health_center_id: 'HC-BOMDILA-02',
+        location: 'West Kameng',
+      };
+
+      const regRes = await request(app).post(`${AUTH_BASE}/register`).send(signupPayload);
+      expect(regRes.status).toBe(201);
+      expect(regRes.body.token).toBeDefined();
+      expect(regRes.body.refreshToken).toBeDefined();
+      expect(regRes.body.user).toBeDefined();
+
+      const user = regRes.body.user;
+      expect(typeof user.id).toBe('number'); // prefs.setInt('current_user_id', _currentUser!.id!)
+      expect(user.full_name).toBe('Fresh Worker');
+      expect(user.phone_number).toBe('9876543288');
+      expect(typeof user.password).toBe('string');
+      expect(user.created_at).toBeDefined();
+      expect(user.updated_at).toBeDefined();
+
+      // 2. Login with phone and password
+      const loginRes = await request(app).post(`${AUTH_BASE}/login`).send({
+        phone: '9876543288',
+        password: 'Password123!',
+      });
+      expect(loginRes.status).toBe(200);
+      expect(loginRes.body.token).toBeDefined();
+      expect(loginRes.body.refreshToken).toBeDefined();
+      expect(loginRes.body.user).toBeDefined();
+      expect(typeof loginRes.body.user.id).toBe('number');
+
+      // 3. /auth/me for User.fromMap(userData['data'] ?? userData)
+      const meRes = await request(app).get(`${AUTH_BASE}/me`).set('Authorization', `Bearer ${loginRes.body.token}`);
+      expect(meRes.status).toBe(200);
+      expect(meRes.body.user).toBeDefined();
+      expect(typeof meRes.body.data.id).toBe('number');
+      expect(meRes.body.data.full_name).toBe('Fresh Worker');
+    });
+
+    it('satisfies PatientProvider addPatient and getPatients contracts', async () => {
+      // 1. addPatient sends { localId, fullName, age, gender, contact, village, address, occupation }
+      // and reads response['patient']['_id']
+      const patientPayload = {
+        localId: 43,
+        fullName: 'Sonam Tashi',
+        age: 50,
+        gender: 'female',
+        contact: '9876500088',
+        village: 'Rupa',
+        address: 'Hill Road',
+        occupation: 'Weaver',
+      };
+
+      const createRes = await request(app)
+        .post(PATIENT_BASE)
+        .set('Authorization', `Bearer ${appUserToken}`)
+        .send(patientPayload);
+
+      expect(createRes.status).toBe(201);
+      expect(createRes.body.patient).toBeDefined();
+      expect(createRes.body.patient._id).toBeDefined();
+
+      // 2. getPatients() returns direct List<dynamic> (JSON Array)
+      const listRes = await request(app)
+        .get(PATIENT_BASE)
+        .set('Authorization', `Bearer ${appUserToken}`);
+
+      expect(listRes.status).toBe(200);
+      expect(Array.isArray(listRes.body)).toBe(true);
+      expect(listRes.body.length).toBeGreaterThanOrEqual(2);
+
+      const pItem = listRes.body.find((p) => p._id === appPatientServerId);
+      expect(pItem).toBeDefined();
+      expect(pItem.id).toBeNull(); // ensures (map['id'] as int?) is null without casting error
+      expect(pItem.name).toBe('Dorjee Khandu');
+      expect(pItem.fullName).toBe('Dorjee Khandu');
+      expect(pItem.server_id).toBe(appPatientServerId);
+      expect(pItem.created_at).toBeDefined();
+      expect(pItem.updated_at).toBeDefined();
+      expect(pItem.synced).toBe(1);
+    });
+
+    it('satisfies ScreeningProvider createScreening contract', async () => {
+      aiService.predictRisk.mockResolvedValueOnce({
+        riskLevel: 'high',
+        confidence: 0.91,
+        contributingFactors: ['High pain score', 'Morning stiffness > 30 min'],
+        aiReasoning: 'Consistent signs of OA progression',
+        doctorRecommendations: 'Refer for X-ray',
+        source: 'ml_model',
+      });
+
+      const screeningPayload = {
+        patientId: appPatientServerId,
+        painLevel: 9,
+        stiffnessDuration: '60 minutes',
+        swelling: true,
+        pastInjury: 'Knee fracture 2019',
+        gaitFeatures: [0.15, 0.25, 0.45],
+      };
+
+      const res = await request(app)
+        .post(SCREENING_BASE)
+        .set('Authorization', `Bearer ${appUserToken}`)
+        .send(screeningPayload);
+
+      expect(res.status).toBe(201);
+      expect(res.body.screening).toBeDefined();
+
+      const scr = res.body.screening;
+      expect(scr._id).toBeDefined();
+      expect(scr.riskLevel).toBe('high');
+      expect(typeof scr.confidence).toBe('number');
+      expect(Array.isArray(scr.contributingFactors)).toBe(true); // (serverResult['contributingFactors'] as List)
+      expect(scr.aiReasoning).toBeDefined();
+      expect(scr.doctorRecommendations).toBeDefined();
     });
   });
 });

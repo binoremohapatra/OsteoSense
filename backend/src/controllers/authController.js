@@ -9,6 +9,47 @@ const tokenService = require('../services/tokenService');
 const SALT_ROUNDS = 12;
 
 /**
+ * Normalizes user objects to satisfy the Flutter mobile app's User.fromMap contract:
+ * - id: positive 32-bit int (derived from mongo _id hex)
+ * - full_name: String
+ * - phone_number: String
+ * - password: String (empty string default so non-nullable cast succeeds)
+ * - created_at: ISO8601 String
+ * - updated_at: ISO8601 String
+ */
+function formatUserForApp(user) {
+  if (!user) return null;
+  const obj = user.toObject ? user.toObject() : { ...user };
+  delete obj.passwordHash;
+  delete obj.refreshTokens;
+
+  const hex = (user._id || '').toString().slice(-6);
+  const intId = (parseInt(hex, 16) % 2147483647) || 1;
+
+  const createdAtIso = user.createdAt ? new Date(user.createdAt).toISOString() : new Date().toISOString();
+  const updatedAtIso = user.updatedAt ? new Date(user.updatedAt).toISOString() : new Date().toISOString();
+
+  return {
+    ...obj,
+    id: intId,
+    _id: (user._id || '').toString(),
+    server_id: (user._id || '').toString(),
+    full_name: user.fullName || '',
+    fullName: user.fullName || '',
+    phone_number: user.phoneNumber || '',
+    phoneNumber: user.phoneNumber || '',
+    password: '',
+    health_center_id: user.healthCenterId || null,
+    healthCenterId: user.healthCenterId || null,
+    location: user.location || null,
+    created_at: createdAtIso,
+    createdAt: createdAtIso,
+    updated_at: updatedAtIso,
+    updatedAt: updatedAtIso,
+  };
+}
+
+/**
  * POST /api/v1/auth/register
  */
 const register = asyncHandler(async (req, res) => {
@@ -33,10 +74,14 @@ const register = asyncHandler(async (req, res) => {
   const { accessToken, refreshToken } = tokenService.issueTokenPair(user);
   await user.save();
 
+  const appUser = formatUserForApp(user);
+
   res.status(201).json({
     success: true,
-    data: { user, accessToken, refreshToken, token: accessToken },
+    data: { user: appUser, accessToken, refreshToken, token: accessToken },
     token: accessToken,
+    refreshToken,
+    user: appUser,
   });
 });
 
@@ -63,10 +108,14 @@ const login = asyncHandler(async (req, res) => {
   const { accessToken, refreshToken } = tokenService.issueTokenPair(user);
   await user.save();
 
+  const appUser = formatUserForApp(user);
+
   res.status(200).json({
     success: true,
-    data: { user, accessToken, refreshToken, token: accessToken },
+    data: { user: appUser, accessToken, refreshToken, token: accessToken },
     token: accessToken,
+    refreshToken,
+    user: appUser,
   });
 });
 
@@ -102,6 +151,7 @@ const refresh = asyncHandler(async (req, res) => {
     success: true,
     data: { accessToken, refreshToken: newRefreshToken, token: accessToken },
     token: accessToken,
+    refreshToken: newRefreshToken,
   });
 });
 
@@ -126,7 +176,12 @@ const logout = asyncHandler(async (req, res) => {
  * Protected route.
  */
 const me = asyncHandler(async (req, res) => {
-  res.status(200).json({ success: true, data: { user: req.user } });
+  const appUser = formatUserForApp(req.user);
+  res.status(200).json({
+    success: true,
+    data: { ...appUser, user: appUser },
+    user: appUser,
+  });
 });
 
 module.exports = { register, login, refresh, logout, me };

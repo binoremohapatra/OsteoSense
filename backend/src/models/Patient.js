@@ -66,8 +66,11 @@ const patientSchema = new Schema(
     timestamps: true,
     toJSON: {
       transform: (_doc, ret) => {
-        ret.id = ret._id;
-        delete ret._id;
+        const idStr = ret._id ? ret._id.toString() : '';
+        ret.id = idStr;
+        ret._id = idStr;
+        ret.server_id = idStr;
+        ret.serverId = idStr;
         delete ret.__v;
         return ret;
       },

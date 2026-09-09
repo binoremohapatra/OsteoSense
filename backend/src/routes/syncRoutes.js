@@ -12,13 +12,15 @@ router.use(authMiddleware);
 
 const syncItemSchema = z.object({
   type: z.enum(["patient", "screening"]),
-  localId: z.string().min(1),
-  action: z.enum(["create", "update"]),
+  localId: z.union([z.string(), z.number()]),
+  action: z.enum(["create", "update", "insert"]),
   data: z.record(z.any()),
 });
 
 const batchSyncSchema = z.object({
-  items: z.array(syncItemSchema).min(0).max(200).default([]),
+  items: z.array(syncItemSchema).min(0).max(200).optional(),
+  patients: z.array(z.record(z.any())).min(0).max(200).optional(),
+  screenings: z.array(z.record(z.any())).min(0).max(200).optional(),
 });
 
 /**

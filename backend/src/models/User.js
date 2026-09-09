@@ -58,8 +58,10 @@ const userSchema = new Schema(
     timestamps: true,
     toJSON: {
       transform: (_doc, ret) => {
-        ret.id = ret._id;
-        delete ret._id;
+        const idStr = ret._id ? ret._id.toString() : '';
+        ret.id = idStr;
+        ret._id = idStr;
+        ret.server_id = idStr;
         delete ret.__v;
         delete ret.passwordHash;
         delete ret.refreshTokens;

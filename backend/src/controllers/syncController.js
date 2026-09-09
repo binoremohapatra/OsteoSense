@@ -120,16 +120,184 @@ async function processSyncItem(item, agentId, localIdMap) {
   throw new Error(`Unsupported sync item type: ${type}`);
 }
 
+async function syncAppBatch(patients = [], screenings = [], agentId) {
+  const patientResults = [];
+  const screeningResults = [];
+  const localIdMap = new Map();
+
+  // 1. Process Patients
+  for (const p of patients) {
+    const localId = p.localId ?? p.id ?? 'unknown';
+    const action = (p._sync_action || p.action || 'insert').toLowerCase();
+
+    try {
+      if (action === 'insert' || action === 'create') {
+        const patientData = {
+          name: p.name || p.fullName,
+          age: Number(p.age),
+          gender: (p.gender || 'other').toLowerCase(),
+          contact: p.contact || undefined,
+          village: p.village || undefined,
+          address: p.address || undefined,
+          occupation: p.occupation || undefined,
+          agentId,
+        };
+
+        const created = await Patient.create(patientData);
+        const serverId = created._id.toString();
+
+        localIdMap.set(String(localId), serverId);
+        if (p.id) localIdMap.set(String(p.id), serverId);
+
+        patientResults.push({ localId, serverId, success: true });
+      } else if (action === 'update') {
+        const patientId = p.server_id || p.serverId || p._id || p.id;
+        if (!patientId || !mongoose.Types.ObjectId.isValid(patientId)) {
+          throw new Error('Valid patient ID is required for update');
+        }
+
+        const updateData = {
+          name: p.name || p.fullName,
+          age: p.age !== undefined ? Number(p.age) : undefined,
+          gender: p.gender ? p.gender.toLowerCase() : undefined,
+          contact: p.contact,
+          village: p.village,
+          address: p.address,
+          occupation: p.occupation,
+        };
+        Object.keys(updateData).forEach((k) => updateData[k] === undefined && delete updateData[k]);
+
+        const updated = await Patient.findOneAndUpdate(
+          { _id: patientId, agentId, isDeleted: false },
+          { $set: updateData },
+          { new: true, runValidators: true }
+        );
+        if (!updated) throw new Error('Patient not found or not owned by this agent');
+
+        const serverId = updated._id.toString();
+        localIdMap.set(String(localId), serverId);
+        patientResults.push({ localId, serverId, success: true });
+      } else {
+        throw new Error(`Unsupported patient action: ${action}`);
+      }
+    } catch (err) {
+      logger.warn('Patient sync item failed', { localId, error: err.message });
+      patientResults.push({ localId, success: false, error: err.message });
+    }
+  }
+
+  // 2. Process Screenings
+  for (const s of screenings) {
+    const localId = s.localId ?? s.id ?? 'unknown';
+    const action = (s._sync_action || s.action || 'insert').toLowerCase();
+
+    try {
+      if (action === 'insert' || action === 'create') {
+        let patientId = s.patient_id ?? s.patientId;
+
+        // Reconcile local ID from the newly created patients in this batch
+        if (patientId !== undefined && localIdMap.has(String(patientId))) {
+          patientId = localIdMap.get(String(patientId));
+        }
+
+        if (!patientId || !mongoose.Types.ObjectId.isValid(patientId)) {
+          throw new Error(`Invalid patient ID: ${patientId || 'missing'}`);
+        }
+
+        const patient = await Patient.findOne({
+          _id: patientId,
+          agentId,
+          isDeleted: false,
+        });
+        if (!patient) {
+          throw new Error('Patient not found or not owned by this agent');
+        }
+
+        // Parse gait features
+        let gaitFeatures = [];
+        const rawGait = s.gait_data ?? s.gaitData ?? s.gaitFeatures;
+        if (typeof rawGait === 'string') {
+          try {
+            const parsed = JSON.parse(rawGait);
+            gaitFeatures = Array.isArray(parsed) ? parsed : [];
+          } catch (_) {
+            try {
+              gaitFeatures = rawGait.replace(/[\[\]]/g, '').split(',').map((v) => parseFloat(v.trim())).filter((v) => !isNaN(v));
+            } catch (e) {}
+          }
+        } else if (Array.isArray(rawGait)) {
+          gaitFeatures = rawGait;
+        }
+
+        const swelling = s.swelling === 1 || s.swelling === '1' || s.swelling === true;
+        const painLevel = Number(s.pain_level ?? s.painLevel ?? 0);
+        const stiffnessDuration = s.stiffness_duration ?? s.stiffnessDuration ?? '';
+        const pastInjury = s.past_injury ?? s.pastInjury ?? '';
+
+        const prediction = await aiService.predictRisk({
+          painLevel,
+          stiffnessDuration,
+          swelling,
+          pastInjury,
+          gaitFeatures,
+        });
+
+        const createdScreening = await Screening.create({
+          patientId,
+          agentId,
+          painLevel,
+          stiffnessDuration,
+          swelling,
+          pastInjury,
+          gaitRawData: gaitFeatures,
+          riskLevel: prediction.riskLevel,
+          confidence: prediction.confidence,
+          contributingFactors: prediction.contributingFactors,
+          aiReasoning: prediction.aiReasoning,
+          doctorRecommendations: prediction.doctorRecommendations,
+          source: prediction.source,
+          screeningDate: s.screening_date ? new Date(s.screening_date) : new Date(),
+          synced: true,
+        });
+
+        screeningResults.push({
+          localId,
+          serverId: createdScreening._id.toString(),
+          success: true,
+        });
+      } else {
+        throw new Error(`Unsupported screening action: ${action}`);
+      }
+    } catch (err) {
+      logger.warn('Screening sync item failed', { localId, error: err.message });
+      screeningResults.push({ localId, success: false, error: err.message });
+    }
+  }
+
+  return { patients: patientResults, screenings: screeningResults };
+}
+
 /**
  * POST /api/v1/sync/batch
  * Reconciles the mobile app's offline-queued records with the server.
- * Individual item failures are caught and reported without failing
- * the whole batch, so a single malformed record doesn't block the rest.
+ * Supports Flutter mobile app's { patients: [...], screenings: [...] } format
+ * as well as the legacy { items: [...] } format.
  */
 const batchSync = asyncHandler(async (req, res) => {
-  const items = req.body.items || [];
   const agentId = req.user._id;
 
+  // 1. Mobile app payload: { patients: [...], screenings: [...] }
+  if (req.body.patients || req.body.screenings) {
+    const results = await syncAppBatch(
+      req.body.patients || [],
+      req.body.screenings || [],
+      agentId
+    );
+    return res.status(200).json({ success: true, results });
+  }
+
+  // 2. Generic items array: { items: [...] }
+  const items = req.body.items || [];
   if (items.length === 0) {
     return res.status(200).json({ success: true, results: [] });
   }

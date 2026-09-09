@@ -7,17 +7,23 @@ const phoneNumberSchema = z
   .trim()
   .regex(/^[6-9]\d{9}$/, 'Phone number must be a valid 10-digit Indian mobile number');
 
-const preprocessPhone = (data) => {
+const preprocessAuth = (data) => {
   if (data && typeof data === 'object') {
-    if (!data.phoneNumber && data.phone) {
-      data.phoneNumber = data.phone;
+    if (!data.phoneNumber) {
+      data.phoneNumber = data.phone || data.phone_number;
+    }
+    if (!data.fullName) {
+      data.fullName = data.full_name || data.name;
+    }
+    if (!data.healthCenterId && data.health_center_id) {
+      data.healthCenterId = data.health_center_id;
     }
   }
   return data;
 };
 
 const registerSchema = z.preprocess(
-  preprocessPhone,
+  preprocessAuth,
   z.object({
     fullName: z
       .string({ required_error: 'Full name is required' })
@@ -26,7 +32,7 @@ const registerSchema = z.preprocess(
     phoneNumber: phoneNumberSchema,
     password: z
       .string({ required_error: 'Password is required' })
-      .min(8, 'Password must be at least 8 characters'),
+      .min(6, 'Password must be at least 6 characters'),
     role: z.enum(['agent', 'user']).optional().default('agent'),
     healthCenterId: z.string().trim().optional(),
     location: z.string().trim().optional(),
@@ -34,7 +40,7 @@ const registerSchema = z.preprocess(
 );
 
 const loginSchema = z.preprocess(
-  preprocessPhone,
+  preprocessAuth,
   z.object({
     phoneNumber: phoneNumberSchema,
     password: z.string({ required_error: 'Password is required' }).min(1, 'Password is required'),

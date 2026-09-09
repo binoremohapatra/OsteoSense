@@ -10,18 +10,57 @@ const asyncHandler = require('../utils/asyncHandler');
  * POST /api/v1/patients
  */
 const createPatient = asyncHandler(async (req, res) => {
+  const patientData = { ...req.body };
+  if (!patientData.name && patientData.fullName) {
+    patientData.name = patientData.fullName;
+  }
+  delete patientData.localId;
+  delete patientData._id;
+  delete patientData.id;
+
   const patient = await Patient.create({
-    ...req.body,
+    ...patientData,
     agentId: req.user._id, // always derived from the authenticated agent, never from client input
   });
 
-  res.status(201).json({ success: true, data: patient });
+  const isoCreated = patient.createdAt ? new Date(patient.createdAt).toISOString() : new Date().toISOString();
+  const isoUpdated = patient.updatedAt ? new Date(patient.updatedAt).toISOString() : new Date().toISOString();
+
+  const patientObj = {
+    _id: patient._id.toString(),
+    id: patient._id.toString(),
+    server_id: patient._id.toString(),
+    serverId: patient._id.toString(),
+    name: patient.name,
+    fullName: patient.name,
+    age: patient.age,
+    gender: patient.gender,
+    contact: patient.contact || null,
+    village: patient.village || null,
+    address: patient.address || null,
+    occupation: patient.occupation || null,
+    created_at: isoCreated,
+    createdAt: isoCreated,
+    updated_at: isoUpdated,
+    updatedAt: isoUpdated,
+    synced: 1,
+    ...patient.toObject(),
+  };
+
+  res.status(201).json({
+    success: true,
+    data: patient,
+    patient: patientObj,
+  });
 });
 
 /**
  * GET /api/v1/patients
  * Attaches each patient's latest screening (riskLevel, screeningDate) via $lookup
  * for the mobile app's patient-list risk badges.
+ *
+ * If called without pagination query params (standard Flutter ApiService().getPatients()),
+ * returns a direct JSON array compatible with Future<List<dynamic>>.
  */
 const listPatients = asyncHandler(async (req, res) => {
   const { page, limit, village, riskLevel } = req.query;
@@ -30,7 +69,7 @@ const listPatients = asyncHandler(async (req, res) => {
   const match = { agentId: req.user._id, isDeleted: false };
   if (village) match.village = village;
 
-  const pipeline = [
+  const basePipeline = [
     { $match: match },
     { $sort: { createdAt: -1 } },
     {
@@ -55,22 +94,59 @@ const listPatients = asyncHandler(async (req, res) => {
 
   // Optional filter on latest screening's risk level (post-lookup)
   if (riskLevel) {
-    pipeline.push({ $match: { 'latestScreening.riskLevel': riskLevel } });
+    basePipeline.push({ $match: { 'latestScreening.riskLevel': riskLevel } });
   }
 
-  pipeline.push(
+  // Flutter mobile app calls ApiService().getPatients() without page/limit params
+  if (!page && !limit) {
+    const rawPatients = await Patient.aggregate(basePipeline);
+    const formatted = rawPatients.map((doc) => {
+      const isoCreated = doc.createdAt ? new Date(doc.createdAt).toISOString() : new Date().toISOString();
+      const isoUpdated = doc.updatedAt ? new Date(doc.updatedAt).toISOString() : new Date().toISOString();
+      return {
+        _id: doc._id.toString(),
+        server_id: doc._id.toString(),
+        serverId: doc._id.toString(),
+        id: null, // Keep null so Patient.fromMap's (map['id'] as int?) does not throw type error
+        name: doc.name,
+        fullName: doc.name,
+        age: doc.age,
+        gender: doc.gender,
+        contact: doc.contact || null,
+        village: doc.village || null,
+        address: doc.address || null,
+        occupation: doc.occupation || null,
+        created_at: isoCreated,
+        createdAt: isoCreated,
+        updated_at: isoUpdated,
+        updatedAt: isoUpdated,
+        synced: 1,
+        latestScreening: doc.latestScreening || null,
+      };
+    });
+
+    return res.status(200).json(formatted);
+  }
+
+  const pNum = Number(page) || 1;
+  const lNum = Number(limit) || 20;
+
+  const pipeline = [
+    ...basePipeline,
     {
       $facet: {
-        data: [{ $skip: (page - 1) * limit }, { $limit: limit }],
+        data: [{ $skip: (pNum - 1) * lNum }, { $limit: lNum }],
         totalCount: [{ $count: 'count' }],
       },
-    }
-  );
+    },
+  ];
 
   const [result] = await Patient.aggregate(pipeline);
   const data = (result?.data || []).map((doc) => {
-    doc.id = doc._id;
-    delete doc._id;
+    doc.id = doc._id.toString();
+    doc._id = doc._id.toString();
+    doc.server_id = doc._id.toString();
+    doc.fullName = doc.name;
     delete doc.__v;
     return doc;
   });
@@ -80,10 +156,10 @@ const listPatients = asyncHandler(async (req, res) => {
     success: true,
     data,
     pagination: {
-      page,
-      limit,
+      page: pNum,
+      limit: lNum,
       total,
-      totalPages: Math.ceil(total / limit) || 0,
+      totalPages: Math.ceil(total / lNum) || 0,
     },
   });
 });
@@ -180,9 +256,13 @@ const updatePatient = asyncHandler(async (req, res) => {
   }
 
   const updateData = { ...req.body };
+  if (!updateData.name && updateData.fullName) {
+    updateData.name = updateData.fullName;
+  }
   delete updateData.agentId;
   delete updateData._id;
   delete updateData.id;
+  delete updateData.localId;
 
   // IDOR guard: only update if it belongs to req.user
   const patient = await Patient.findOneAndUpdate(
@@ -195,7 +275,31 @@ const updatePatient = asyncHandler(async (req, res) => {
     throw ApiError.notFound('Patient not found');
   }
 
-  res.status(200).json({ success: true, data: patient });
+  const isoCreated = patient.createdAt ? new Date(patient.createdAt).toISOString() : new Date().toISOString();
+  const isoUpdated = patient.updatedAt ? new Date(patient.updatedAt).toISOString() : new Date().toISOString();
+
+  const patientObj = {
+    _id: patient._id.toString(),
+    id: patient._id.toString(),
+    server_id: patient._id.toString(),
+    serverId: patient._id.toString(),
+    name: patient.name,
+    fullName: patient.name,
+    age: patient.age,
+    gender: patient.gender,
+    contact: patient.contact || null,
+    village: patient.village || null,
+    address: patient.address || null,
+    occupation: patient.occupation || null,
+    created_at: isoCreated,
+    createdAt: isoCreated,
+    updated_at: isoUpdated,
+    updatedAt: isoUpdated,
+    synced: 1,
+    ...patient.toObject(),
+  };
+
+  res.status(200).json({ success: true, data: patient, patient: patientObj });
 });
 
 /**
