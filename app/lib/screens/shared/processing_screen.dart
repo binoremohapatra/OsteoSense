@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
 import 'package:lottie/lottie.dart';
 import '../../providers/screening_provider.dart';
 import '../../services/tflite_service.dart';
@@ -8,6 +9,7 @@ import '../../theme/app_colors.dart';
 import '../../theme/app_spacing.dart';
 import '../../theme/app_typography.dart';
 import '../../theme/app_motion.dart';
+import '../../widgets/common/index.dart';
 import '../shared/risk_result_screen.dart';
 import '../../models/screening.dart';
 
@@ -58,6 +60,7 @@ class _ProcessingScreenState extends State<ProcessingScreen>
     _updateStep(1, StepStatus.completed);
     _updateStep(2, StepStatus.inProgress);
 
+    if (!mounted) return;
     final screeningProvider = Provider.of<ScreeningProvider>(context, listen: false);
 
     // Ensure we have a patient to run the screening against
@@ -127,17 +130,12 @@ class _ProcessingScreenState extends State<ProcessingScreen>
 
     if (mounted) {
       if (success) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            // Access the saved screening from provider since it now has an ID
-            builder: (_) => RiskResultScreen(screening: screeningProvider.currentScreening ?? newScreening),
-          ),
-        );
+        context.push('/screening/result', extra: screeningProvider.currentScreening ?? newScreening);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to save screening: ${screeningProvider.errorMessage}')),
         );
-        Navigator.of(context).pop();
+        context.pop();
       }
     }
   }
@@ -166,6 +164,11 @@ class _ProcessingScreenState extends State<ProcessingScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
+      appBar: const CustomAppBar(
+        title: 'Processing',
+        centerTitle: false,
+        showBackButton: true,
+      ),
       body: SafeArea(
         child: AnimatedSwitcher(
           duration: AppMotion.moderate,

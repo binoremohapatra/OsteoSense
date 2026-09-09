@@ -133,7 +133,7 @@ class AuthProvider with ChangeNotifier {
 
     try {
       // 1. Try API Signup
-      final response = await ApiService().register(user.toMap());
+      final response = await ApiService().register(user.toApiMap());
       final token = response['token'];
       final refreshToken = response['refreshToken'];
       final userData = response['user'];

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:go_router/go_router.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_spacing.dart';
 import '../../theme/app_typography.dart';
@@ -35,7 +36,7 @@ class PreventiveCareArticleScreen extends StatelessWidget {
             pinned: true,
             backgroundColor: effectiveGradient.colors.first,
             leading: GestureDetector(
-              onTap: () => Navigator.of(context).pop(),
+              onTap: () => context.pop(),
               child: Container(
                 margin: const EdgeInsets.all(8),
                 decoration: BoxDecoration(

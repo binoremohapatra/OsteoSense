@@ -118,7 +118,7 @@ class ApiService {
   Future<Map<String, dynamic>> login(String phone, String password) async {
     try {
       final response = await _dio.post('/auth/login', data: {
-        'phone': phone,
+        'phoneNumber': phone,
         'password': password,
       });
       return response.data;
@@ -150,7 +150,12 @@ class ApiService {
   Future<List<dynamic>> getPatients() async {
     try {
       final response = await _dio.get('/patients');
-      return response.data;
+      // Backend returns { success, data: [...], pagination: {} } — extract the list.
+      final body = response.data;
+      if (body is Map && body.containsKey('data')) {
+        return body['data'] as List<dynamic>;
+      }
+      return response.data as List<dynamic>;
     } on DioException catch (e) {
       throw _handleError(e);
     }
@@ -185,7 +190,177 @@ class ApiService {
     }
   }
 
-  // --- Sync ---
+  Future<Map<String, dynamic>> getScreening(String id) async {
+    try {
+      final response = await _dio.get('/screenings/$id');
+      return response.data;
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  Future<List<dynamic>> getPatientScreenings(String patientId) async {
+    try {
+      final response = await _dio.get('/screenings/patient/$patientId');
+      return response.data;
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  Future<Map<String, dynamic>> updateScreening(String id, Map<String, dynamic> data) async {
+    try {
+      final response = await _dio.put('/screenings/$id', data: data);
+      return response.data;
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  Future<void> deleteScreening(String id) async {
+    try {
+      await _dio.delete('/screenings/$id');
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  // --- Preventive Care Endpoints ---
+
+  Future<List<dynamic>> getPreventiveCareArticles() async {
+    try {
+      final response = await _dio.get('/preventive-care/articles');
+      return response.data;
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  Future<List<dynamic>> getArticlesByCategory(String category) async {
+    try {
+      final response = await _dio.get('/preventive-care/articles/category/$category');
+      return response.data;
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  Future<Map<String, dynamic>> getArticle(String id) async {
+    try {
+      final response = await _dio.get('/preventive-care/articles/$id');
+      return response.data;
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  // --- Analytics Endpoints ---
+
+  Future<Map<String, dynamic>> getAnalyticsData(String type) async {
+    try {
+      final response = await _dio.get('/analytics/$type');
+      return response.data;
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  Future<Map<String, dynamic>> getPopulationInsights() async {
+    try {
+      final response = await _dio.get('/analytics/population-insights');
+      return response.data;
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  Future<String> exportAnalyticsReport(String format) async {
+    try {
+      final response = await _dio.get('/analytics/export', 
+        queryParameters: {'format': format});
+      return response.data['data'];
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  // --- User Management Endpoints ---
+
+  Future<Map<String, dynamic>> updateUserProfile(Map<String, dynamic> data) async {
+    try {
+      final response = await _dio.put('/users/profile', data: data);
+      return response.data;
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  Future<Map<String, dynamic>> changePassword(Map<String, dynamic> data) async {
+    try {
+      final response = await _dio.post('/users/change-password', data: data);
+      return response.data;
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  Future<void> logout() async {
+    try {
+      await _dio.post('/auth/logout');
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  // --- Health Center/Location Endpoints ---
+
+  Future<List<dynamic>> getHealthCenters() async {
+    try {
+      final response = await _dio.get('/health-centers');
+      return response.data;
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  Future<Map<String, dynamic>> updateHealthCenter(String id, Map<String, dynamic> data) async {
+    try {
+      final response = await _dio.put('/health-centers/$id', data: data);
+      return response.data;
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  // --- Sync Endpoints ---
+
+  Future<Map<String, dynamic>> syncPush(List<Map<String, dynamic>> data) async {
+    try {
+      final response = await _dio.post('/sync/push', data: {'changes': data});
+      return response.data;
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> syncPull(DateTime lastSync) async {
+    try {
+      final response = await _dio.get('/sync/pull', 
+        queryParameters: {'lastSync': lastSync.toIso8601String()});
+      return List<Map<String, dynamic>>.from(response.data);
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  Future<Map<String, dynamic>> getSyncStatus() async {
+    try {
+      final response = await _dio.get('/sync/status');
+      return response.data;
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
 
   Future<Map<String, dynamic>> syncBatch(Map<String, dynamic> batchData) async {
     try {

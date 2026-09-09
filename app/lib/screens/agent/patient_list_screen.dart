@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
 import '../../providers/patient_provider.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_spacing.dart';
 import '../../theme/app_typography.dart';
 import '../../theme/app_motion.dart';
 import '../../widgets/common/index.dart';
+import '../../widgets/premium/inputs/premium_inputs.dart';
+import '../../widgets/premium/loading/premium_loading.dart';
+import '../../widgets/premium/cards/premium_cards.dart';
 import 'add_patient_screen.dart';
 import 'patient_profile_screen.dart';
-import 'package:animations/animations.dart';
 import '../../widgets/common/open_container_card.dart';
 
 class PatientListScreen extends StatefulWidget {
@@ -40,6 +42,11 @@ class _PatientListScreenState extends State<PatientListScreen> {
       appBar: CustomAppBar(
         title: 'Patients',
         centerTitle: false,
+        showBackButton: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new),
+          onPressed: () => context.go('/agent/home'),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.tune),
@@ -51,25 +58,29 @@ class _PatientListScreenState extends State<PatientListScreen> {
           ),
         ],
       ),
-      body: Column(
+      body: Stack(
         children: [
+          Positioned.fill(
+            child: IgnorePointer(
+              child: Opacity(
+                opacity: 0.25,
+                child: Image.asset(
+                  'assets/images/04_patient_list.gif',
+                  fit: BoxFit.cover,
+                  gaplessPlayback: true,
+                  errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                ),
+              ),
+            ),
+          ),
+          Column(
+            children: [
           // Search bar with animation
           Padding(
-            padding: const EdgeInsets.all(AppSpacing.screenPaddingLg),
-            child: CustomTextField(
+            padding: const EdgeInsets.fromLTRB(AppSpacing.screenPaddingLg, AppSpacing.screenPaddingLg, AppSpacing.screenPaddingLg, 0),
+            child: SearchField(
               controller: _searchController,
               hint: 'Search patients by name or village',
-              prefixIcon: const Icon(Icons.search),
-              suffixIcon: _searchController.text.isNotEmpty
-                  ? IconButton(
-                      icon: const Icon(Icons.clear),
-                      onPressed: () {
-                        _searchController.clear();
-                        patientProvider.loadPatients();
-                        setState(() {});
-                      },
-                    )
-                  : null,
               onChanged: (value) {
                 setState(() {});
                 if (value.isEmpty) {
@@ -78,8 +89,8 @@ class _PatientListScreenState extends State<PatientListScreen> {
                   patientProvider.searchPatients(value);
                 }
               },
-            ),
-          ).animate().fadeIn(duration: 400.ms),
+            ).animate().fadeIn(duration: 400.ms),
+          ),
 
           // Animated filter chips
           if (_showFilters)
@@ -97,52 +108,39 @@ class _PatientListScreenState extends State<PatientListScreen> {
                   _buildFilterChip('High Risk', 'high', _filterRisk == 'high'),
                 ],
               ),
-            ).animate().fadeIn(duration: AppMotion.fast).slideY(
+            ).animate().fadeIn(duration: 300.ms).slideY(
               begin: -0.2,
               end: 0,
-              duration: AppMotion.fast,
+              duration: 300.ms,
             ),
           const SizedBox(height: AppSpacing.md),
 
           // Patient list or empty state
           Expanded(
             child: patientProvider.isLoading
-                // Use skeleton loader instead of spinner
-                ? const SkeletonPage(listItemCount: 6)
+                ? ListView.builder(
+                    itemCount: 6,
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPaddingLg),
+                    itemBuilder: (_, __) => const Padding(
+                      padding: EdgeInsets.only(bottom: AppSpacing.sm),
+                      child: SkeletonProfile(),
+                    ),
+                  )
                 : patientProvider.patients.isEmpty
                     ? _buildEmptyState()
                     : _buildPatientList(patientProvider),
           ).animate().fadeIn(duration: 400.ms, delay: 100.ms).slideY(begin: 0.05, end: 0, duration: 400.ms, delay: 100.ms),
+          const SizedBox(height: 120), // clearance for bottom nav
         ],
       ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.1, end: 0, duration: 400.ms),
-      floatingActionButton: OpenContainer<void>(
-        transitionType: ContainerTransitionType.fadeThrough,
-        transitionDuration: AppMotion.normal,
-        closedElevation: 0,
-        closedShape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(28)),
-        ),
-        closedColor: Colors.transparent,
-        openColor: AppColors.background,
-        closedBuilder: (context, openContainer) {
-          return PulsingFAB(
-            onPressed: openContainer,
-            icon: Icons.person_add,
-            tooltip: 'Add Patient',
-          );
-        },
-        openBuilder: (context, closeContainer) {
-          return const AddPatientScreen();
-        },
+        ],
       ),
     );
   }
 
   Widget _buildFilterChip(String label, String value, bool selected) {
-    return FilterChip(
-      label: Text(label),
-      selected: selected,
-      onSelected: (isSelected) {
+    return GestureDetector(
+      onTap: () {
         setState(() {
           _filterRisk = value;
           final patientProvider = Provider.of<PatientProvider>(context, listen: false);
@@ -153,24 +151,32 @@ class _PatientListScreenState extends State<PatientListScreen> {
           }
         });
       },
-      backgroundColor: AppColors.surface,
-      selectedColor: AppColors.primary.withValues(alpha: 0.2),
-      side: BorderSide(
-        color: selected ? AppColors.primary : AppColors.border,
-        width: selected ? 2 : 1,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.primary : AppColors.surface,
+          borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
+          border: Border.all(
+            color: selected ? AppColors.primary : AppColors.softBorder,
+            width: 1,
+          ),
+          boxShadow: selected ? [
+            BoxShadow(
+              color: AppColors.primary.withValues(alpha: 0.2),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ] : [],
+        ),
+        child: Text(
+          label,
+          style: AppTypography.labelMedium.copyWith(
+            color: selected ? Colors.white : AppColors.textSecondary,
+            fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+            fontSize: 13,
+          ),
+        ),
       ),
-      labelStyle: AppTypography.labelMedium.copyWith(
-        color: selected ? AppColors.primary : AppColors.textSecondary,
-        fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-      ),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-      ),
-    ).animate().scale(
-      begin: const Offset(0.8, 0.8),
-      end: const Offset(1, 1),
-      duration: AppMotion.fast,
-      curve: Curves.easeOut,
     );
   }
 
@@ -194,18 +200,9 @@ class _PatientListScreenState extends State<PatientListScreen> {
           ).animate().scale(
             begin: const Offset(0.5, 0.5),
             end: const Offset(1, 1),
-            duration: AppMotion.slow,
+            duration: 600.ms,
             curve: Curves.easeOut,
-          ).then() // gentle floating animation - subtle idle
-            .animate(
-              onPlay: (controller) => controller.repeat(reverse: true),
-            )
-            .moveY(
-              begin: 0,
-              end: -4,
-              duration: 3000.ms,
-              curve: Curves.easeInOut,
-            ),
+          ),
           const SizedBox(height: AppSpacing.lg),
           Text(
             'No Patients Yet',
@@ -224,18 +221,14 @@ class _PatientListScreenState extends State<PatientListScreen> {
           const SizedBox(height: AppSpacing.xxxl),
           CustomButton(
             text: 'Add Patient',
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const AddPatientScreen()),
-              );
-            },
+            onPressed: () => context.go('/agent/add-patient'),
             variant: ButtonVariant.primary,
             size: ButtonSize.medium,
             icon: const Icon(Icons.add),
           ),
         ],
       ),
-    ).animate().fadeIn(duration: AppMotion.slow);
+    ).animate().fadeIn(duration: 600.ms);
   }
 
   Widget _buildPatientList(PatientProvider patientProvider) {
@@ -244,28 +237,22 @@ class _PatientListScreenState extends State<PatientListScreen> {
       onRefresh: () async {
         await patientProvider.loadPatients();
       },
-      child: AnimationLimiter(
-        child: ListView.builder(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.screenPaddingLg,
-            vertical: AppSpacing.md,
-          ),
-          itemCount: patientProvider.patients.length,
-          itemBuilder: (context, index) {
-            final patient = patientProvider.patients[index];
-            return AnimationConfiguration.staggeredList(
-              position: index,
-              duration: AppMotion.slow,
-              delay: Duration(milliseconds: index * 35), // 35ms stagger
-              child: SlideAnimation(
-                verticalOffset: AppMotion.listSlideOffset,
-                child: FadeInAnimation(
-                  child: _buildPatientCard(patient),
-                ),
-              ),
-            );
-          },
+      child: ListView.builder(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.screenPaddingLg,
+          vertical: AppSpacing.md,
         ),
+        itemCount: patientProvider.patients.length,
+        itemBuilder: (context, index) {
+          final patient = patientProvider.patients[index];
+          return Padding(
+            padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+            child: _buildPatientCard(patient)
+                .animate(delay: Duration(milliseconds: index * 50))
+                .fadeIn(duration: 400.ms)
+                .slideX(begin: -0.05, end: 0, duration: 400.ms),
+          );
+        },
       ),
     );
   }
@@ -275,115 +262,15 @@ class _PatientListScreenState extends State<PatientListScreen> {
     if (patient.lastScreening != null) {
       riskLevel = patient.lastScreening!.riskLevel ?? 'low';
     }
-    final cardVariant = riskLevel == 'high'
-        ? CardVariant.riskHigh
-        : riskLevel == 'medium'
-            ? CardVariant.riskMedium
-            : CardVariant.riskLow;
-
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: OpenContainerCard(
-        openBuilder: (context) => PatientProfileScreen(patientId: patient.id!),
-        closedChild: CustomCard(
-          variant: cardVariant,
-          padding: const EdgeInsets.all(AppSpacing.cardPaddingMd),
-          child: Row(
-            children: [
-              // Avatar
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: AppColors.getRiskSurfaceColor(riskLevel),
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: AppColors.getRiskBorderColor(riskLevel).withValues(alpha: 0.3),
-                    width: 1.5,
-                  ),
-                ),
-                child: Center(
-                  child: Text(
-                    patient.name.substring(0, 1).toUpperCase(),
-                    style: AppTypography.titleMedium.copyWith(
-                      color: AppColors.getRiskColor(riskLevel),
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: AppSpacing.md),
-              // Patient info
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      patient.name,
-                      style: AppTypography.titleMedium.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.xs),
-                    Text(
-                      '${patient.age} yrs • ${patient.gender}',
-                      style: AppTypography.bodySmall.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                    if (patient.village != null) ...[
-                      const SizedBox(height: AppSpacing.xs),
-                      Row(
-                        children: [
-                          const Icon(Icons.location_on,
-                              size: AppSpacing.iconSm,
-                              color: AppColors.textSecondary),
-                          const SizedBox(width: AppSpacing.xs),
-                          Expanded(
-                            child: Text(
-                              patient.village!,
-                              style: AppTypography.bodySmall.copyWith(
-                                color: AppColors.textSecondary,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              // Risk badge
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.sm,
-                      vertical: AppSpacing.xs,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.getRiskColor(riskLevel).withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-                    ),
-                    child: Text(
-                      riskLevel.toUpperCase(),
-                      style: AppTypography.labelSmall.copyWith(
-                        color: AppColors.getRiskColor(riskLevel),
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  const Icon(Icons.arrow_forward_ios,
-                      size: 14, color: AppColors.textTertiary),
-                ],
-              ),
-            ],
-          ),
+      child: GestureDetector(
+        onTap: () => context.go('/agent/patient/${patient.id}'),
+        child: PatientCard(
+          name: patient.name,
+          subtitle: patient.village != null ? '${patient.age} yrs • ${patient.gender}\n${patient.village}' : '${patient.age} yrs • ${patient.gender}',
+          riskLevel: riskLevel,
+          onTap: () => context.go('/agent/patient/${patient.id}'),
         ),
       ),
     );

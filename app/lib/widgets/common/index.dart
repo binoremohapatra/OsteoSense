@@ -17,9 +17,11 @@ export 'animated_counter.dart';
 // Navigation & Layout
 export 'custom_app_bar.dart';
 export 'pulsing_fab.dart';
-export 'animated_bottom_nav.dart';
+export '../premium/navigation/premium_navigation.dart'
+    show GlassBottomNav, NavItem, RetainedTabSwitcher;
 
 // Premium UI Components
 export 'gradient_mesh_background.dart';
 export 'dashboard_widgets.dart';
 export 'ambient_background.dart';
+export 'page_animated_background.dart';

@@ -1,4 +1,5 @@
 import 'package:sqflite/sqflite.dart';
+import 'package:sqflite/sqlite_api.dart';
 import 'package:path/path.dart';
 import 'dart:async';
 import 'dart:convert';
@@ -23,7 +24,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 1,
+      version: 3,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -58,7 +59,8 @@ class DatabaseHelper {
         occupation TEXT,
         created_at TEXT DEFAULT CURRENT_TIMESTAMP,
         updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
-        synced INTEGER DEFAULT 0
+        synced INTEGER DEFAULT 0,
+        deleted INTEGER DEFAULT 0
       )
     ''');
 
@@ -81,6 +83,7 @@ class DatabaseHelper {
         ai_reasoning TEXT,
         doctor_recommendations TEXT,
         synced INTEGER DEFAULT 0,
+        deleted INTEGER DEFAULT 0,
         FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       )
@@ -163,7 +166,33 @@ class DatabaseHelper {
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     // Handle database upgrades when schema changes
     if (oldVersion < 2) {
-      // Add new columns or tables for version 2
+      // Add server_id column to patients table if it doesn't exist
+      try {
+        await db.execute('ALTER TABLE patients ADD COLUMN server_id TEXT');
+      } catch (e) {
+        // Column might already exist, ignore error
+      }
+      // Add server_id column to screenings table if it doesn't exist
+      try {
+        await db.execute('ALTER TABLE screenings ADD COLUMN server_id TEXT');
+      } catch (e) {
+        // Column might already exist, ignore error
+      }
+    }
+    
+    if (oldVersion < 3) {
+      // Add deleted column to patients table if it doesn't exist
+      try {
+        await db.execute('ALTER TABLE patients ADD COLUMN deleted INTEGER DEFAULT 0');
+      } catch (e) {
+        // Column might already exist, ignore error
+      }
+      // Add deleted column to screenings table if it doesn't exist
+      try {
+        await db.execute('ALTER TABLE screenings ADD COLUMN deleted INTEGER DEFAULT 0');
+      } catch (e) {
+        // Column might already exist, ignore error
+      }
     }
   }
 
@@ -270,5 +299,415 @@ class DatabaseHelper {
   Future<void> close() async {
     final db = await database;
     await db.close();
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // ADVANCED PATIENT QUERIES
+  // ─────────────────────────────────────────────────────────────────────────
+
+  Future<List<Map<String, dynamic>>> searchPatients(String query) async {
+    final db = await database;
+    return await db.query(
+      'patients',
+      where: 'name LIKE ? OR village LIKE ? OR contact LIKE ?',
+      whereArgs: ['%$query%', '%$query%', '%$query%'],
+      orderBy: 'name ASC',
+    );
+  }
+
+  Future<List<Map<String, dynamic>>> filterPatients(Map<String, dynamic> filters) async {
+    final db = await database;
+    List<String> whereConditions = [];
+    List<dynamic> whereArgs = [];
+
+    if (filters.containsKey('gender')) {
+      whereConditions.add('gender = ?');
+      whereArgs.add(filters['gender']);
+    }
+
+    if (filters.containsKey('minAge')) {
+      whereConditions.add('age >= ?');
+      whereArgs.add(filters['minAge']);
+    }
+
+    if (filters.containsKey('maxAge')) {
+      whereConditions.add('age <= ?');
+      whereArgs.add(filters['maxAge']);
+    }
+
+    if (filters.containsKey('village')) {
+      whereConditions.add('village = ?');
+      whereArgs.add(filters['village']);
+    }
+
+    final whereClause = whereConditions.isNotEmpty 
+        ? whereConditions.join(' AND ') 
+        : null;
+
+    return await db.query(
+      'patients',
+      where: whereClause,
+      whereArgs: whereArgs.isNotEmpty ? whereArgs : null,
+      orderBy: 'name ASC',
+    );
+  }
+
+  Future<List<Map<String, dynamic>>> getPatientsByVillage(String village) async {
+    final db = await database;
+    return await db.query(
+      'patients',
+      where: 'village = ?',
+      whereArgs: [village],
+      orderBy: 'name ASC',
+    );
+  }
+
+  Future<List<Map<String, dynamic>>> getPatientsByAgeRange(int min, int max) async {
+    final db = await database;
+    return await db.query(
+      'patients',
+      where: 'age >= ? AND age <= ?',
+      whereArgs: [min, max],
+      orderBy: 'age ASC',
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // ADVANCED SCREENING QUERIES
+  // ─────────────────────────────────────────────────────────────────────────
+
+  Future<List<Map<String, dynamic>>> getScreeningsByDateRange(DateTime start, DateTime end) async {
+    final db = await database;
+    return await db.query(
+      'screenings',
+      where: 'screening_date >= ? AND screening_date <= ?',
+      whereArgs: [start.toIso8601String(), end.toIso8601String()],
+      orderBy: 'screening_date DESC',
+    );
+  }
+
+  Future<List<Map<String, dynamic>>> getHighRiskPatients() async {
+    final db = await database;
+    return await db.rawQuery('''
+      SELECT DISTINCT p.* 
+      FROM patients p
+      INNER JOIN screenings s ON p.id = s.patient_id
+      WHERE s.risk_level = 'high'
+      ORDER BY p.name ASC
+    ''');
+  }
+
+  Future<List<Map<String, dynamic>>> getPatientsNeedingFollowUp() async {
+    final db = await database;
+    final thirtyDaysAgo = DateTime.now().subtract(const Duration(days: 30));
+    return await db.rawQuery('''
+      SELECT DISTINCT p.*, MAX(s.screening_date) as last_screening
+      FROM patients p
+      INNER JOIN screenings s ON p.id = s.patient_id
+      WHERE s.risk_level IN ('medium', 'high')
+      GROUP BY p.id
+      HAVING last_screening < ?
+      ORDER BY last_screening ASC
+    ''', [thirtyDaysAgo.toIso8601String()]);
+  }
+
+  Future<Map<String, dynamic>> getPatientRiskTrend(int patientId) async {
+    final db = await database;
+    final screenings = await db.query(
+      'screenings',
+      where: 'patient_id = ?',
+      whereArgs: [patientId],
+      orderBy: 'screening_date ASC',
+    );
+
+    return {
+      'patientId': patientId,
+      'totalScreenings': screenings.length,
+      'screenings': screenings,
+      'trend': _calculateRiskTrend(screenings),
+    };
+  }
+
+  Map<String, dynamic> _calculateRiskTrend(List<Map<String, dynamic>> screenings) {
+    if (screenings.isEmpty) {
+      return {'trend': 'no_data', 'improving': false};
+    }
+
+    final riskLevels = screenings.map((s) => s['risk_level'] as String?).toList();
+    final riskScores = riskLevels.map((level) {
+      switch (level?.toLowerCase()) {
+        case 'low': return 1;
+        case 'medium': return 2;
+        case 'high': return 3;
+        default: return 0;
+      }
+    }).toList();
+
+    if (riskScores.length < 2) {
+      return {'trend': 'insufficient_data', 'improving': false};
+    }
+
+    final firstHalf = riskScores.sublist(0, (riskScores.length / 2).ceil());
+    final secondHalf = riskScores.sublist((riskScores.length / 2).floor());
+
+    final firstAvg = firstHalf.reduce((a, b) => a + b) / firstHalf.length;
+    final secondAvg = secondHalf.reduce((a, b) => a + b) / secondHalf.length;
+
+    final improving = secondAvg < firstAvg;
+    final trend = improving ? 'improving' : (secondAvg > firstAvg ? 'worsening' : 'stable');
+
+    return {
+      'trend': trend,
+      'improving': improving,
+      'firstAverage': firstAvg,
+      'secondAverage': secondAvg,
+    };
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // PREVENTIVE CARE QUERIES
+  // ─────────────────────────────────────────────────────────────────────────
+
+  Future<List<Map<String, dynamic>>> getPreventiveCareArticles() async {
+    final db = await database;
+    return await db.query('preventive_care', orderBy: 'category ASC');
+  }
+
+  Future<List<Map<String, dynamic>>> getArticlesByCategory(String category) async {
+    final db = await database;
+    return await db.query(
+      'preventive_care',
+      where: 'category = ?',
+      whereArgs: [category],
+      orderBy: 'created_at DESC',
+    );
+  }
+
+  Future<void> saveArticleProgress(String articleId, Map<String, dynamic> progress) async {
+    final db = await database;
+    // Check if article_progress table exists, if not create it
+    try {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS article_progress (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          article_id TEXT NOT NULL,
+          user_id INTEGER NOT NULL,
+          progress INTEGER DEFAULT 0,
+          completed INTEGER DEFAULT 0,
+          created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+          updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE(article_id, user_id)
+        )
+      ''');
+    } catch (e) {
+      // Table might already exist
+    }
+
+    await db.insert(
+      'article_progress',
+      {
+        'article_id': articleId,
+        'user_id': progress['user_id'] ?? 1,
+        'progress': progress['progress'] ?? 0,
+        'completed': progress['completed'] ?? 0,
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // USER SETTINGS QUERIES
+  // ─────────────────────────────────────────────────────────────────────────
+
+  Future<Map<String, dynamic>> getUserSettings(int userId) async {
+    final db = await database;
+    // Check if user_settings table exists
+    try {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS user_settings (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER NOT NULL,
+          settings TEXT NOT NULL,
+          updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE(user_id)
+        )
+      ''');
+    } catch (e) {
+      // Table might already exist
+    }
+
+    final settings = await db.query(
+      'user_settings',
+      where: 'user_id = ?',
+      whereArgs: [userId],
+    );
+
+    if (settings.isNotEmpty) {
+      return {'settings': settings.first['settings'], 'updated_at': settings.first['updated_at']};
+    }
+
+    return {};
+  }
+
+  Future<void> updateUserSettings(int userId, Map<String, dynamic> settings) async {
+    final db = await database;
+    final settingsJson = settings.toString();
+
+    await db.insert(
+      'user_settings',
+      {
+        'user_id': userId,
+        'settings': settingsJson,
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // SYNC MANAGEMENT QUERIES
+  // ─────────────────────────────────────────────────────────────────────────
+
+  Future<DateTime> getLastSyncTime() async {
+    final db = await database;
+    try {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS sync_metadata (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          last_sync_time TEXT NOT NULL,
+          sync_status TEXT DEFAULT 'idle'
+        )
+      ''');
+    } catch (e) {
+      // Table might already exist
+    }
+
+    final metadata = await db.query('sync_metadata', limit: 1);
+    if (metadata.isNotEmpty && metadata.first['last_sync_time'] != null) {
+      return DateTime.parse(metadata.first['last_sync_time'] as String);
+    }
+
+    return DateTime.fromMillisecondsSinceEpoch(0);
+  }
+
+  Future<void> updateLastSyncTime(DateTime time) async {
+    final db = await database;
+    try {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS sync_metadata (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          last_sync_time TEXT NOT NULL,
+          sync_status TEXT DEFAULT 'idle'
+        )
+      ''');
+    } catch (e) {
+      // Table might already exist
+    }
+
+    await db.insert(
+      'sync_metadata',
+      {
+        'last_sync_time': time.toIso8601String(),
+        'sync_status': 'completed',
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<List<Map<String, dynamic>>> getPendingSyncItems() async {
+    final db = await database;
+    return await db.query(
+      'sync_queue',
+      where: 'retry_count < 3',
+      orderBy: 'created_at ASC',
+    );
+  }
+
+  Future<void> markSyncItemComplete(int syncId) async {
+    final db = await database;
+    await db.delete(
+      'sync_queue',
+      where: 'id = ?',
+      whereArgs: [syncId],
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // AUDIT LOGGING
+  // ─────────────────────────────────────────────────────────────────────────
+
+  Future<void> logAuditEvent(Map<String, dynamic> event) async {
+    final db = await database;
+    try {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS audit_logs (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER,
+          action TEXT NOT NULL,
+          table_name TEXT NOT NULL,
+          record_id INTEGER,
+          old_values TEXT,
+          new_values TEXT,
+          ip_address TEXT,
+          user_agent TEXT,
+          created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+      ''');
+    } catch (e) {
+      // Table might already exist
+    }
+
+    await db.insert('audit_logs', {
+      'user_id': event['user_id'],
+      'action': event['action'],
+      'table_name': event['table_name'],
+      'record_id': event['record_id'],
+      'old_values': event['old_values']?.toString(),
+      'new_values': event['new_values']?.toString(),
+      'ip_address': event['ip_address'],
+      'user_agent': event['user_agent'],
+    });
+  }
+
+  Future<List<Map<String, dynamic>>> getAuditLogs(Map<String, dynamic> filters) async {
+    final db = await database;
+    List<String> whereConditions = [];
+    List<dynamic> whereArgs = [];
+
+    if (filters.containsKey('userId')) {
+      whereConditions.add('user_id = ?');
+      whereArgs.add(filters['userId']);
+    }
+
+    if (filters.containsKey('action')) {
+      whereConditions.add('action = ?');
+      whereArgs.add(filters['action']);
+    }
+
+    if (filters.containsKey('tableName')) {
+      whereConditions.add('table_name = ?');
+      whereArgs.add(filters['tableName']);
+    }
+
+    if (filters.containsKey('startDate')) {
+      whereConditions.add('created_at >= ?');
+      whereArgs.add(filters['startDate']);
+    }
+
+    if (filters.containsKey('endDate')) {
+      whereConditions.add('created_at <= ?');
+      whereArgs.add(filters['endDate']);
+    }
+
+    final whereClause = whereConditions.isNotEmpty 
+        ? whereConditions.join(' AND ') 
+        : null;
+
+    return await db.query(
+      'audit_logs',
+      where: whereClause,
+      whereArgs: whereArgs.isNotEmpty ? whereArgs : null,
+      orderBy: 'created_at DESC',
+      limit: filters['limit'] ?? 100,
+    );
   }
 }

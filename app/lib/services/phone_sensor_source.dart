@@ -31,7 +31,7 @@ class PhoneSensorDataSource implements SensorDataSource {
   Future<void> initialize() async {
     // Phone sensors are always available
     // Set sampling interval to 50ms (20Hz) for gait analysis
-    await accelerometerEvents.listen(null).cancel();
+    await accelerometerEventStream().listen(null).cancel();
   }
 
   @override
@@ -39,7 +39,7 @@ class PhoneSensorDataSource implements SensorDataSource {
     _isRecording = true;
 
     // Listen to accelerometer events
-    _accelSubscription = accelerometerEvents.listen(
+    _accelSubscription = accelerometerEventStream().listen(
       (AccelerometerEvent event) {
         if (_isRecording) {
           _accelerometerController.add(
@@ -58,7 +58,7 @@ class PhoneSensorDataSource implements SensorDataSource {
     );
 
     // Listen to gyroscope events
-    _gyroSubscription = gyroscopeEvents.listen(
+    _gyroSubscription = gyroscopeEventStream().listen(
       (GyroscopeEvent event) {
         if (_isRecording) {
           _gyroscopeController.add(

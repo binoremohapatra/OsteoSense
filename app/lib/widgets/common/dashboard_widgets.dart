@@ -417,7 +417,7 @@ class CompactStatCard extends StatelessWidget {
     return Container(
       width: double.infinity,
       height: double.infinity,
-      padding: const EdgeInsets.fromLTRB(16, 18, 16, 18),
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
@@ -453,7 +453,7 @@ class CompactStatCard extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 6),
           // Animated count-up for compact cards
           AnimatedCounter(
             value: value,
@@ -462,8 +462,8 @@ class CompactStatCard extends StatelessWidget {
               color: AppColors.textPrimary,
               fontWeight: AppTypography.extraBold,
               letterSpacing: -1.5,
-              fontSize: 46,
-              height: 1.0, // Keeping 1.0 but using SizedBox to prevent overlap
+              fontSize: 32,
+              height: 1.0,
             ),
           ),
           if (subtitle != null) ...[

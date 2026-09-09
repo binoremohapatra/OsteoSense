@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:confetti/confetti.dart';
+import 'package:go_router/go_router.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_spacing.dart';
 import '../../theme/app_typography.dart';
 import '../../theme/app_motion.dart';
 import '../../widgets/common/index.dart';
+import '../../widgets/premium/buttons/premium_buttons.dart';
 import '../../models/screening.dart';
 
 class RiskResultScreen extends StatefulWidget {
@@ -64,6 +66,7 @@ class _RiskResultScreenState extends State<RiskResultScreen> {
       appBar: const CustomAppBar(
         title: 'Risk Assessment',
         centerTitle: false,
+        showBackButton: true,
       ),
       extendBodyBehindAppBar: true,
       body: TweenAnimationBuilder<double>(
@@ -96,6 +99,19 @@ class _RiskResultScreenState extends State<RiskResultScreen> {
         },
         child: Stack(
           children: [
+            Positioned.fill(
+              child: IgnorePointer(
+                child: Opacity(
+                  opacity: 0.22,
+                  child: Image.asset(
+                    'assets/images/07_risk_result.gif',
+                    fit: BoxFit.cover,
+                    gaplessPlayback: true,
+                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                  ),
+                ),
+              ),
+            ),
             AmbientBackground(
               primaryColor: riskColor,
               child: SafeArea(
@@ -260,26 +276,22 @@ class _RiskResultScreenState extends State<RiskResultScreen> {
             Row(
               children: [
                 Expanded(
-                  child: CustomButton(
+                  child: GlassButton(
                     text: 'Back to Home',
                     onPressed: () => Navigator.pushNamedAndRemoveUntil(
                       context,
                       '/home',
                       (route) => false,
                     ),
-                    variant: ButtonVariant.outline,
-                    size: ButtonSize.large,
                   ),
                 ),
                 const SizedBox(width: AppSpacing.md),
                 Expanded(
-                  child: CustomButton(
+                  child: MagneticButton(
                     text: 'Share Report',
                     onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Share feature coming soon')),
                     ),
-                    variant: ButtonVariant.primary,
-                    size: ButtonSize.large,
                   ),
                 ),
               ],
@@ -324,7 +336,7 @@ class _RiskResultScreenState extends State<RiskResultScreen> {
       if ((screening.painLevel ?? 0) >= 5) 'High pain level detected',
       if ((int.tryParse(screening.stiffnessDuration ?? '0') ?? 0) >= 30) 'Prolonged morning stiffness',
       if (screening.swelling == true) 'Joint swelling observed',
-      if (screening.pastInjury == true) 'History of joint injury',
+      if (screening.pastInjury != null && screening.pastInjury!.isNotEmpty) 'History of joint injury',
       if ((double.tryParse(screening.gaitData ?? '0') ?? 0.0) > 0.5) 'Irregular gait pattern',
     ];
 

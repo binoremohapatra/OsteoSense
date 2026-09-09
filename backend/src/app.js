@@ -78,7 +78,10 @@ app.get("/health", (_req, res) => {
 // API docs
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-// Routes
+const userRoutes = require("./routes/userRoutes");
+
+// ... (in the routes section)
+app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/patients", patientRoutes);
 app.use("/api/v1/screenings", screeningRoutes);

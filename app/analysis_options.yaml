@@ -14,6 +14,7 @@ analyzer:
     - build/**
     - android/**
     - ios/**
+    - ../jointsaathi_flutterflow_separated/**
 
 linter:
   # The lint rules applied to this project can be customized in the

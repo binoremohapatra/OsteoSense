@@ -58,12 +58,18 @@ router.use(authMiddleware);
  *               type: object
  *               properties:
  *                 success: { type: boolean, example: true }
- *                 data:
+ *                 screening:
  *                   type: object
  *                   properties:
+ *                     id: { type: string }
+ *                     patientId: { type: string }
+ *                     agentId: { type: string }
  *                     riskLevel: { type: string, example: high }
  *                     confidence: { type: number, example: 0.82 }
  *                     source: { type: string, example: ml_model }
+ *                     contributingFactors: { type: array, items: { type: string } }
+ *                     aiReasoning: { type: string }
+ *                     doctorRecommendations: { type: string }
  *       404:
  *         description: Patient not found
  *   get:

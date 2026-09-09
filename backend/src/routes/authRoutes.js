@@ -44,6 +44,21 @@ const router = express.Router();
  *     responses:
  *       201:
  *         description: Account created, returns user + token pair
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 token: { type: string, example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." }
+ *                 refreshToken: { type: string, example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." }
+ *                 user:
+ *                   type: object
+ *                   properties:
+ *                     id: { type: string }
+ *                     fullName: { type: string }
+ *                     phoneNumber: { type: string }
+ *                     role: { type: string }
  *       409:
  *         description: Phone number already registered
  */
@@ -68,6 +83,21 @@ router.post('/register', authLimiter, validate(registerSchema), authController.r
  *     responses:
  *       200:
  *         description: Login successful, returns user + token pair
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 token: { type: string, example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." }
+ *                 refreshToken: { type: string, example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." }
+ *                 user:
+ *                   type: object
+ *                   properties:
+ *                     id: { type: string }
+ *                     fullName: { type: string }
+ *                     phoneNumber: { type: string }
+ *                     role: { type: string }
  *       401:
  *         description: Invalid credentials
  */

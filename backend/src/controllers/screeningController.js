@@ -47,7 +47,7 @@ const createScreening = asyncHandler(async (req, res) => {
     stiffnessDuration,
     swelling,
     pastInjury,
-    gaitRawData: gaitFeatures,
+    gaitData: gaitFeatures,
     riskLevel: prediction.riskLevel,
     confidence: prediction.confidence,
     contributingFactors: prediction.contributingFactors,
@@ -57,7 +57,7 @@ const createScreening = asyncHandler(async (req, res) => {
     synced: true,
   });
 
-  res.status(201).json({ success: true, data: screening });
+  res.status(201).json({ success: true, screening: screening });
 });
 
 /**

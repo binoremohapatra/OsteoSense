@@ -30,7 +30,7 @@ class BLEWearableSensorSource implements SensorDataSource {
   Stream<SensorData> get gyroscopeStream => _gyroscopeController.stream;
 
   @override
-  String get deviceName => device.name;
+  String get deviceName => device.platformName;
 
   @override
   bool get isConnected => _isConnected;

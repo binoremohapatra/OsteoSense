@@ -27,20 +27,20 @@ class PatientProvider with ChangeNotifier {
         // Try API first
         final patientsData = await ApiService().getPatients();
         _patients = patientsData.map((data) {
-          // Backend might return _id (Mongo), map it to serverId
-          final pData = data as Map<String, dynamic>;
-          if (pData['_id'] != null) {
-            pData['server_id'] = pData['_id'];
-          }
-          if (pData['fullName'] != null) {
-            pData['name'] = pData['fullName'];
-          }
+          // Normalize backend (camelCase Mongoose) response to local DB snake_case shape
+          // so Patient.fromMap can handle both.
+          final pData = Map<String, dynamic>.from(data as Map);
+          // Backend toJSON transform: _id → id; we need server_id
+          pData['server_id'] = pData['id'] ?? pData['_id'];
+          // Mongoose timestamps are camelCase; Patient.fromMap expects snake_case
           if (pData['createdAt'] != null) {
-            pData['created_at'] = pData['createdAt'];
+            pData['created_at'] = pData['createdAt'].toString();
           }
           if (pData['updatedAt'] != null) {
-            pData['updated_at'] = pData['updatedAt'];
+            pData['updated_at'] = pData['updatedAt'].toString();
           }
+          // Ensure required fields for fromMap (local id = 0 since not in local DB yet)
+          pData['id'] ??= 0;
           pData['synced'] = 1;
           return Patient.fromMap(pData);
         }).toList();

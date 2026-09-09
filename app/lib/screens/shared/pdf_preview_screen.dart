@@ -9,6 +9,7 @@ import '../../theme/app_spacing.dart';
 import '../../theme/app_typography.dart';
 import '../../theme/app_motion.dart';
 import '../../widgets/common/index.dart';
+import '../../widgets/premium/buttons/premium_buttons.dart';
 
 class PdfPreviewScreen extends StatelessWidget {
   final Screening? screening;
@@ -34,6 +35,7 @@ class PdfPreviewScreen extends StatelessWidget {
       appBar: CustomAppBar(
         title: 'Report Preview',
         centerTitle: false,
+        showBackButton: true,
         actions: [
           IconButton(
             icon: const Icon(Icons.share_outlined),
@@ -156,22 +158,18 @@ class PdfPreviewScreen extends StatelessWidget {
             child: Row(
               children: [
                 Expanded(
-                  child: CustomButton(
+                  child: GlassButton(
                     text: 'Share',
                     onPressed: () => _shareReport(context),
-                    variant: ButtonVariant.outline,
-                    size: ButtonSize.large,
-                    icon: const Icon(Icons.share_outlined),
+                    icon: const Icon(Icons.share_outlined, color: AppColors.primary),
                   ),
                 ),
                 const SizedBox(width: AppSpacing.md),
                 Expanded(
-                  child: CustomButton(
+                  child: MagneticButton(
                     text: 'Download',
                     onPressed: () => _downloadReport(context),
-                    variant: ButtonVariant.primary,
-                    size: ButtonSize.large,
-                    icon: const Icon(Icons.download_outlined),
+                    icon: const Icon(Icons.download_outlined, color: Colors.white),
                   ),
                 ),
               ],

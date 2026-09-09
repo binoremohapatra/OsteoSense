@@ -49,7 +49,7 @@ async function processSyncItem(item, agentId) {
         stiffnessDuration: data.stiffnessDuration,
         swelling: data.swelling,
         pastInjury: data.pastInjury,
-        gaitRawData: data.gaitFeatures,
+        gaitData: data.gaitFeatures,
         riskLevel: prediction.riskLevel,
         confidence: prediction.confidence,
         contributingFactors: prediction.contributingFactors,

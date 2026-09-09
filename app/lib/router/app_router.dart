@@ -10,6 +10,7 @@ import '../screens/shared/role_selection_screen.dart';
 import '../screens/shared/login_screen.dart';
 import '../screens/shared/signup_screen.dart';
 import '../screens/agent/home_screen.dart';
+import '../screens/agent/patient_list_screen.dart';
 import '../screens/user/user_home_screen.dart';
 import '../screens/shared/onboarding_screen.dart';
 import '../screens/agent/add_patient_screen.dart';
@@ -273,6 +274,13 @@ final appRouter = GoRouter(
       },
     ),
     GoRoute(
+      path: '/agent/patients',
+      pageBuilder: (context, state) => SharedAxisTransition(
+        key: state.pageKey,
+        child: const PatientListScreen(),
+      ),
+    ),
+    GoRoute(
       path: '/user/home',
       pageBuilder: (context, state) => SharedAxisTransition(
         key: state.pageKey,
@@ -309,7 +317,9 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/screening/symptoms',
       pageBuilder: (context, state) {
-        final patientId = state.extra as int;
+        // Guard against null extra — GoRouter can re-evaluate routes during
+        // a frame rebuild even when this route is not the active one.
+        final patientId = (state.extra as int?) ?? 0;
         return SlideUpTransitionPage(
           key: state.pageKey,
           child: SymptomQuestionnaireScreen(patientId: patientId),

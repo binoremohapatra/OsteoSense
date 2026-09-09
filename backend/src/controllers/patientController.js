@@ -15,7 +15,7 @@ const createPatient = asyncHandler(async (req, res) => {
     agentId: req.user._id, // always derived from the authenticated agent, never from client input
   });
 
-  res.status(201).json({ success: true, data: patient });
+  res.status(201).json({ success: true, patient: patient, data: patient });
 });
 
 /**

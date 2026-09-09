@@ -33,16 +33,29 @@ class User {
     };
   }
 
+  Map<String, dynamic> toApiMap() {
+    return {
+      'id': id,
+      'fullName': fullName,
+      'phoneNumber': phoneNumber,
+      'password': password,
+      'healthCenterId': healthCenterId,
+      'location': location,
+      'createdAt': createdAt.toIso8601String(),
+      'updatedAt': updatedAt.toIso8601String(),
+    };
+  }
+
   factory User.fromMap(Map<String, dynamic> map) {
     return User(
       id: map['id'] as int?,
-      fullName: map['full_name'] as String,
-      phoneNumber: map['phone_number'] as String,
+      fullName: (map['full_name'] ?? map['fullName']) as String,
+      phoneNumber: (map['phone_number'] ?? map['phoneNumber']) as String,
       password: map['password'] as String,
-      healthCenterId: map['health_center_id'] as String?,
+      healthCenterId: (map['health_center_id'] ?? map['healthCenterId']) as String?,
       location: map['location'] as String?,
-      createdAt: DateTime.parse(map['created_at'] as String),
-      updatedAt: DateTime.parse(map['updated_at'] as String),
+      createdAt: DateTime.parse(map['created_at'] ?? map['createdAt'] ?? DateTime.now().toIso8601String()),
+      updatedAt: DateTime.parse(map['updated_at'] ?? map['updatedAt'] ?? DateTime.now().toIso8601String()),
     );
   }
 

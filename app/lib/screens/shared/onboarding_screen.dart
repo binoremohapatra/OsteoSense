@@ -1,8 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../providers/settings_provider.dart';
-import '../../utils/app_theme.dart';
-import 'login_screen.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:go_router/go_router.dart';
+import '../../flutter_flow/flutter_flow_util.dart';
+import '../../theme/app_colors.dart';
+import '../../widgets/ff/ff_button.dart';
+
+// ============================================================================
+// OnboardingScreen — matches FlutterFlow OnboardingWidget exactly.
+//
+// Layout (Stack):
+//  1. Mesh gradient background (LinearGradient approximation of FbmGradientShaderFill)
+//  2. Scrollable body: Logo → Hero slide → Language selection → spacer
+//  3. Bottom CTA area (page dots + "Get Started" button)
+//  4. Top-right "Skip" ghost button
+// ============================================================================
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -12,207 +23,395 @@ class OnboardingScreen extends StatefulWidget {
 }
 
 class _OnboardingScreenState extends State<OnboardingScreen> {
-  final PageController _pageController = PageController();
-  int _currentPage = 0;
+  String _selectedLanguage = 'english'; // 'english' | 'hindi'
 
-  final List<OnboardingItem> _items = [
-    OnboardingItem(
-      icon: Icons.medical_services,
-      title: 'Early Detection',
-      description: 'Detect osteoarthritis risk early with AI-powered screening',
-    ),
-    OnboardingItem(
-      icon: Icons.cloud_off,
-      title: 'Offline First',
-      description: 'Works without internet, syncs when connection available',
-    ),
-    OnboardingItem(
-      icon: Icons.location_on,
-      title: 'Rural Healthcare',
-      description: 'Designed for healthcare workers in remote areas',
-    ),
-  ];
-
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
+  void _proceed() {
+    context.go('/login');
   }
 
   @override
   Widget build(BuildContext context) {
-    final settingsProvider = Provider.of<SettingsProvider>(context);
-    final isHindi = settingsProvider.language == 'hi';
+    final ff = FlutterFlowTheme.of(context);
 
-    return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
-      body: SafeArea(
-        child: Column(
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(),
+      child: Scaffold(
+        backgroundColor: ff.primaryBackground,
+        body: Stack(
+          alignment: Alignment.topLeft,
           children: [
-            Expanded(
-              child: PageView.builder(
-                controller: _pageController,
-                onPageChanged: (index) {
-                  setState(() {
-                    _currentPage = index;
-                  });
-                },
-                itemCount: _items.length,
-                itemBuilder: (context, index) {
-                  return _buildPage(_items[index], isHindi);
-                },
+            // Page-specific animated background (Onboarding)
+            Positioned.fill(
+              child: IgnorePointer(
+                child: Opacity(
+                  opacity: 0.28,
+                  child: Image.asset(
+                    'assets/images/01_onboarding.gif',
+                    fit: BoxFit.cover,
+                    gaplessPlayback: true,
+                    errorBuilder: (_, __, ___) => Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: const Alignment(-1, -1),
+                          end: const Alignment(1, 1),
+                          colors: [
+                            ff.primaryBackground,
+                            ff.secondaryBackground,
+                            const Color(0x4D4A5D4E),
+                          ],
+                          stops: const [0.0, 0.5, 1.0],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ),
-            _buildBottomNavigation(context),
+
+            // Scrollable main content
+            SingleChildScrollView(
+              primary: false,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // ── Logo row ──────────────────────────────────────────────
+                  SafeArea(
+                    bottom: false,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 24, vertical: 32),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: ff.primary,
+                              borderRadius: BorderRadius.circular(24),
+                            ),
+                            alignment: Alignment.center,
+                            child: Icon(
+                              Icons.accessibility_new_rounded,
+                              color: ff.onPrimary,
+                              size: 24,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'JointSaathi',
+                            style: GoogleFonts.dmSans(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w800,
+                              color: ff.primaryText,
+                              height: 1.4,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  // ── Hero slide ───────────────────────────────────────────
+                  _OnboardingHeroSlide(ff: ff),
+
+                  // ── Language selection ───────────────────────────────────
+                  Padding(
+                    padding: const EdgeInsets.all(32),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          'Choose your language',
+                          style: GoogleFonts.dmSans(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            color: ff.primaryText,
+                            height: 1.4,
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        _LanguageOption(
+                          label: 'English',
+                          sublabel: 'Recommended for clinical use',
+                          selected: _selectedLanguage == 'english',
+                          onTap: () =>
+                              setState(() => _selectedLanguage = 'english'),
+                        ),
+                        const SizedBox(height: 8),
+                        _LanguageOption(
+                          label: 'हिन्दी',
+                          sublabel: 'Hindi - Native support',
+                          selected: _selectedLanguage == 'hindi',
+                          onTap: () =>
+                              setState(() => _selectedLanguage = 'hindi'),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Bottom spacer for CTA overlay
+                  const SizedBox(height: 140),
+                ],
+              ),
+            ),
+
+            // ── Bottom CTA (gradient fade + dots + button) ────────────────
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: Container(
+                height: 160,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.bottomCenter,
+                    end: Alignment.topCenter,
+                    colors: [
+                      ff.primaryBackground,
+                      ff.primaryBackground.withValues(alpha: 0.0),
+                    ],
+                  ),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      // Page indicator dots
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          _Dot(active: true, primary: ff.primary, alternate: ff.alternate),
+                          const SizedBox(width: 4),
+                          _Dot(active: false, primary: ff.primary, alternate: ff.alternate),
+                          const SizedBox(width: 4),
+                          _Dot(active: false, primary: ff.primary, alternate: ff.alternate),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      // Get Started button
+                      FFButton(
+                        content: 'Get Started',
+                        variant: 'primary',
+                        size: 'large',
+                        fullWidth: true,
+                        onTap: _proceed,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            // ── Skip button (top-right) ───────────────────────────────────
+            SafeArea(
+              child: Align(
+                alignment: Alignment.topRight,
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: GestureDetector(
+                    onTap: _proceed,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 10),
+                      child: Text(
+                        'Skip',
+                        style: GoogleFonts.dmSans(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: ff.primary,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
+}
 
-  Widget _buildPage(OnboardingItem item, bool isHindi) {
-    return Padding(
-      padding: const EdgeInsets.all(32.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            item.icon,
-            size: 120,
-            color: AppTheme.primaryColor,
-          ),
-          const SizedBox(height: 32),
-          Text(
-            isHindi ? _getHindiTitle(item.title) : item.title,
-            style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                  color: AppTheme.textPrimary,
-                  fontWeight: FontWeight.bold,
-                ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            isHindi ? _getHindiDescription(item.description) : item.description,
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: AppTheme.textSecondary,
-                ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
+// ── Hero slide component ─────────────────────────────────────────────────────
 
-  Widget _buildBottomNavigation(BuildContext context) {
+class _OnboardingHeroSlide extends StatelessWidget {
+  const _OnboardingHeroSlide({required this.ff});
+  final FlutterFlowTheme ff;
+
+  @override
+  Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(24.0),
+      padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(
-              _items.length,
-              (index) => _buildPageIndicator(index == _currentPage),
+          // Illustration placeholder (blob + icon)
+          Container(
+            height: 260,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  ff.primary.withValues(alpha: 0.08),
+                  ff.secondary.withValues(alpha: 0.15),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(32),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 100,
+                  height: 100,
+                  decoration: BoxDecoration(
+                    color: ff.primary.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(50),
+                  ),
+                  child: Icon(
+                    Icons.accessibility_new_rounded,
+                    size: 52,
+                    color: ff.primary,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: ff.primary.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(9999),
+                  ),
+                  child: Text(
+                    'AI-Powered Screening',
+                    style: GoogleFonts.dmSans(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: ff.primary,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 24),
-          Row(
-            children: [
-              if (_currentPage > 0)
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () {
-                      _pageController.previousPage(
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeInOut,
-                      );
-                    },
-                    child: const Text('Back'),
-                  ),
-                ),
-              if (_currentPage > 0) const SizedBox(width: 16),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: () {
-                    if (_currentPage < _items.length - 1) {
-                      _pageController.nextPage(
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeInOut,
-                      );
-                    } else {
-                      Navigator.of(context).pushReplacement(
-                        MaterialPageRoute(builder: (_) => const LoginScreen()),
-                      );
-                    }
-                  },
-                  child: Text(_currentPage < _items.length - 1 ? 'Next' : 'Get Started'),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          if (_currentPage < _items.length - 1)
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(builder: (_) => const LoginScreen()),
-                );
-              },
-              child: const Text('Skip'),
+          // Title
+          Text(
+            'Early Detection for Joint Health',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.dmSans(
+              fontSize: 26,
+              fontWeight: FontWeight.w800,
+              color: ff.primaryText,
+              height: 1.3,
             ),
+          ),
+          const SizedBox(height: 12),
+          // Description
+          Text(
+            'AI-powered screening to identify osteoarthritis risk factors early in your clinical practice.',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.dmSans(
+              fontSize: 14,
+              fontWeight: FontWeight.normal,
+              color: ff.secondaryText,
+              height: 1.6,
+            ),
+          ),
         ],
       ),
     );
   }
+}
 
-  Widget _buildPageIndicator(bool isActive) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      margin: const EdgeInsets.symmetric(horizontal: 4),
-      height: 8,
-      width: isActive ? 24 : 8,
-      decoration: BoxDecoration(
-        color: isActive ? AppTheme.primaryColor : AppTheme.dividerColor,
-        borderRadius: BorderRadius.circular(4),
+// ── Language option tile ─────────────────────────────────────────────────────
+
+class _LanguageOption extends StatelessWidget {
+  const _LanguageOption({
+    required this.label,
+    required this.sublabel,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final String sublabel;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final ff = FlutterFlowTheme.of(context);
+
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: selected ? ff.primaryContainer : ff.secondaryBackground,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: selected ? ff.primary : ff.alternate,
+            width: selected ? 2 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: GoogleFonts.dmSans(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: selected ? ff.primary : ff.primaryText,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    sublabel,
+                    style: GoogleFonts.dmSans(
+                      fontSize: 12,
+                      color: ff.secondaryText,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (selected)
+              Icon(Icons.check_circle_rounded, color: ff.primary, size: 24),
+          ],
+        ),
       ),
     );
   }
-
-  String _getHindiTitle(String englishTitle) {
-    switch (englishTitle) {
-      case 'Early Detection':
-        return 'प्रारंभिक पहचान';
-      case 'Offline First':
-        return 'ऑफ़लाइन पहले';
-      case 'Rural Healthcare':
-        return 'ग्रामीण स्वास्थ्य सेवा';
-      default:
-        return englishTitle;
-    }
-  }
-
-  String _getHindiDescription(String englishDescription) {
-    switch (englishDescription) {
-      case 'Detect osteoarthritis risk early with AI-powered screening':
-        return 'AI-संचालित स्क्रीनिंग के साथ ऑस्टियोआर्थराइटिस जोखिम का प्रारंभिक पता लगाएं';
-      case 'Works without internet, syncs when connection available':
-        return 'बिना इंटरनेट के काम करता है, कनेक्शन उपलब्ध होने पर सिंक होता है';
-      case 'Designed for healthcare workers in remote areas':
-        return 'दूरदराज के क्षेत्रों में स्वास्थ्य कार्यकर्ताओं के लिए डिज़ाइन किया गया';
-      default:
-        return englishDescription;
-    }
-  }
 }
 
-class OnboardingItem {
-  final IconData icon;
-  final String title;
-  final String description;
+// ── Pagination dot ───────────────────────────────────────────────────────────
 
-  OnboardingItem({
-    required this.icon,
-    required this.title,
-    required this.description,
-  });
+class _Dot extends StatelessWidget {
+  const _Dot({required this.active, required this.primary, required this.alternate});
+
+  final bool active;
+  final Color primary;
+  final Color alternate;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      width: active ? 24 : 8,
+      height: 8,
+      decoration: BoxDecoration(
+        color: active ? primary : alternate,
+        borderRadius: BorderRadius.circular(9999),
+      ),
+    );
+  }
 }

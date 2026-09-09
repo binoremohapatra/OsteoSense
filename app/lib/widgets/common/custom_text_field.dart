@@ -62,7 +62,6 @@ class CustomTextField extends StatefulWidget {
 class _CustomTextFieldState extends State<CustomTextField> {
   late TextEditingController _controller;
   bool _obscureText = false;
-  bool _isFocused = false;
 
   @override
   void initState() {
@@ -104,11 +103,6 @@ class _CustomTextFieldState extends State<CustomTextField> {
           const SizedBox(height: AppSpacing.xs),
         ],
         Focus(
-          onFocusChange: (hasFocus) {
-            setState(() {
-              _isFocused = hasFocus;
-            });
-          },
           child: TextFormField(
             controller: _controller,
             obscureText: _obscureText,
@@ -201,7 +195,6 @@ class _CustomTextFieldState extends State<CustomTextField> {
           borderColor: AppColors.divider,
         );
       case TextFieldVariant.default_:
-      default:
         return _TextFieldColors(
           fillColor: AppColors.surfaceVariant,
           borderColor: AppColors.border,

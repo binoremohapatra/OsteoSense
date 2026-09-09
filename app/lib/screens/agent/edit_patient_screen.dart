@@ -8,6 +8,8 @@ import '../../theme/app_spacing.dart';
 import '../../theme/app_typography.dart';
 import '../../theme/app_motion.dart';
 import '../../widgets/common/index.dart';
+import '../../widgets/premium/inputs/premium_inputs.dart';
+import '../../widgets/premium/buttons/premium_buttons.dart';
 
 class EditPatientScreen extends StatefulWidget {
   final Patient? patient;
@@ -149,7 +151,7 @@ class _EditPatientScreenState extends State<EditPatientScreen> {
             _buildSectionHeader('Personal Information', Icons.person_outline),
             const SizedBox(height: AppSpacing.md),
 
-            CustomTextField(
+            PremiumTextField(
               controller: _nameController,
               label: 'Full Name',
               hint: 'Enter patient\'s full name',
@@ -159,9 +161,10 @@ class _EditPatientScreenState extends State<EditPatientScreen> {
             const SizedBox(height: AppSpacing.md),
 
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
-                  child: CustomTextField(
+                  child: PremiumTextField(
                     controller: _ageController,
                     label: 'Age',
                     hint: 'Years',
@@ -177,13 +180,27 @@ class _EditPatientScreenState extends State<EditPatientScreen> {
                 ),
                 const SizedBox(width: AppSpacing.md),
                 Expanded(
-                  child: _buildGenderPicker(),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Gender', style: AppTypography.caption.copyWith(color: AppColors.textSecondary, fontWeight: FontWeight.w500)),
+                      const SizedBox(height: AppSpacing.xs),
+                      ComboBox<String>(
+                        items: const ['male', 'female', 'other'],
+                        itemAsString: (item) => item.substring(0, 1).toUpperCase() + item.substring(1),
+                        hint: _gender.substring(0, 1).toUpperCase() + _gender.substring(1),
+                        onChanged: (val) {
+                          if (val != null) setState(() => _gender = val);
+                        },
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ).animate().fadeIn(duration: AppMotion.standard, delay: 100.ms).slideY(begin: 0.1, end: 0, duration: AppMotion.standard),
             const SizedBox(height: AppSpacing.md),
 
-            CustomTextField(
+            PremiumTextField(
               controller: _occupationController,
               label: 'Occupation',
               hint: 'e.g., Farmer, Teacher',
@@ -194,7 +211,7 @@ class _EditPatientScreenState extends State<EditPatientScreen> {
             _buildSectionHeader('Contact & Location', Icons.location_on_outlined),
             const SizedBox(height: AppSpacing.md),
 
-            CustomTextField(
+            PremiumTextField(
               controller: _contactController,
               label: 'Phone Number',
               hint: '10-digit mobile number',
@@ -203,7 +220,7 @@ class _EditPatientScreenState extends State<EditPatientScreen> {
             ).animate().fadeIn(duration: AppMotion.standard, delay: 200.ms).slideY(begin: 0.1, end: 0, duration: AppMotion.standard),
             const SizedBox(height: AppSpacing.md),
 
-            CustomTextField(
+            PremiumTextField(
               controller: _villageController,
               label: 'Village',
               hint: 'Village or town name',
@@ -211,11 +228,10 @@ class _EditPatientScreenState extends State<EditPatientScreen> {
             ).animate().fadeIn(duration: AppMotion.standard, delay: 250.ms).slideY(begin: 0.1, end: 0, duration: AppMotion.standard),
             const SizedBox(height: AppSpacing.md),
 
-            CustomTextField(
+            PremiumTextField(
               controller: _addressController,
               label: 'Full Address',
               hint: 'Block, district, state',
-              maxLines: 2,
               keyboardType: TextInputType.streetAddress,
               prefixIcon: const Icon(Icons.home_outlined),
             ).animate().fadeIn(duration: AppMotion.standard, delay: 300.ms).slideY(begin: 0.1, end: 0, duration: AppMotion.standard),
@@ -227,7 +243,7 @@ class _EditPatientScreenState extends State<EditPatientScreen> {
             Row(
               children: [
                 Expanded(
-                  child: CustomTextField(
+                  child: PremiumTextField(
                     controller: _heightController,
                     label: 'Height (cm)',
                     hint: 'e.g., 165',
@@ -237,7 +253,7 @@ class _EditPatientScreenState extends State<EditPatientScreen> {
                 ),
                 const SizedBox(width: AppSpacing.md),
                 Expanded(
-                  child: CustomTextField(
+                  child: PremiumTextField(
                     controller: _weightController,
                     label: 'Weight (kg)',
                     hint: 'e.g., 70',
@@ -250,14 +266,10 @@ class _EditPatientScreenState extends State<EditPatientScreen> {
 
             const SizedBox(height: AppSpacing.xxl),
 
-            CustomButton(
+            MagneticButton(
               text: 'Save Changes',
-              onPressed: patientProvider.isLoading ? null : _saveChanges,
-              variant: ButtonVariant.primary,
-              size: ButtonSize.large,
-              fullWidth: true,
+              onPressed: patientProvider.isLoading ? () {} : _saveChanges,
               isLoading: patientProvider.isLoading,
-              icon: const Icon(Icons.check_rounded),
             ).animate().fadeIn(duration: AppMotion.standard, delay: 400.ms),
 
             const SizedBox(height: AppSpacing.lg),
@@ -285,33 +297,5 @@ class _EditPatientScreenState extends State<EditPatientScreen> {
     );
   }
 
-  Widget _buildGenderPicker() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Gender', style: AppTypography.labelSmall.copyWith(color: AppColors.textSecondary)),
-          const SizedBox(height: 4),
-          DropdownButton<String>(
-            value: _gender,
-            isExpanded: true,
-            underline: const SizedBox.shrink(),
-            style: AppTypography.bodyMedium.copyWith(color: AppColors.textPrimary),
-            items: const [
-              DropdownMenuItem(value: 'male', child: Text('Male')),
-              DropdownMenuItem(value: 'female', child: Text('Female')),
-              DropdownMenuItem(value: 'other', child: Text('Other')),
-            ],
-            onChanged: (v) => setState(() => _gender = v!),
-          ),
-        ],
-      ),
-    );
-  }
+
 }

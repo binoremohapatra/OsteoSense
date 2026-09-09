@@ -1,8 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
 import '../../providers/patient_provider.dart';
 import '../../models/patient.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_spacing.dart';
+import '../../theme/app_typography.dart';
+import '../../theme/app_motion.dart';
+import '../../widgets/common/index.dart';
+import '../../widgets/premium/inputs/premium_inputs.dart';
+import '../../widgets/premium/buttons/premium_buttons.dart';
 
 class AddPatientScreen extends StatefulWidget {
   const AddPatientScreen({super.key});
@@ -33,185 +41,187 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
   }
 
   Future<void> _savePatient() async {
-    if (_formKey.currentState!.validate()) {
-      final patientProvider = Provider.of<PatientProvider>(context, listen: false);
+    if (!_formKey.currentState!.validate()) return;
+    
+    final patientProvider = context.read<PatientProvider>();
 
-      final patient = Patient(
-        name: _nameController.text.trim(),
-        age: int.parse(_ageController.text),
-        gender: _gender,
-        contact: _contactController.text.trim().isEmpty
-            ? null
-            : _contactController.text.trim(),
-        village: _villageController.text.trim().isEmpty
-            ? null
-            : _villageController.text.trim(),
-        address: _addressController.text.trim().isEmpty
-            ? null
-            : _addressController.text.trim(),
-        occupation: _occupationController.text.trim().isEmpty
-            ? null
-            : _occupationController.text.trim(),
+    final patient = Patient(
+      name: _nameController.text.trim(),
+      age: int.parse(_ageController.text),
+      gender: _gender,
+      contact: _contactController.text.trim().isEmpty ? null : _contactController.text.trim(),
+      village: _villageController.text.trim().isEmpty ? null : _villageController.text.trim(),
+      address: _addressController.text.trim().isEmpty ? null : _addressController.text.trim(),
+      occupation: _occupationController.text.trim().isEmpty ? null : _occupationController.text.trim(),
+    );
+
+    final success = await patientProvider.addPatient(patient);
+
+    if (!mounted) return;
+
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Row(children: [
+            Icon(Icons.check_circle_rounded, color: Colors.white, size: 18),
+            SizedBox(width: 8),
+            Text('Patient added successfully'),
+          ]),
+          backgroundColor: AppColors.riskLow,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusSm)),
+        ),
       );
-
-      final success = await patientProvider.addPatient(patient);
-
-      if (!mounted) return;
-
-      if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Patient added successfully'),
-            backgroundColor: AppColors.riskLow,
-          ),
-        );
-        Navigator.of(context).pop();
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(patientProvider.errorMessage ?? 'Failed to add patient'),
-            backgroundColor: AppColors.error,
-          ),
-        );
-      }
+      context.pop();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(patientProvider.errorMessage ?? 'Failed to add patient'),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final patientProvider = Provider.of<PatientProvider>(context);
+    final patientProvider = context.watch<PatientProvider>();
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Add Patient'),
-        backgroundColor: AppColors.primary,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              TextFormField(
-                controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Patient Name *',
-                  hintText: 'Enter full name',
-                  prefixIcon: Icon(Icons.person),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter patient name';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: _ageController,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: 'Age *',
-                        hintText: 'Age in years',
-                        prefixIcon: Icon(Icons.cake),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter age';
-                        }
-                        final age = int.tryParse(value);
-                        if (age == null || age < 0 || age > 150) {
-                          return 'Please enter valid age';
-                        }
-                        return null;
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: DropdownButtonFormField<String>(
-                      initialValue: _gender,
-                      decoration: const InputDecoration(
-                        labelText: 'Gender *',
-                        prefixIcon: Icon(Icons.wc),
-                      ),
-                      items: const [
-                        DropdownMenuItem(value: 'male', child: Text('Male')),
-                        DropdownMenuItem(value: 'female', child: Text('Female')),
-                        DropdownMenuItem(value: 'other', child: Text('Other')),
-                      ],
-                      onChanged: (value) {
-                        setState(() {
-                          _gender = value!;
-                        });
-                      },
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _contactController,
-                keyboardType: TextInputType.phone,
-                decoration: const InputDecoration(
-                  labelText: 'Contact Number',
-                  hintText: 'Phone number',
-                  prefixIcon: Icon(Icons.phone),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _villageController,
-                decoration: const InputDecoration(
-                  labelText: 'Village',
-                  hintText: 'Village name',
-                  prefixIcon: Icon(Icons.location_city),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _addressController,
-                maxLines: 2,
-                decoration: const InputDecoration(
-                  labelText: 'Address',
-                  hintText: 'Full address',
-                  prefixIcon: Icon(Icons.home),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _occupationController,
-                decoration: const InputDecoration(
-                  labelText: 'Occupation',
-                  hintText: 'Patient\'s occupation',
-                  prefixIcon: Icon(Icons.work),
-                ),
-              ),
-              const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: patientProvider.isLoading ? null : _savePatient,
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                ),
-                child: patientProvider.isLoading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                        ),
-                      )
-                    : const Text('Save Patient', style: TextStyle(fontSize: 16)),
-              ),
-            ],
-          ),
+      backgroundColor: AppColors.background,
+      appBar: CustomAppBar(
+        title: 'Add Patient',
+        centerTitle: false,
+        showBackButton: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new),
+          onPressed: () => context.go('/agent/patients'),
         ),
       ),
+      body: Form(
+        key: _formKey,
+        child: ListView(
+          padding: const EdgeInsets.all(AppSpacing.screenPaddingLg),
+          children: [
+            _buildSectionHeader('Personal Information', Icons.person_outline),
+            const SizedBox(height: AppSpacing.md),
+
+            PremiumTextField(
+              controller: _nameController,
+              label: 'Full Name',
+              hint: 'Enter patient\'s full name',
+              prefixIcon: const Icon(Icons.person_outline),
+              validator: (v) => (v == null || v.trim().isEmpty) ? 'Name is required' : null,
+            ).animate().fadeIn(duration: AppMotion.standard, delay: 50.ms).slideY(begin: 0.1, end: 0, duration: AppMotion.standard),
+            const SizedBox(height: AppSpacing.md),
+
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: PremiumTextField(
+                    controller: _ageController,
+                    label: 'Age',
+                    hint: 'Years',
+                    keyboardType: TextInputType.number,
+                    prefixIcon: const Icon(Icons.cake_outlined),
+                    validator: (v) {
+                      if (v == null || v.isEmpty) return 'Required';
+                      final age = int.tryParse(v);
+                      if (age == null || age < 1 || age > 120) return 'Invalid age';
+                      return null;
+                    },
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Gender', style: AppTypography.caption.copyWith(color: AppColors.textSecondary, fontWeight: FontWeight.w500)),
+                      const SizedBox(height: AppSpacing.xs),
+                      ComboBox<String>(
+                        items: const ['male', 'female', 'other'],
+                        itemAsString: (item) => item.substring(0, 1).toUpperCase() + item.substring(1),
+                        hint: 'Male',
+                        onChanged: (val) {
+                          if (val != null) setState(() => _gender = val);
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ).animate().fadeIn(duration: AppMotion.standard, delay: 100.ms).slideY(begin: 0.1, end: 0, duration: AppMotion.standard),
+            const SizedBox(height: AppSpacing.md),
+
+            PremiumTextField(
+              controller: _occupationController,
+              label: 'Occupation',
+              hint: 'e.g., Farmer, Teacher',
+              prefixIcon: const Icon(Icons.work_outline),
+            ).animate().fadeIn(duration: AppMotion.standard, delay: 150.ms).slideY(begin: 0.1, end: 0, duration: AppMotion.standard),
+
+            const SizedBox(height: AppSpacing.xl),
+            _buildSectionHeader('Contact & Location', Icons.location_on_outlined),
+            const SizedBox(height: AppSpacing.md),
+
+            PremiumTextField(
+              controller: _contactController,
+              label: 'Phone Number',
+              hint: '10-digit mobile number',
+              keyboardType: TextInputType.phone,
+              prefixIcon: const Icon(Icons.phone_outlined),
+            ).animate().fadeIn(duration: AppMotion.standard, delay: 200.ms).slideY(begin: 0.1, end: 0, duration: AppMotion.standard),
+            const SizedBox(height: AppSpacing.md),
+
+            PremiumTextField(
+              controller: _villageController,
+              label: 'Village',
+              hint: 'Village or town name',
+              prefixIcon: const Icon(Icons.location_city_outlined),
+            ).animate().fadeIn(duration: AppMotion.standard, delay: 250.ms).slideY(begin: 0.1, end: 0, duration: AppMotion.standard),
+            const SizedBox(height: AppSpacing.md),
+
+            PremiumTextField(
+              controller: _addressController,
+              label: 'Full Address',
+              hint: 'Block, district, state',
+              keyboardType: TextInputType.streetAddress,
+              prefixIcon: const Icon(Icons.home_outlined),
+            ).animate().fadeIn(duration: AppMotion.standard, delay: 300.ms).slideY(begin: 0.1, end: 0, duration: AppMotion.standard),
+
+            const SizedBox(height: AppSpacing.xxl),
+
+            MagneticButton(
+              text: 'Add Patient',
+              onPressed: patientProvider.isLoading ? () {} : _savePatient,
+              isLoading: patientProvider.isLoading,
+            ).animate().fadeIn(duration: AppMotion.standard, delay: 400.ms),
+
+            const SizedBox(height: AppSpacing.lg),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title, IconData icon) {
+    return Row(
+      children: [
+        Icon(icon, color: AppColors.primary, size: 18),
+        const SizedBox(width: AppSpacing.sm),
+        Text(
+          title,
+          style: AppTypography.titleSmall.copyWith(
+            fontWeight: AppTypography.semiBold,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(width: AppSpacing.md),
+        Expanded(child: Container(height: 1, color: AppColors.border)),
+      ],
     );
   }
 }

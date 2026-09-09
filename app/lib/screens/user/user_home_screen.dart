@@ -7,6 +7,7 @@ import '../../theme/app_colors.dart';
 import '../../theme/app_spacing.dart';
 import '../../theme/app_typography.dart';
 import '../../theme/app_motion.dart';
+import '../../widgets/premium/cards/premium_cards.dart';
 import '../shared/preventive_care_home_screen.dart';
 import '../shared/symptom_questionnaire_screen.dart';
 
@@ -88,6 +89,9 @@ class UserHomeScreen extends StatelessWidget {
   }
 
   Widget _buildWelcomeCard(BuildContext context) {
+    final authProvider = context.read<AuthProvider>();
+    final userName = authProvider.currentUser?.fullName ?? 'User';
+
     return Container(
       padding: const EdgeInsets.all(AppSpacing.cardPaddingLg),
       decoration: BoxDecoration(
@@ -122,7 +126,7 @@ class UserHomeScreen extends StatelessWidget {
                   children: [
                     Text('Welcome back!', style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary)),
                     Text(
-                      'Jane Doe', // Hardcoded for demo until integrated
+                      userName,
                       style: AppTypography.titleLarge.copyWith(fontWeight: AppTypography.bold),
                     ),
                   ],
@@ -146,8 +150,8 @@ class UserHomeScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Last Risk Status: LOW', style: AppTypography.labelMedium.copyWith(color: AppColors.success)),
-                      Text('Assessed 2 weeks ago', style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary)),
+                      Text('Ready for self-check', style: AppTypography.labelMedium.copyWith(color: AppColors.success)),
+                      Text('Check your joint health today', style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary)),
                     ],
                   ),
                 ),
@@ -160,113 +164,22 @@ class UserHomeScreen extends StatelessWidget {
   }
 
   Widget _buildAssessmentCta(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        // Just launch a symptom questionnaire directly for self-assessment.
-        // We will need to set a dummy patient ID in the provider or handle this in Phase 3.
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            // Passing a dummy patient ID for the demo UI flow.
-            // In integration phase, we'll fetch/create the User's own Patient record.
-            builder: (_) => const SymptomQuestionnaireScreen(patientId: 0),
-          ),
-        );
-      },
-      child: Container(
-        padding: const EdgeInsets.all(AppSpacing.cardPaddingLg),
-        decoration: BoxDecoration(
-          gradient: AppColors.primaryGradient,
-          borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primary.withValues(alpha: 0.3),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Start Self-Check',
-                    style: AppTypography.titleLarge.copyWith(color: Colors.white, fontWeight: AppTypography.bold),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Answer a few questions & take a short walk to check your joint health.',
-                    style: AppTypography.bodySmall.copyWith(color: Colors.white.withValues(alpha: 0.9), height: 1.4),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: AppSpacing.md),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.2),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 32),
-            ),
-          ],
-        ),
-      ),
+    return PremiumActionCard(
+      title: 'Start Self-Check',
+      subtitle: 'Answer a few questions & take a short walk to check your joint health.',
+      icon: Icons.play_arrow_rounded,
+      iconColor: AppColors.primary,
+      onTap: () => context.push('/screening/symptoms', extra: 0),
     );
   }
 
   Widget _buildPreventiveCareCard(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        // Navigate to the Preventive Care Home Screen
-        // We need to create a route for this or just push it. Let's push for simplicity.
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => const PreventiveCareHomeScreen(),
-          ),
-        );
-      },
-      child: Container(
-        padding: const EdgeInsets.all(AppSpacing.cardPaddingLg),
-        decoration: BoxDecoration(
-          color: const Color(0xFFF0FDF4), // Light green tint
-          borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-          border: Border.all(color: const Color(0xFFBBF7D0)),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFF22C55E),
-                borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-              ),
-              child: const Icon(Icons.spa_rounded, color: Colors.white, size: 28),
-            ),
-            const SizedBox(width: AppSpacing.md),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Preventive Care',
-                    style: AppTypography.titleMedium.copyWith(color: const Color(0xFF166534), fontWeight: AppTypography.bold),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Exercises, diet tips, and habits to protect your joints.',
-                    style: AppTypography.bodySmall.copyWith(color: const Color(0xFF15803D)),
-                  ),
-                ],
-              ),
-            ),
-            const Icon(Icons.chevron_right_rounded, color: Color(0xFF166534)),
-          ],
-        ),
-      ),
+    return PremiumActionCard(
+      title: 'Preventive Care',
+      subtitle: 'Exercises, diet tips, and habits to protect your joints.',
+      icon: Icons.spa_rounded,
+      iconColor: AppColors.success,
+      onTap: () => context.go('/preventive-care/home'),
     );
   }
 }

@@ -10,6 +10,9 @@ import '../../theme/app_spacing.dart';
 import '../../theme/app_typography.dart';
 import '../../widgets/common/index.dart';
 import '../../widgets/common/pulsing_dot.dart';
+import '../../widgets/premium/cards/premium_cards.dart';
+import '../../widgets/premium/charts/premium_charts.dart';
+import 'edit_patient_screen.dart';
 
 class PatientProfileScreen extends StatefulWidget {
   final int patientId;
@@ -48,12 +51,18 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
         centerTitle: false,
         actions: [
           IconButton(
-            icon: const Icon(Icons.edit),
+            icon: const Icon(Icons.edit_rounded, color: AppColors.primary),
             onPressed: () {
-              // TODO: Implement edit patient
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Edit feature coming soon')),
-              );
+              if (patient != null) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => EditPatientScreen(patient: patient)),
+                ).then((updatedPatient) {
+                  if (updatedPatient != null) {
+                    _loadData();
+                  }
+                });
+              }
             },
           ),
         ],
@@ -117,29 +126,49 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // Header card with patient info
-                        _buildPatientHeader(patient).animate().fadeIn(duration: 300.ms),
+                        _buildPatientHeader(patient).animate().fadeIn(duration: 500.ms).slideY(begin: 0.1, curve: Curves.easeOutCubic),
                         const SizedBox(height: AppSpacing.xl),
 
-                        // Patient details
+                        // Risk Gauge
+                        if (screeningProvider.screenings.isNotEmpty) ...[
+                          Center(
+                            child: Column(
+                              children: [
+                                Text(
+                                  'Current Risk Level',
+                                  style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.bold),
+                                ),
+                                const SizedBox(height: AppSpacing.lg),
+                                RiskGauge(
+                                  score: (screeningProvider.screenings.first.confidence ?? 0) / 100.0,
+                                  size: 240,
+                                ),
+                              ],
+                            ),
+                          ).animate().fadeIn(duration: 500.ms, delay: 100.ms).scale(curve: Curves.easeOutCubic),
+                          const SizedBox(height: AppSpacing.xl),
+                        ],
+
+                        // Patient details using MetricCards
                         Text(
-                          'Patient Information',
+                          'Patient Metrics',
                           style: AppTypography.titleMedium.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
-                        ).animate().fadeIn(duration: 300.ms, delay: 100.ms),
+                        ).animate().fadeIn(duration: 500.ms, delay: 150.ms),
                         const SizedBox(height: AppSpacing.md),
-                        _buildPatientDetails(patient)
+                        _buildPatientMetrics(patient)
                             .animate()
-                            .fadeIn(duration: 300.ms, delay: 150.ms),
+                            .fadeIn(duration: 500.ms, delay: 200.ms),
                         const SizedBox(height: AppSpacing.xl),
 
                         // Screening history
                         Text(
-                          'Screening History',
+                          'Screening Timeline',
                           style: AppTypography.titleMedium.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
-                        ).animate().fadeIn(duration: 300.ms, delay: 200.ms),
+                        ).animate().fadeIn(duration: 500.ms, delay: 250.ms),
                         const SizedBox(height: AppSpacing.md),
                         _buildScreeningHistory(screeningProvider.screenings)
                             .animate()
@@ -152,11 +181,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
   }
 
   Widget _buildPatientHeader(patient) {
-    final riskLevel = patient.lastScreening?.riskLevel ?? 'low';
-    final riskColor = AppColors.getRiskColor(riskLevel);
-
-    return CustomCard(
-      variant: CardVariant.elevated,
+    return GlassCard(
       padding: const EdgeInsets.all(AppSpacing.cardPaddingLg),
       child: Row(
         children: [
@@ -225,87 +250,44 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
               ],
             ),
           ),
-          if (patient.lastScreening != null)
-            Hero(
-              tag: 'risk_badge_${patient.id}',
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.md,
-                  vertical: AppSpacing.sm,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.getRiskSurfaceColor(riskLevel),
-                  borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-                ),
-                child: Column(
-                  children: [
-                    Text(
-                      riskLevel.toUpperCase(),
-                      style: AppTypography.labelSmall.copyWith(
-                        color: riskColor,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      '${(patient.lastScreening!.confidence ?? 0).toInt()}%',
-                      style: AppTypography.labelSmall.copyWith(
-                        color: riskColor,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
         ],
       ),
     );
   }
 
-  Widget _buildPatientDetails(patient) {
-    return CustomCard(
-      variant: CardVariant.elevated,
-      padding: const EdgeInsets.all(AppSpacing.cardPaddingMd),
-      child: Column(
-        children: [
-          _buildDetailRow('ID:', patient.id?.toString() ?? 'N/A'),
-          const SizedBox(height: AppSpacing.md),
-          _buildDetailRow('Phone:', patient.phoneNumber ?? 'N/A'),
-          const SizedBox(height: AppSpacing.md),
-          _buildDetailRow('Occupation:', patient.occupation ?? 'N/A'),
-          const SizedBox(height: AppSpacing.md),
-          _buildDetailRow('Height:', patient.height != null ? '${patient.height} cm' : 'N/A'),
-          const SizedBox(height: AppSpacing.md),
-          _buildDetailRow('Weight:', patient.weight != null ? '${patient.weight} kg' : 'N/A'),
-          const SizedBox(height: AppSpacing.md),
-          _buildDetailRow(
-            'Added:',
-            DateFormat('MMM dd, yyyy').format(patient.createdAt ?? DateTime.now()),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDetailRow(String label, String value) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  Widget _buildPatientMetrics(patient) {
+    return GridView.count(
+      crossAxisCount: 2,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisSpacing: AppSpacing.md,
+      mainAxisSpacing: AppSpacing.md,
+      childAspectRatio: 1.8,
       children: [
-        Text(
-          label,
-          style: AppTypography.bodyMedium.copyWith(
-            color: AppColors.textSecondary,
-          ),
+        MetricCard(
+          title: 'Age',
+          value: '${patient.age}',
+          icon: Icons.cake_rounded,
         ),
-        Text(
-          value,
-          style: AppTypography.bodyMedium.copyWith(
-            fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
-          ),
+        MetricCard(
+          title: 'Gender',
+          value: patient.gender.substring(0, 1).toUpperCase() + patient.gender.substring(1),
+          icon: Icons.person_rounded,
+        ),
+        const MetricCard(
+          title: 'Height',
+          value: '--', // Not available in current model
+          icon: Icons.height_rounded,
+        ),
+        const MetricCard(
+          title: 'Weight',
+          value: '--', // Not available in current model
+          icon: Icons.monitor_weight_rounded,
         ),
       ],
     );
   }
+
 
   Widget _buildScreeningHistory(List<Screening> screenings) {
     if (screenings.isEmpty) {

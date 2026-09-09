@@ -1,262 +1,684 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_animate/flutter_animate.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import '../../flutter_flow/flutter_flow_util.dart';
 import '../../providers/auth_provider.dart';
-import '../../theme/app_colors.dart';
-import '../../theme/app_typography.dart';
-import '../../theme/app_spacing.dart';
-import '../../theme/app_motion.dart';
-import '../../widgets/common/index.dart';
+import '../../models/user.dart';
+import '../../widgets/ff/ff_button.dart';
+
+// ============================================================================
+// LoginScreen — matches FlutterFlow AuthenticationWidget exactly.
+//
+// Layout (Stack):
+//  1. Mesh gradient background (LinearGradient approximation)
+//  2. Scrollable body: Logo → Tab switcher → Form fields → Sign In CTA →
+//     Social auth → Offline info card → Privacy footer
+//  3. "Server Online" pill (top-right)
+// ============================================================================
 
 class LoginScreen extends StatefulWidget {
-  final String role;
   const LoginScreen({super.key, this.role = 'agent'});
+
+  final String role;
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _phoneController = TextEditingController();
-  final _passwordController = TextEditingController();
+  bool _isLogin = true;
   bool _obscurePassword = true;
-  bool _isLoading = false;
+  bool _loading = false;
+  String? _errorMsg;
+
+  final _emailCtrl = TextEditingController();
+  final _passwordCtrl = TextEditingController();
+  final _nameCtrl = TextEditingController();
 
   @override
   void dispose() {
-    _phoneController.dispose();
-    _passwordController.dispose();
+    _emailCtrl.dispose();
+    _passwordCtrl.dispose();
+    _nameCtrl.dispose();
     super.dispose();
   }
 
-  Future<void> _login() async {
-    if (!_formKey.currentState!.validate()) return;
-    setState(() => _isLoading = true);
-    HapticFeedback.mediumImpact();
+  Future<void> _submit() async {
+    final auth = context.read<AuthProvider>();
+    setState(() {
+      _loading = true;
+      _errorMsg = null;
+    });
 
-    final authProvider = context.read<AuthProvider>();
+    try {
+      bool success;
+      if (_isLogin) {
+        success = await auth.login(_emailCtrl.text.trim(), _passwordCtrl.text);
+      } else {
+        final user = User(
+          fullName: _nameCtrl.text.trim(),
+          phoneNumber: _emailCtrl.text.trim(),
+          password: _passwordCtrl.text,
+          healthCenterId: null,
+          location: null,
+        );
+        success = await auth.signup(user);
+      }
+      if (!mounted) return;
+      if (success) {
+        context.go('/agent/home');
+      } else {
+        setState(() => _errorMsg = auth.errorMessage ?? 'Authentication failed');
+      }
+    } catch (e) {
+      if (mounted) setState(() => _errorMsg = e.toString());
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
 
-    // Demo login (pre-integration) — calls existing demoLogin method
-    await authProvider.demoLogin(widget.role);
-
-    if (!mounted) return;
-    setState(() => _isLoading = false);
-
-    if (authProvider.isAuthenticated) {
-      final route = widget.role == 'agent' ? '/agent/home' : '/user/home';
-      context.go(route);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(authProvider.errorMessage ?? 'Login failed'),
-          backgroundColor: AppColors.error,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusSm)),
-        ),
-      );
+  Future<void> _demoLogin() async {
+    final auth = context.read<AuthProvider>();
+    setState(() { _loading = true; _errorMsg = null; });
+    try {
+      // Use offline/demo login if available
+      await auth.demoLogin(widget.role);
+      if (!mounted) return;
+      if (auth.isAuthenticated) {
+        context.go('/agent/home');
+      }
+    } catch (_) {} finally {
+      if (mounted) setState(() => _loading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final isAgent = widget.role == 'agent';
+    final ff = FlutterFlowTheme.of(context);
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              // ── Top gradient banner
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.screenPaddingLg,
-                  AppSpacing.xl,
-                  AppSpacing.screenPaddingLg,
-                  AppSpacing.xxl,
-                ),
-                decoration: const BoxDecoration(
-                  gradient: AppColors.primaryGradient,
-                  borderRadius: BorderRadius.only(
-                    bottomLeft: Radius.circular(AppSpacing.radiusXl),
-                    bottomRight: Radius.circular(AppSpacing.radiusXl),
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Back button
-                    GestureDetector(
-                      onTap: () => Navigator.of(context).maybePop(),
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-                        ),
-                        child: const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 20),
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.xl),
-
-                    // JointSaathi logo
-                    Row(
-                      children: [
-                        Container(
-                          width: 48,
-                          height: 48,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-                          ),
-                          child: const Icon(Icons.accessibility_new_rounded, color: Colors.white, size: 28),
-                        ),
-                        const SizedBox(width: AppSpacing.md),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('JointSaathi', style: AppTypography.titleLarge.copyWith(color: Colors.white, fontWeight: AppTypography.bold)),
-                            Text('MDoNER Healthcare Initiative', style: AppTypography.labelSmall.copyWith(color: Colors.white.withValues(alpha: 0.8))),
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(),
+      child: Scaffold(
+        backgroundColor: ff.primaryBackground,
+        appBar: AppBar(
+          leading: IconButton(
+            icon: Icon(Icons.arrow_back_ios, color: ff.primaryText),
+            onPressed: () {
+              if (context.canPop()) {
+                context.pop();
+              } else {
+                context.go('/role');
+              }
+            },
+          ),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+        ),
+        body: Stack(
+          alignment: Alignment.topLeft,
+          children: [
+            // Animated dotted particle background GIF
+            Positioned.fill(
+              child: IgnorePointer(
+                child: Image.asset(
+                  'assets/images/02_authentication.gif',
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    // Fallback to gradient if GIF is not found
+                    return Container(
+                      width: double.infinity,
+                      height: double.infinity,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: const Alignment(-1, -1),
+                          end: const Alignment(1, 1),
+                          colors: [
+                            const Color(0x33A8B5A0),
+                            ff.primaryBackground,
+                            const Color(0x4DE8DCC4),
+                            ff.primaryBackground,
                           ],
+                          stops: const [0.0, 0.3, 0.7, 1.0],
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: AppSpacing.xl),
-
-                    Text(
-                      isAgent ? 'Health Worker Login' : 'Self-Check Login',
-                      style: AppTypography.headlineMedium.copyWith(color: Colors.white, fontWeight: AppTypography.bold),
-                    ),
-                    Text(
-                      isAgent
-                          ? 'Sign in to manage patients and run OA screenings'
-                          : 'Sign in to check your personal OA risk',
-                      style: AppTypography.bodyMedium.copyWith(color: Colors.white.withValues(alpha: 0.85), height: 1.4),
-                    ),
-                  ],
-                ).animate().fadeIn(duration: AppMotion.slow).slideY(begin: -0.1, end: 0, duration: AppMotion.slow, curve: AppMotion.curve),
+                      ),
+                    );
+                  },
+                ),
               ),
+            ),
 
-              // ── Form
-              Padding(
-                padding: const EdgeInsets.all(AppSpacing.screenPaddingLg),
-                child: Form(
-                  key: _formKey,
+            // Scrollable content
+            SafeArea(
+              child: SingleChildScrollView(
+                primary: false,
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      const SizedBox(height: AppSpacing.md),
+                      const SizedBox(height: 20),
 
-                      CustomTextField(
-                        controller: _phoneController,
-                        label: 'Phone Number',
-                        hint: '10-digit mobile number',
-                        keyboardType: TextInputType.phone,
-                        prefixIcon: const Icon(Icons.phone_outlined),
-                        validator: (v) {
-                          if (v == null || v.isEmpty) return 'Phone number required';
-                          if (v.length < 10) return 'Enter a valid 10-digit number';
-                          return null;
-                        },
-                        inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(10)],
-                      ).animate().fadeIn(duration: AppMotion.standard, delay: 100.ms).slideY(begin: 0.1, end: 0, duration: AppMotion.standard, curve: AppMotion.curve),
+                      // ── Logo block ────────────────────────────────────
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 80,
+                            height: 80,
+                            decoration: BoxDecoration(
+                              color: ff.secondaryBackground,
+                              borderRadius: BorderRadius.circular(24),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.08),
+                                  blurRadius: 20,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            alignment: Alignment.center,
+                            child: Icon(
+                              Icons.health_and_safety_rounded,
+                              color: ff.primary,
+                              size: 42,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'JointSaathi',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.dmSans(
+                              fontSize: 28,
+                              fontWeight: FontWeight.w800,
+                              color: ff.primaryText,
+                              height: 1.3,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'AI-Assisted Osteoarthritis Screening',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.dmSans(
+                              fontSize: 14,
+                              color: ff.secondaryText,
+                              height: 1.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 32),
 
-                      const SizedBox(height: AppSpacing.md),
-
-                      CustomTextField(
-                        controller: _passwordController,
-                        label: 'Password',
-                        hint: 'Enter your password',
-                        obscureText: _obscurePassword,
-                        prefixIcon: const Icon(Icons.lock_outline),
-                        suffixIcon: GestureDetector(
-                          onTap: () => setState(() => _obscurePassword = !_obscurePassword),
-                          child: Icon(_obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined, color: AppColors.textTertiary, size: 20),
+                      // ── Login / Register tab switcher ─────────────────
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(24),
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: ff.surface60,
+                              borderRadius: BorderRadius.circular(24),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.all(6),
+                              child: Row(
+                                children: [
+                                  _Tab(
+                                    label: 'Login',
+                                    active: _isLogin,
+                                    onTap: () => setState(() => _isLogin = true),
+                                  ),
+                                  _Tab(
+                                    label: 'Register',
+                                    active: !_isLogin,
+                                    onTap: () => setState(() => _isLogin = false),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
                         ),
-                        validator: (v) {
-                          if (v == null || v.isEmpty) return 'Password required';
-                          if (v.length < 4) return 'Password too short';
-                          return null;
-                        },
-                      ).animate().fadeIn(duration: AppMotion.standard, delay: 150.ms).slideY(begin: 0.1, end: 0, duration: AppMotion.standard, curve: AppMotion.curve),
+                      ),
+                      const SizedBox(height: 24),
 
-                      const SizedBox(height: AppSpacing.sm),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: TextButton(
-                          onPressed: () {},
-                          child: Text('Forgot password?', style: AppTypography.labelMedium.copyWith(color: AppColors.primary)),
+                      // ── Form fields ───────────────────────────────────
+                      if (!_isLogin) ...[
+                        _OutlinedField(
+                          controller: _nameCtrl,
+                          label: 'Full Name',
+                          hint: 'Dr. Your Name',
+                          icon: Icons.person_outline_rounded,
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                      _OutlinedField(
+                        controller: _emailCtrl,
+                        label: 'Phone Number',
+                        hint: 'Enter 10-digit mobile number',
+                        icon: Icons.phone_outlined,
+                        keyboardType: TextInputType.phone,
+                      ),
+                      const SizedBox(height: 16),
+                      _OutlinedField(
+                        controller: _passwordCtrl,
+                        label: 'Password',
+                        hint: '••••••••',
+                        icon: Icons.lock_outline_rounded,
+                        obscureText: _obscurePassword,
+                        trailing: IconButton(
+                          icon: Icon(
+                            _obscurePassword
+                                ? Icons.visibility_off_rounded
+                                : Icons.visibility_rounded,
+                            color: ff.primaryText,
+                            size: 22,
+                          ),
+                          onPressed: () =>
+                              setState(() => _obscurePassword = !_obscurePassword),
                         ),
                       ),
 
-                      const SizedBox(height: AppSpacing.lg),
+                      if (_isLogin) ...[
+                        const SizedBox(height: 8),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: GestureDetector(
+                            onTap: () {},
+                            child: Text(
+                              'Forgot Password?',
+                              style: GoogleFonts.dmSans(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: ff.primary,
+                                height: 1.3,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
 
-                      CustomButton(
-                        text: 'Sign In',
-                        onPressed: _isLoading ? null : _login,
-                        variant: ButtonVariant.primary,
-                        size: ButtonSize.large,
+                      const SizedBox(height: 24),
+
+                      // ── Error ─────────────────────────────────────────
+                      if (_errorMsg != null) ...[
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: ff.error.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                                color: ff.error.withValues(alpha: 0.3)),
+                          ),
+                          child: Text(
+                            _errorMsg!,
+                            style: GoogleFonts.dmSans(
+                              fontSize: 13,
+                              color: ff.error,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+
+                      // ── Sign In button ────────────────────────────────
+                      FFButton(
+                        content: _isLogin ? 'Sign In to Dashboard' : 'Create Account',
+                        variant: 'primary',
+                        size: 'large',
                         fullWidth: true,
-                        isLoading: _isLoading,
-                        trailingIcon: const Icon(Icons.arrow_forward_rounded),
-                      ).animate().fadeIn(duration: AppMotion.standard, delay: 200.ms),
-
-                      const SizedBox(height: AppSpacing.xl),
-
-                      // ── Sign up link
-                      Center(
-                        child: Wrap(
-                          alignment: WrapAlignment.center,
-                          children: [
-                            Text('New to JointSaathi? ', style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary)),
-                            GestureDetector(
-                              onTap: () => context.push('/signup?role=${widget.role}'),
-                              child: Text('Create Account', style: AppTypography.bodySmall.copyWith(color: AppColors.primary, fontWeight: AppTypography.semiBold)),
-                            ),
-                          ],
+                        loading: _loading,
+                        icon: Icon(
+                          Icons.login_rounded,
+                          color: Colors.white,
+                          size: 20,
                         ),
-                      ).animate().fadeIn(duration: AppMotion.standard, delay: 250.ms),
+                        onTap: _submit,
+                      ),
+                      const SizedBox(height: 12),
 
-                      const SizedBox(height: AppSpacing.xl),
+                      // ── Demo Login button ─────────────────────────────
+                      FFButton(
+                        content: 'Demo Login (No Account Required)',
+                        variant: 'secondary',
+                        size: 'medium',
+                        fullWidth: true,
+                        loading: _loading,
+                        icon: Icon(
+                          Icons.play_arrow_rounded,
+                          color: ff.primary,
+                          size: 18,
+                        ),
+                        onTap: _demoLogin,
+                      ),
+                      const SizedBox(height: 16),
 
-                      // ── Role toggle
+                      // ── OR divider ────────────────────────────────────
+                      Row(
+                        children: [
+                          Expanded(
+                              child: Divider(color: ff.alternate, height: 1)),
+                          Padding(
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 16),
+                            child: Text(
+                              'OR',
+                              style: GoogleFonts.dmSans(
+                                fontSize: 11,
+                                color: ff.onSurface,
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                              child: Divider(color: ff.alternate, height: 1)),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+
+                      // ── Social / Demo auth ────────────────────────────
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _SocialTile(
+                              icon: Icons.g_mobiledata_rounded,
+                              label: 'Google',
+                              onTap: () {},
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: _SocialTile(
+                              icon: Icons.apple_rounded,
+                              label: 'Apple',
+                              onTap: () {},
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+
+                      // ── Offline access card ───────────────────────────
                       Container(
-                        padding: const EdgeInsets.all(AppSpacing.cardPaddingMd),
                         decoration: BoxDecoration(
-                          color: AppColors.surface,
-                          borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-                          border: Border.all(color: AppColors.border),
+                          color: ff.secondary10,
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(color: ff.secondary30, width: 1),
                         ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.swap_horiz_rounded, color: AppColors.textTertiary, size: 18),
-                            const SizedBox(width: AppSpacing.md),
-                            Expanded(
-                              child: Text(
-                                isAgent ? 'Not a health worker?' : 'Are you a health worker?',
-                                style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(Icons.wifi_off_rounded,
+                                  color: ff.onSurface, size: 20),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Offline Access Enabled',
+                                      style: GoogleFonts.dmSans(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                        color: ff.onSurface,
+                                        height: 1.4,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      'You can log in with cached credentials when offline.',
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: GoogleFonts.dmSans(
+                                        fontSize: 12,
+                                        color: ff.onSurface,
+                                        height: 1.5,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                            GestureDetector(
-                              onTap: () => context.go('/login?role=${isAgent ? 'user' : 'agent'}'),
-                              child: Text(
-                                isAgent ? 'Self-check login' : 'Agent login',
-                                style: AppTypography.labelSmall.copyWith(color: AppColors.primary, fontWeight: AppTypography.semiBold),
-                              ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ).animate().fadeIn(duration: AppMotion.standard, delay: 300.ms),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // ── Privacy footer ────────────────────────────────
+                      Column(
+                        children: [
+                          Text(
+                            'By signing in, you agree to our',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.dmSans(
+                              fontSize: 11,
+                              color: ff.secondaryText,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Wrap(
+                            alignment: WrapAlignment.center,
+                            spacing: 4,
+                            children: [
+                              Text(
+                                'Privacy Policy',
+                                style: GoogleFonts.dmSans(
+                                  fontSize: 11,
+                                  color: ff.primary,
+                                  decoration: TextDecoration.underline,
+                                ),
+                              ),
+                              Text('&',
+                                  style: GoogleFonts.dmSans(
+                                      fontSize: 11, color: ff.secondaryText)),
+                              Text(
+                                'Terms of Service',
+                                style: GoogleFonts.dmSans(
+                                  fontSize: 11,
+                                  color: ff.primary,
+                                  decoration: TextDecoration.underline,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 32),
                     ],
                   ),
                 ),
               ),
-            ],
+            ),
+
+            // ── Server Online pill (top-right) ────────────────────────────
+            Positioned(
+              top: 16,
+              right: 16,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(9999),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: ff.surface80,
+                      borderRadius: BorderRadius.circular(9999),
+                      border: Border.all(color: ff.alternate, width: 1),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 8),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: ff.success,
+                            borderRadius: BorderRadius.circular(9999),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Server Online',
+                          style: GoogleFonts.dmSans(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            color: ff.primaryText,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Tab switcher item ────────────────────────────────────────────────────────
+
+class _Tab extends StatelessWidget {
+  const _Tab({required this.label, required this.active, required this.onTap});
+
+  final String label;
+  final bool active;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final ff = FlutterFlowTheme.of(context);
+
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          decoration: BoxDecoration(
+            color: active ? ff.primary : Colors.transparent,
+            borderRadius: BorderRadius.circular(20),
           ),
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            style: GoogleFonts.dmSans(
+              fontSize: 16,
+              fontWeight: active ? FontWeight.bold : FontWeight.normal,
+              color: active ? Colors.white : ff.secondaryText,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Outlined text field ──────────────────────────────────────────────────────
+
+class _OutlinedField extends StatelessWidget {
+  const _OutlinedField({
+    required this.controller,
+    required this.label,
+    required this.hint,
+    required this.icon,
+    this.obscureText = false,
+    this.keyboardType,
+    this.trailing,
+  });
+
+  final TextEditingController controller;
+  final String label;
+  final String hint;
+  final IconData icon;
+  final bool obscureText;
+  final TextInputType? keyboardType;
+  final Widget? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    final ff = FlutterFlowTheme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.dmSans(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: ff.primaryText,
+            height: 1.4,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Container(
+          decoration: BoxDecoration(
+            color: ff.secondaryBackground,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: ff.alternate, width: 1),
+          ),
+          child: TextField(
+            controller: controller,
+            obscureText: obscureText,
+            keyboardType: keyboardType,
+            style: GoogleFonts.dmSans(fontSize: 14, color: ff.primaryText),
+            decoration: InputDecoration(
+              hintText: hint,
+              hintStyle:
+                  GoogleFonts.dmSans(fontSize: 14, color: ff.secondaryText),
+              prefixIcon: Icon(icon, color: ff.primaryText, size: 22),
+              suffixIcon: trailing,
+              border: InputBorder.none,
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Social auth tile ─────────────────────────────────────────────────────────
+
+class _SocialTile extends StatelessWidget {
+  const _SocialTile(
+      {required this.icon, required this.label, required this.onTap});
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final ff = FlutterFlowTheme.of(context);
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          color: ff.secondaryBackground,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: ff.alternate, width: 1),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 22, color: ff.primaryText),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: GoogleFonts.dmSans(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: ff.primaryText,
+              ),
+            ),
+          ],
         ),
       ),
     );

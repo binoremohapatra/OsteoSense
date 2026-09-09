@@ -136,7 +136,7 @@ class _CustomCardState extends State<CustomCard>
           onTapDown: _handleTapDown,
           onTapUp: _handleTapUp,
           onTapCancel: _handleTapCancel,
-          borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+          borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
           splashColor: colors.splashColor,
           highlightColor: colors.highlightColor,
           child: card,
@@ -165,11 +165,18 @@ class _CustomCardState extends State<CustomCard>
         margin: widget.margin ?? EdgeInsets.zero,
         decoration: BoxDecoration(
           color: colors.backgroundColor,
-          borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+          borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
           border: Border.all(color: colors.borderColor, width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.shadowSoft,
+              blurRadius: 12,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+          borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -191,12 +198,8 @@ class _CustomCardState extends State<CustomCard>
       margin: widget.margin ?? EdgeInsets.zero,
       decoration: BoxDecoration(
         color: colors.backgroundColor,
-        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-        border: widget.variant == CardVariant.outlined
-            ? Border.all(color: colors.borderColor, width: 1)
-            : widget.variant == CardVariant.default_
-                ? Border.all(color: colors.borderColor, width: 1)
-                : null,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
+        border: Border.all(color: colors.borderColor, width: 1),
         boxShadow: colors.boxShadows,
       ),
       child: child,
@@ -207,7 +210,7 @@ class _CustomCardState extends State<CustomCard>
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+      borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
       child: BackdropFilter(
         filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
         child: Container(
@@ -216,16 +219,16 @@ class _CustomCardState extends State<CustomCard>
           margin: widget.margin ?? EdgeInsets.zero,
           decoration: BoxDecoration(
             color: colors.backgroundColor,
-            borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+            borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
             border: Border.all(
               color: isDark ? AppColors.glassBorderDark : AppColors.glassBorder,
               width: 1,
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.1),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
+                color: AppColors.shadowSoft,
+                blurRadius: 16,
+                offset: const Offset(0, 4),
               ),
             ],
           ),
@@ -238,38 +241,38 @@ class _CustomCardState extends State<CustomCard>
   _CardColors _getCardColors() {
     switch (widget.variant) {
       case CardVariant.elevated:
-        // Purposefully floating element — shadow is appropriate here
+        // Elevated card — very subtle shadow (JointSaathi: extremely soft)
         return _CardColors(
           backgroundColor: AppColors.surface,
           boxShadows: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.06),
+              color: AppColors.shadowSoft,
               offset: const Offset(0, 2),
-              blurRadius: 8,
+              blurRadius: 12,
               spreadRadius: 0,
             ),
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.03),
-              offset: const Offset(0, 8),
-              blurRadius: 24,
-              spreadRadius: -4,
+              color: AppColors.shadow,
+              offset: const Offset(0, 6),
+              blurRadius: 20,
+              spreadRadius: -2,
             ),
           ],
-          borderColor: AppColors.border,
+          borderColor: AppColors.softBorder,
           accentColor: AppColors.primary,
           gradient: null,
-          splashColor: AppColors.primary.withValues(alpha: 0.08),
-          highlightColor: AppColors.primary.withValues(alpha: 0.04),
+          splashColor: AppColors.primary.withValues(alpha: 0.06),
+          highlightColor: AppColors.primary.withValues(alpha: 0.03),
         );
       case CardVariant.outlined:
         return _CardColors(
           backgroundColor: AppColors.surface,
           boxShadows: [],
-          borderColor: AppColors.border,
+          borderColor: AppColors.softBorder,
           accentColor: AppColors.primary,
           gradient: null,
-          splashColor: AppColors.primary.withValues(alpha: 0.08),
-          highlightColor: AppColors.primary.withValues(alpha: 0.04),
+          splashColor: AppColors.primary.withValues(alpha: 0.06),
+          highlightColor: AppColors.primary.withValues(alpha: 0.03),
         );
       // Risk variants: white card + left border accent strip (signal not fill)
       case CardVariant.riskLow:
@@ -320,16 +323,21 @@ class _CustomCardState extends State<CustomCard>
           highlightColor: AppColors.primary.withValues(alpha: 0.04),
         );
       case CardVariant.default_:
-      default:
-        // Primary depth technique: 1px border, no shadow
+        // JointSaathi: 1px soft border, extremely subtle shadow
         return _CardColors(
           backgroundColor: AppColors.surface,
-          boxShadows: [],
-          borderColor: AppColors.border,
+          boxShadows: [
+            BoxShadow(
+              color: AppColors.shadowSoft,
+              blurRadius: 10,
+              offset: const Offset(0, 2),
+            ),
+          ],
+          borderColor: AppColors.softBorder,
           accentColor: AppColors.primary,
           gradient: null,
-          splashColor: AppColors.primary.withValues(alpha: 0.08),
-          highlightColor: AppColors.primary.withValues(alpha: 0.04),
+          splashColor: AppColors.primary.withValues(alpha: 0.06),
+          highlightColor: AppColors.primary.withValues(alpha: 0.03),
         );
     }
   }

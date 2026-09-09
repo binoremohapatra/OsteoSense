@@ -8,7 +8,9 @@ import '../../theme/app_colors.dart';
 import '../../theme/app_typography.dart';
 import '../../theme/app_spacing.dart';
 import '../../theme/app_motion.dart';
-import '../../widgets/common/index.dart';
+
+import '../../widgets/premium/inputs/premium_inputs.dart';
+import '../../widgets/premium/buttons/premium_buttons.dart';
 
 class SignupScreen extends StatefulWidget {
   final String role;
@@ -69,10 +71,20 @@ class _SignupScreenState extends State<SignupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context);
     final isAgent = widget.role == 'agent';
 
     return Scaffold(
       backgroundColor: AppColors.background,
+      appBar: AppBar(
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_ios, color: AppColors.textPrimary),
+          onPressed: () => context.pop(),
+        ),
+        backgroundColor: AppColors.surface,
+        foregroundColor: AppColors.textPrimary,
+        elevation: 0,
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           child: Column(
@@ -134,7 +146,7 @@ class _SignupScreenState extends State<SignupScreen> {
                     children: [
                       const SizedBox(height: AppSpacing.md),
 
-                      CustomTextField(
+                      PremiumTextField(
                         controller: _nameController,
                         label: 'Full Name',
                         hint: 'Enter your full name',
@@ -147,7 +159,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
                       const SizedBox(height: AppSpacing.md),
 
-                      CustomTextField(
+                      PremiumTextField(
                         controller: _phoneController,
                         label: 'Phone Number',
                         hint: '10-digit mobile number',
@@ -163,7 +175,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
                       const SizedBox(height: AppSpacing.md),
 
-                      CustomTextField(
+                      PremiumTextField(
                         controller: _passwordController,
                         label: 'Password',
                         hint: 'Create a password (min 6 chars)',
@@ -182,7 +194,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
                       if (isAgent) ...[
                         const SizedBox(height: AppSpacing.md),
-                        CustomTextField(
+                        PremiumTextField(
                           controller: _healthCenterController,
                           label: 'Health Center / Clinic',
                           hint: 'Optional: name of your health center',
@@ -190,7 +202,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         ).animate().fadeIn(duration: AppMotion.standard, delay: 200.ms).slideY(begin: 0.1, end: 0, duration: AppMotion.standard, curve: AppMotion.curve),
 
                         const SizedBox(height: AppSpacing.md),
-                        CustomTextField(
+                        PremiumTextField(
                           controller: _locationController,
                           label: 'Location (Village / Block)',
                           hint: 'Optional: your operating area',
@@ -200,14 +212,13 @@ class _SignupScreenState extends State<SignupScreen> {
 
                       const SizedBox(height: AppSpacing.xxl),
 
-                      CustomButton(
+                      GradientButton(
                         text: 'Sign Up',
-                        onPressed: _isLoading ? null : _signup,
-                        variant: ButtonVariant.primary,
-                        size: ButtonSize.large,
-                        fullWidth: true,
+                        onPressed: _isLoading ? () {} : _signup,
                         isLoading: _isLoading,
-                        trailingIcon: const Icon(Icons.arrow_forward_rounded),
+                        gradient: AppColors.fullPrimaryGradient,
+                        fullWidth: true,
+                        icon: const Icon(Icons.arrow_forward_rounded, color: Colors.white),
                       ).animate().fadeIn(duration: AppMotion.standard, delay: 300.ms),
 
                       const SizedBox(height: AppSpacing.xl),

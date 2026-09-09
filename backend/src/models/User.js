@@ -69,7 +69,8 @@ const userSchema = new Schema(
   }
 );
 
-userSchema.index({ phoneNumber: 1 }, { unique: true });
+// Note: phoneNumber unique index is already declared via `unique: true` on the field schema above.
+// Adding a second explicit index here causes a Mongoose duplicate-index warning at startup.
 
 userSchema.methods.comparePassword = async function comparePassword(candidatePassword) {
   return bcrypt.compare(candidatePassword, this.passwordHash);

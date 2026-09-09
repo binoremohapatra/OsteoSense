@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:go_router/go_router.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_spacing.dart';
 import '../../theme/app_typography.dart';
@@ -221,16 +222,11 @@ class _CategoryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => PreventiveCareCategoryScreen(
-            categoryId: category.id,
-            categoryTitle: category.title,
-            gradient: category.gradient,
-            icon: category.icon,
-          ),
-        ),
-      ),
+      onTap: () => context.push('/preventive-care/category/${category.id}', extra: {
+        'categoryTitle': category.title,
+        'gradient': category.gradient,
+        'icon': category.icon,
+      }),
       child: Container(
         height: 140,
         decoration: BoxDecoration(

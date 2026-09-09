@@ -35,21 +35,21 @@ class SensorService {
     _userAccelerometerData.clear();
 
     // Subscribe to accelerometer events
-    _accelerometerSubscription = accelerometerEvents.listen((AccelerometerEvent event) {
+    _accelerometerSubscription = accelerometerEventStream().listen((AccelerometerEvent event) {
       if (_isRecording) {
         _accelerometerData.addAll([event.x, event.y, event.z]);
       }
     });
 
     // Subscribe to gyroscope events
-    _gyroscopeSubscription = gyroscopeEvents.listen((GyroscopeEvent event) {
+    _gyroscopeSubscription = gyroscopeEventStream().listen((GyroscopeEvent event) {
       if (_isRecording) {
         _gyroscopeData.addAll([event.x, event.y, event.z]);
       }
     });
 
     // Subscribe to user accelerometer events (gravity removed)
-    _userAccelerometerSubscription = userAccelerometerEvents.listen((UserAccelerometerEvent event) {
+    _userAccelerometerSubscription = userAccelerometerEventStream().listen((UserAccelerometerEvent event) {
       if (_isRecording) {
         _userAccelerometerData.addAll([event.x, event.y, event.z]);
       }

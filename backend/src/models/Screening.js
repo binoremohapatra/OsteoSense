@@ -39,7 +39,7 @@ const screeningSchema = new Schema(
     pastInjury: {
       type: String, // free-text description or empty
     },
-    gaitRawData: {
+    gaitData: {
       type: Schema.Types.Mixed, // raw sensor feature array, stored as-is
     },
     riskLevel: {

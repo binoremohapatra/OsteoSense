@@ -4,6 +4,7 @@ import '../../theme/app_colors.dart';
 import '../../theme/app_spacing.dart';
 import '../../theme/app_typography.dart';
 import '../../widgets/common/index.dart';
+import '../../widgets/premium/faq_feedback/premium_faq_feedback.dart';
 
 class HelpScreen extends StatefulWidget {
   const HelpScreen({super.key});
@@ -237,47 +238,9 @@ class _HelpScreenState extends State<HelpScreen> {
   }
 
   Widget _buildFAQItem(FAQItem item, int index) {
-    return CustomCard(
-      variant: CardVariant.outlined,
-      padding: EdgeInsets.zero,
-      child: ExpansionTile(
-        title: Text(
-          item.question,
-          style: AppTypography.bodyMedium.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        leading: Text(
-          '${index + 1}',
-          style: AppTypography.labelMedium.copyWith(
-            color: AppColors.primary,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        tilePadding: const EdgeInsets.all(AppSpacing.cardPaddingMd),
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.cardPaddingMd,
-              vertical: AppSpacing.cardPaddingMd,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Divider(color: AppColors.border),
-                const SizedBox(height: AppSpacing.md),
-                Text(
-                  item.answer,
-                  style: AppTypography.bodyMedium.copyWith(
-                    color: AppColors.textSecondary,
-                    height: 1.6,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+    return AnimatedFAQ(
+      question: '${index + 1}. ${item.question}',
+      answer: item.answer,
     );
   }
 

@@ -24,8 +24,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
       appBar: const CustomAppBar(
         title: 'Settings',
         centerTitle: false,
+        showBackButton: false,
       ),
-      body: SingleChildScrollView(
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: IgnorePointer(
+              child: Opacity(
+                opacity: 0.25,
+                child: Image.asset(
+                  'assets/images/03_dashboard.gif',
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                ),
+              ),
+            ),
+          ),
+          SingleChildScrollView(
         padding: const EdgeInsets.all(AppSpacing.screenPaddingLg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -130,6 +145,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ],
         ),
       ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.1, end: 0, duration: 400.ms),
+        ],
+      ),
     );
   }
 
@@ -172,17 +189,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
           child: Row(
             children: [
               Container(
-                width: 44,
-                height: 44,
+                width: 40,
+                height: 40,
                 decoration: BoxDecoration(
                   color: isDanger
                       ? AppColors.error.withValues(alpha: 0.1)
-                      : AppColors.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                      : AppColors.primarySurface,
+                  shape: BoxShape.circle,
                 ),
                 child: Icon(
                   icon,
                   color: isDanger ? AppColors.error : AppColors.primary,
+                  size: 20,
                 ),
               ),
               const SizedBox(width: AppSpacing.md),
@@ -235,15 +253,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: Row(
         children: [
           Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+            width: 40,
+            height: 40,
+            decoration: const BoxDecoration(
+              color: AppColors.primarySurface,
+              shape: BoxShape.circle,
             ),
             child: Icon(
               icon,
               color: AppColors.primary,
+              size: 20,
             ),
           ),
           const SizedBox(width: AppSpacing.md),
@@ -258,7 +277,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           Switch(
             value: value,
             onChanged: onChanged,
-            activeThumbColor: AppColors.primary,
+            activeColor: AppColors.primary,
+            activeTrackColor: AppColors.primarySurface,
           ),
         ],
       ),
@@ -269,7 +289,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return const Padding(
       padding: EdgeInsets.symmetric(horizontal: AppSpacing.cardPaddingMd),
       child: Divider(
-        color: AppColors.border,
+        color: AppColors.softBorder,
         height: 1,
       ),
     );

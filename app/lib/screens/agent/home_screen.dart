@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'dart:ui';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/patient_provider.dart';
 import '../../providers/screening_provider.dart';
@@ -11,25 +10,13 @@ import '../../theme/app_colors.dart';
 import '../../theme/app_spacing.dart';
 import '../../theme/app_typography.dart';
 import '../../theme/app_motion.dart';
-import '../../widgets/common/index.dart';
-
+import '../../widgets/premium/navigation/premium_navigation.dart';
+import '../../components/bento_stat/bento_stat_widget.dart';
+import '../../components/patient_row/patient_row_widget.dart';
+import '../../components/quick_action/quick_action_widget.dart';
 import 'patient_list_screen.dart';
 import 'reports_screen.dart';
 import 'settings_screen.dart';
-import '../shared/gait_test_screen.dart';
-
-// ─── Nav item model with outline/filled icon pair ────────────────────────────
-class _NavItemData {
-  final IconData icon;
-  final IconData selectedIcon;
-  final String label;
-
-  const _NavItemData({
-    required this.icon,
-    required this.selectedIcon,
-    required this.label,
-  });
-}
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -40,7 +27,6 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
-
   late final List<Widget> _screens;
 
   @override
@@ -49,11 +35,45 @@ class _HomeScreenState extends State<HomeScreen> {
     _screens = [
       const HomeDashboard(),
       const PatientListScreen(),
-      const GaitTestScreen(),
       const ReportsScreen(),
       const SettingsScreen(),
     ];
     _loadData();
+    _handleTabFromRoute();
+  }
+
+  void _handleTabFromRoute() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final router = GoRouter.of(context);
+      final uri = router.routeInformationProvider.value.uri;
+      final tabParam = uri.queryParameters['tab'];
+      
+      if (tabParam != null) {
+        switch (tabParam.toLowerCase()) {
+          case 'patients':
+            if (_currentIndex != 1) {
+              setState(() => _currentIndex = 1);
+            }
+            break;
+          case 'analytics':
+          case 'reports':
+            if (_currentIndex != 2) {
+              setState(() => _currentIndex = 2);
+            }
+            break;
+          case 'settings':
+            if (_currentIndex != 3) {
+              setState(() => _currentIndex = 3);
+            }
+            break;
+          default:
+            // Default to home tab (index 0)
+            if (_currentIndex != 0) {
+              setState(() => _currentIndex = 0);
+            }
+        }
+      }
+    });
   }
 
   void _loadData() {
@@ -61,7 +81,6 @@ class _HomeScreenState extends State<HomeScreen> {
       final patientProvider = Provider.of<PatientProvider>(context, listen: false);
       final screeningProvider = Provider.of<ScreeningProvider>(context, listen: false);
       final settingsProvider = Provider.of<SettingsProvider>(context, listen: false);
-
       await patientProvider.loadPatients();
       await screeningProvider.loadScreenings();
       await settingsProvider.checkConnectivity();
@@ -71,54 +90,47 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final settingsProvider = Provider.of<SettingsProvider>(context);
+    final isOnline = settingsProvider.isConnected;
+
     return Scaffold(
-      extendBody: true,
-      body: AnimatedSwitcher(
-        duration: AppMotion.fast,
-        switchInCurve: Curves.easeOutCubic,
-        switchOutCurve: Curves.easeOutCubic,
-        transitionBuilder: (child, animation) {
-          return FadeTransition(opacity: animation, child: child);
-        },
-        child: IndexedStack(
-          key: ValueKey<int>(_currentIndex),
-          index: _currentIndex,
-          children: _screens,
-        ),
-      ),
-      bottomNavigationBar: _PremiumGlassNav(
+      extendBody: false,
+      body: RetainedTabSwitcher(
         currentIndex: _currentIndex,
-        // Outline ↔ filled icon pairs — the premium "attention-to-detail" swap
+        children: _screens,
+      ),
+      bottomNavigationBar: CenteredFabBottomNav(
+        currentIndex: _currentIndex,
         items: const [
-          _NavItemData(
-            icon: Icons.home_outlined,
-            selectedIcon: Icons.home_rounded,
+          CenteredNavItem(
+            icon: Icons.dashboard_outlined,
+            selectedIcon: Icons.dashboard_rounded,
             label: 'Home',
           ),
-          _NavItemData(
-            icon: Icons.people_outline_rounded,
-            selectedIcon: Icons.people_rounded,
+          CenteredNavItem(
+            icon: Icons.group_outlined,
+            selectedIcon: Icons.group_rounded,
             label: 'Patients',
           ),
-          _NavItemData(
-            icon: Icons.medical_services_outlined,
-            selectedIcon: Icons.medical_services_rounded,
-            label: 'Screen',
+          CenteredNavItem(
+            icon: Icons.insights_outlined,
+            selectedIcon: Icons.insights_rounded,
+            label: 'Analytics',
           ),
-          _NavItemData(
-            icon: Icons.bar_chart_outlined,
-            selectedIcon: Icons.bar_chart_rounded,
-            label: 'Reports',
-          ),
-          _NavItemData(
+          CenteredNavItem(
             icon: Icons.settings_outlined,
             selectedIcon: Icons.settings_rounded,
             label: 'Settings',
           ),
         ],
         onTap: (index) {
-          HapticFeedback.selectionClick();
+          if (index == _currentIndex) return;
+          FocusManager.instance.primaryFocus?.unfocus();
           setState(() => _currentIndex = index);
+        },
+        onFabTap: () {
+          FocusManager.instance.primaryFocus?.unfocus();
+          context.go('/screening/symptoms');
         },
       ),
     );
@@ -126,7 +138,7 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// HOME DASHBOARD
+// HOME DASHBOARD — JointSaathi Visual Design
 // ═══════════════════════════════════════════════════════════════════════════
 
 class HomeDashboard extends StatefulWidget {
@@ -142,20 +154,8 @@ class _HomeDashboardState extends State<HomeDashboard> {
   @override
   void initState() {
     super.initState();
-    _loadRiskDistribution();
-  }
-
-  void _loadRiskDistribution() {
-    final screeningProvider =
-        Provider.of<ScreeningProvider>(context, listen: false);
-    _riskDistributionFuture = screeningProvider.getRiskDistribution();
-  }
-
-  String _getGreeting() {
-    final hour = DateTime.now().hour;
-    if (hour < 12) return 'Good morning,';
-    if (hour < 17) return 'Good afternoon,';
-    return 'Good evening,';
+    _riskDistributionFuture = Provider.of<ScreeningProvider>(context, listen: false)
+        .getRiskDistribution();
   }
 
   @override
@@ -165,409 +165,559 @@ class _HomeDashboardState extends State<HomeDashboard> {
     final screeningProvider = Provider.of<ScreeningProvider>(context);
     final settingsProvider = Provider.of<SettingsProvider>(context);
 
+    final totalPatients = patientProvider.patients.length;
+    final isOnline = settingsProvider.isConnected;
+
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ─── SIGNATURE CURVED HEADER ───────────────────────────────
-            _buildCurvedHeader(context, authProvider, settingsProvider)
-                .animate()
-                .fadeIn(duration: 800.ms)
-                .slideY(begin: -0.15, end: 0, duration: 800.ms, curve: Curves.easeOutCubic),
-
-            const SizedBox(height: AppSpacing.lg),
-
-            // ─── BENTO STAT CARDS + AMBIENT ORBS ──────────────────────
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.screenPaddingLg),
-              child: AmbientOrbs(
-                primaryColor: AppColors.primary,
-                secondaryColor: AppColors.accent,
-                child: Column(
-                  children: [
-                    // Hero card — full width, Total Patients + sparkline
-                    // (HeroStatCard has its own entrance animation built-in)
-                    HeroStatCard(
-                      title: 'Total Patients',
-                      value: patientProvider.patients.length,
-                      icon: Icons.people_rounded,
-                      color: AppColors.primary,
-                      sparklineData: const [2, 5, 3, 8, 6, 11, 9],
-                    ),
-
-                    const SizedBox(height: AppSpacing.md),
-
-                    // Asymmetric bento row: tall left | 2-stacked right
-                    IntrinsicHeight(
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          // Tall left card — Screenings
-                          Expanded(
-                            flex: 5,
-                            child: CompactStatCard(
-                              title: 'Screenings',
-                              value: screeningProvider.screenings.length,
-                              color: AppColors.accent,
-                              subtitle: 'Total sessions',
-                            ),
-                          ),
-
-                          const SizedBox(width: AppSpacing.md),
-
-                          // Right column — 2 stacked smaller cards with extra delay
-                          Expanded(
-                            flex: 4,
-                            child: Column(
-                              children: [
-                                Expanded(
-                                  child: FutureBuilder<Map<String, int>>(
-                                    future: _riskDistributionFuture,
-                                    builder: (context, snapshot) {
-                                      final highRiskCount =
-                                          snapshot.data?['high'] ?? 0;
-                                      return CompactStatCard(
-                                        title: 'High Risk',
-                                        value: highRiskCount,
-                                        color: AppColors.riskHigh,
-                                      )
-                                          .animate(delay: 150.ms)
-                                          .fadeIn(duration: 800.ms)
-                                          .slideX(begin: 0.15, end: 0, duration: 800.ms, curve: Curves.easeOutCubic);
-                                    },
-                                  ),
-                                ),
-                                const SizedBox(height: AppSpacing.md),
-                                Expanded(
-                                  child: CompactStatCard(
-                                    title: 'Pending Sync',
-                                    value: settingsProvider.pendingSyncCount,
-                                    color: AppColors.info,
-                                  )
-                                      .animate(delay: 250.ms)
-                                      .fadeIn(duration: 800.ms)
-                                      .slideX(begin: 0.15, end: 0, duration: 800.ms, curve: Curves.easeOutCubic),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+      body: Stack(
+        children: [
+          // Page-specific animated background (Dashboard) — kept subtle so UI stays prominent
+          Positioned.fill(
+            child: IgnorePointer(
+              child: Opacity(
+                opacity: 0.25,
+                child: Image.asset(
+                  'assets/images/03_dashboard.gif',
+                  fit: BoxFit.cover,
                 ),
               ),
             ),
+          ),
+          CustomScrollView(
+            slivers: [
+          // ─── HEADER ─────────────────────────────────────────────────────
+          SliverToBoxAdapter(
+            child: _buildHeader(context, authProvider, isOnline)
+                .animate()
+                .fadeIn(duration: 600.ms)
+                .slideY(begin: -0.08, end: 0, duration: 600.ms, curve: Curves.easeOutCubic),
+          ),
 
-            const SizedBox(height: AppSpacing.sectionGap),
+          // ─── WEEKLY GOAL CARD ──────────────────────────────────────────
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.screenPaddingLg,
+                AppSpacing.xl,
+                AppSpacing.screenPaddingLg,
+                0,
+              ),
+              child: _buildWeeklyGoalCard(screeningProvider)
+                  .animate(delay: 100.ms)
+                  .fadeIn(duration: 600.ms)
+                  .slideY(begin: 0.1, end: 0, duration: 600.ms, curve: Curves.easeOutCubic),
+            ),
+          ),
 
-            // ─── QUICK ACTIONS ─────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.screenPaddingLg),
+          // ─── 2×2 STAT CARDS ───────────────────────────────────────────
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.screenPaddingLg,
+                AppSpacing.xl,
+                AppSpacing.screenPaddingLg,
+                0,
+              ),
+              child: FutureBuilder<Map<String, int>>(
+                future: _riskDistributionFuture,
+                builder: (context, snapshot) {
+                  final highRisk = snapshot.data?['high'] ?? 0;
+                  return _buildStatGrid(
+                    context,
+                    totalPatients: totalPatients,
+                    highRisk: highRisk,
+                    isOnline: isOnline,
+                  );
+                },
+              ).animate(delay: 200.ms).fadeIn(duration: 600.ms),
+            ),
+          ),
+
+          // ─── QUICK ACTIONS ─────────────────────────────────────────────
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.screenPaddingLg,
+                AppSpacing.xl,
+                AppSpacing.screenPaddingLg,
+                0,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SectionHeader(title: 'Quick Actions')
-                      .animate(delay: 350.ms)
-                      .fadeIn(duration: 800.ms)
-                      .slideX(begin: -0.15, end: 0, duration: 800.ms, curve: Curves.easeOutCubic),
-
+                  _SectionHeader(title: 'Quick Actions'),
                   const SizedBox(height: AppSpacing.md),
-
-                  PremiumActionCard(
-                    title: 'New Screening',
-                    subtitle: 'Start an OA risk assessment',
-                    icon: Icons.add_circle_outline_rounded,
-                    color: AppColors.primary,
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const PatientListScreen()),
-                    ),
-                  )
-                      .animate(delay: 450.ms)
-                      .fadeIn(duration: 800.ms)
-                      .slideY(begin: 0.20, end: 0, duration: 800.ms, curve: Curves.easeOutCubic),
-
-                  const SizedBox(height: AppSpacing.sm),
-
-                  PremiumActionCard(
-                    title: 'Add Patient',
-                    subtitle: 'Register a new patient record',
-                    icon: Icons.person_add_rounded,
-                    color: AppColors.accent,
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const PatientListScreen()),
-                    ),
-                  )
-                      .animate(delay: 550.ms)
-                      .fadeIn(duration: 800.ms)
-                      .slideY(begin: 0.20, end: 0, duration: 800.ms, curve: Curves.easeOutCubic),
+                  _buildQuickActions(),
                 ],
-              ),
+              ).animate(delay: 300.ms).fadeIn(duration: 600.ms),
             ),
+          ),
 
-            const SizedBox(height: AppSpacing.sectionGap),
-
-            // ─── RECENT PATIENTS ───────────────────────────────────────
-            if (patientProvider.patients.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.screenPaddingLg),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SectionHeader(
-                      title: 'Recent Patients',
-                      accentColor: AppColors.accent,
-                    )
-                        .animate(delay: 650.ms)
-                        .fadeIn(duration: 800.ms)
-                        .slideX(begin: -0.15, end: 0, duration: 800.ms, curve: Curves.easeOutCubic),
-
-                    const SizedBox(height: AppSpacing.md),
-
-                    ...patientProvider.patients
-                        .take(3)
-                        .toList()
-                        .asMap()
-                        .entries
-                        .map((entry) {
-                      final i = entry.key;
-                      final patient = entry.value;
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                        child: _buildPatientCard(context, patient)
-                            .animate(delay: Duration(milliseconds: 750 + i * 100))
-                            .fadeIn(duration: 800.ms)
-                            .slideY(
-                              begin: 0.20,
-                              end: 0,
-                              duration: 800.ms,
-                              curve: Curves.easeOutCubic,
-                            ),
-                      );
-                    }),
-                  ],
-                ),
+          // ─── AI INSIGHT ────────────────────────────────────────────────
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.screenPaddingLg,
+                AppSpacing.xl,
+                AppSpacing.screenPaddingLg,
+                0,
               ),
-
-            const SizedBox(height: 120),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ─────────────────────────────────────────────────────────────────────────
-  // CURVED HEADER with S-curve clip + geometric deco + editorial typography
-  // ─────────────────────────────────────────────────────────────────────────
-
-  Widget _buildCurvedHeader(
-    BuildContext context,
-    AuthProvider authProvider,
-    SettingsProvider settingsProvider,
-  ) {
-    return TweenAnimationBuilder<double>(
-      tween: Tween<double>(begin: 0.0, end: 1.0),
-      duration: const Duration(milliseconds: 1200),
-      curve: Curves.elasticOut,
-      builder: (context, amplitude, child) {
-        return ClipPath(
-          clipper: HeaderClipper(amplitude: amplitude),
-          child: child,
-        );
-      },
-      child: Container(
-        width: double.infinity,
-        // Extra bottom padding to account for the curve overhang
-        padding: const EdgeInsets.only(bottom: 52),
-        decoration: const BoxDecoration(gradient: AppColors.primaryGradient),
-        child: Stack(
-          children: [
-            // ── Geometric deco overlay ────────────────────────────────
-            const Positioned.fill(
-              child: CustomPaint(painter: HeaderDecoPainter()),
+              child: _buildAIInsightCard()
+                  .animate(delay: 400.ms)
+                  .fadeIn(duration: 600.ms),
             ),
+          ),
 
-            // ── Content ───────────────────────────────────────────────
-            SafeArea(
-              bottom: false,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.screenPaddingLg,
-                  AppSpacing.screenPaddingLg,
-                  AppSpacing.screenPaddingLg,
-                  AppSpacing.xl,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Top row: app label + connection indicator (NO pill)
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Text(
-                          'OsteoSense',
+          // ─── RECENT PATIENTS ───────────────────────────────────────────
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.screenPaddingLg,
+                AppSpacing.xl,
+                AppSpacing.screenPaddingLg,
+                0,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _SectionHeader(title: 'Recent Patients'),
+                      GestureDetector(
+                        onTap: () => context.go('/agent/patients'),
+                        child: Text(
+                          'See All',
                           style: AppTypography.labelMedium.copyWith(
-                            color: Colors.white.withValues(alpha: 0.65),
-                            letterSpacing: 1.4,
-                            fontWeight: AppTypography.semiBold,
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
-                        // Pill-less connection indicator — just icon + text
-                        Row(
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  if (patientProvider.patients.isEmpty)
+                    Center(
+                      child: Container(
+                        padding: const EdgeInsets.all(AppSpacing.xl),
+                        decoration: BoxDecoration(
+                          color: AppColors.surface.withValues(alpha: 0.5),
+                          borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                          border: Border.all(
+                            color: AppColors.border.withValues(alpha: 0.3),
+                          ),
+                        ),
+                        child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
-                              settingsProvider.isConnected
-                                  ? Icons.cloud_done_outlined
-                                  : Icons.cloud_off_outlined,
-                              size: 15,
-                              color: settingsProvider.isConnected
-                                  ? AppColors.riskLowLight
-                                  : AppColors.gray400,
+                              Icons.person_outline_rounded,
+                              size: 48,
+                              color: AppColors.textSecondary.withValues(alpha: 0.5),
                             ),
-                            const SizedBox(width: 5),
+                            const SizedBox(height: AppSpacing.sm),
                             Text(
-                              settingsProvider.isConnected ? 'Synced' : 'Offline',
-                              style: AppTypography.labelSmall.copyWith(
-                                color: settingsProvider.isConnected
-                                    ? AppColors.riskLowLight
-                                    : Colors.white.withValues(alpha: 0.5),
-                                fontWeight: AppTypography.medium,
+                              'No patients yet',
+                              style: AppTypography.bodyMedium.copyWith(
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                            const SizedBox(height: AppSpacing.xs),
+                            Text(
+                              'Add your first patient to get started',
+                              style: AppTypography.bodySmall.copyWith(
+                                color: AppColors.textTertiary,
                               ),
                             ),
                           ],
                         ),
-                      ],
-                    ),
-
-                    const SizedBox(height: AppSpacing.xl),
-
-                    // Greeting line — light weight, secondary feel
-                    Text(
-                      _getGreeting(),
-                      style: AppTypography.bodyLarge.copyWith(
-                        color: Colors.white.withValues(alpha: 0.70),
-                        fontWeight: AppTypography.light,
-                        letterSpacing: 0.2,
                       ),
-                    ),
+                    )
+                  else
+                    ...patientProvider.patients.take(3).toList().asMap().entries.map((entry) {
+                      final i = entry.key;
+                      final patient = entry.value;
+                      final initials = patient.name
+                          .split(' ')
+                          .map((n) => n.isEmpty ? '' : n[0])
+                          .take(2)
+                          .join()
+                          .toUpperCase();
 
-                    const SizedBox(height: 4),
+                      // Assign avatar colors based on index
+                      final avatarColors = [
+                        const Color(0xFFE9DFC9), // warm beige
+                        const Color(0xFFD4DFCF), // sage light
+                        const Color(0xFFEBF0EC), // forest surface
+                      ];
+                      final textColors = [
+                        const Color(0xFF7A6A45),
+                        const Color(0xFF4F6757),
+                        const Color(0xFF34483D),
+                      ];
 
-                    // Name — magazine headline scale, tight tracking
-                    Text(
-                      authProvider.currentUser?.fullName ?? 'Health Worker',
-                      style: AppTypography.displaySmall.copyWith(
-                        color: Colors.white,
-                        fontWeight: AppTypography.extraBold,
-                        letterSpacing: -1.2,
-                        fontSize: 38,
-                        height: 1.1,
-                      ),
-                    ).animate().fadeIn(duration: AppMotion.slow).slideX(begin: -0.06),
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+                        child: PatientRowWidget(
+                          initials: initials,
+                          name: patient.name,
+                          lastScreening: '${patient.age} yrs • Knee',
+                          riskLabel: 'LOW RISK',
+                          riskBg: AppColors.riskLowSurface,
+                          riskText: AppColors.riskLow,
+                          bgColor: avatarColors[i % avatarColors.length],
+                          textColor: textColors[i % textColors.length],
+                          patientId: patient.id?.toString(),
+                        ).animate(delay: (400 + i * 80).ms)
+                            .fadeIn(duration: 500.ms)
+                            .slideX(begin: -0.05, end: 0, duration: 500.ms),
+                      );
+                    }),
                   ],
-                ),
+                ).animate(delay: 450.ms).fadeIn(duration: 600.ms),
               ),
             ),
-          ],
-        ),
+
+          // Bottom padding for nav bar
+          const SliverToBoxAdapter(child: SizedBox(height: 150)),
+        ],
+      ),
+        ],
       ),
     );
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // PATIENT CARD — Gradient avatar + risk-level left-edge glow
+  // HEADER — Namaste, Dr. Sharma with location + avatar
   // ─────────────────────────────────────────────────────────────────────────
+  Widget _buildHeader(BuildContext context, AuthProvider auth, bool isOnline) {
+    final name = auth.currentUser?.fullName ?? 'Health Worker';
+    final hour = DateTime.now().hour;
+    final greeting = hour < 12 ? 'Good Morning' : hour < 17 ? 'Good Afternoon' : 'Good Evening';
 
-  Widget _buildPatientCard(BuildContext context, patient) {
-    String riskLevel = 'low';
-    if (patient.lastScreening != null) {
-      riskLevel = patient.lastScreening!.riskLevel ?? 'low';
-    }
-    final riskColor = AppColors.getRiskColor(riskLevel);
-    final isHighRisk = riskLevel.toLowerCase() == 'high';
-
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.cardPaddingMd),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-        // High-risk gets a 3px left-edge color accent to signal at a glance
-        border: isHighRisk
-            ? Border(
-                left: BorderSide(color: riskColor, width: 3),
-                top: const BorderSide(color: AppColors.border),
-                right: const BorderSide(color: AppColors.border),
-                bottom: const BorderSide(color: AppColors.border),
-              )
-            : Border.all(color: AppColors.border),
-        boxShadow: [
-          // Standard lift
-          const BoxShadow(
-            color: AppColors.shadowLight,
-            blurRadius: 8,
-            offset: Offset(0, 2),
-          ),
-          // Risk-tinted ambient glow — stronger for high risk
-          if (isHighRisk)
-            BoxShadow(
-              color: riskColor.withValues(alpha: 0.14),
-              blurRadius: 16,
-              offset: const Offset(-2, 4),
-              spreadRadius: -1,
-            ),
-        ],
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        AppSpacing.screenPaddingLg,
+        MediaQuery.of(context).padding.top + AppSpacing.md,
+        AppSpacing.screenPaddingLg,
+        AppSpacing.md,
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Deterministic gradient avatar
-          GradientAvatar(name: patient.name, size: 44),
-
-          const SizedBox(width: AppSpacing.md),
-
+          // Text content
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  patient.name,
-                  style: AppTypography.titleSmall.copyWith(
-                    fontWeight: AppTypography.bold,
+                  '$greeting, $name',
+                  style: AppTypography.headlineSmall.copyWith(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 24,
+                    letterSpacing: -0.4,
                   ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  '${patient.age} yrs • ${patient.gender}',
-                  style: AppTypography.bodySmall.copyWith(
-                    color: AppColors.textSecondary,
-                    fontWeight: AppTypography.light,
-                  ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.location_on_outlined,
+                      size: 13,
+                      color: AppColors.textSecondary,
+                    ),
+                    const SizedBox(width: 3),
+                    Text(
+                      'Rural Health Center, Sector 4',
+                      style: AppTypography.bodySmall.copyWith(
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
-
-          // Risk badge
-          Container(
-            padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.sm, vertical: 4),
-            decoration: BoxDecoration(
-              color: riskColor.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-            ),
-            child: Text(
-              riskLevel.toUpperCase(),
-              style: AppTypography.labelSmall.copyWith(
-                color: riskColor,
-                fontWeight: AppTypography.bold,
+          // Avatar + sync badge
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.primarySurface,
+                  border: Border.all(color: AppColors.softBorder, width: 1.5),
+                ),
+                child: const Icon(
+                  Icons.person_rounded,
+                  color: AppColors.primary,
+                  size: 26,
+                ),
               ),
+              Positioned(
+                bottom: -2,
+                right: -2,
+                child: Container(
+                  width: 14,
+                  height: 14,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: isOnline ? AppColors.riskLow : AppColors.textMuted,
+                    border: Border.all(color: AppColors.background, width: 2),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // WEEKLY SCREENING GOAL CARD
+  // ─────────────────────────────────────────────────────────────────────────
+  Widget _buildWeeklyGoalCard(ScreeningProvider screeningProvider) {
+    final weeklyTarget = 16;
+    final completedThisWeek = screeningProvider.screenings
+        .where((s) => s.screeningDate.isAfter(DateTime.now().subtract(const Duration(days: 7))))
+        .length;
+    final progressPercent = completedThisWeek / weeklyTarget;
+
+    return Container(
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF5A7460), Color(0xFF34483D)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.25),
+            blurRadius: 20,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(AppSpacing.cardPaddingLg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Weekly Screening Goal',
+                style: AppTypography.titleSmall.copyWith(
+                  color: Colors.white.withValues(alpha: 0.9),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              Text(
+                '${(progressPercent * 100).round()}%',
+                style: AppTypography.titleMedium.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          // Progress bar
+          ClipRRect(
+            borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
+            child: LinearProgressIndicator(
+              value: progressPercent,
+              backgroundColor: Colors.white.withValues(alpha: 0.2),
+              valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+              minHeight: 8,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Row(
+            children: [
+              Icon(
+                Icons.trending_up_rounded,
+                size: 14,
+                color: Colors.white.withValues(alpha: 0.8),
+              ),
+              const SizedBox(width: 5),
+              Text(
+                '$completedThisWeek screenings completed this week',
+                style: AppTypography.bodySmall.copyWith(
+                  color: Colors.white.withValues(alpha: 0.8),
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // 2×2 STAT GRID
+  // ─────────────────────────────────────────────────────────────────────────
+  Widget _buildStatGrid(
+    BuildContext context, {
+    required int totalPatients,
+    required int highRisk,
+    required bool isOnline,
+  }) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: BentoStatWidget(
+                icon: Icon(Icons.people_rounded, color: AppColors.primary, size: 20),
+                iconBg: AppColors.primarySurface,
+                label: 'Total Patient',
+                value: '$totalPatients',
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: BentoStatWidget(
+                icon: Icon(Icons.warning_amber_rounded, color: AppColors.dustyRose, size: 20),
+                iconBg: AppColors.dustyRoseSurface,
+                label: 'High Risk',
+                value: '$highRisk',
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        Row(
+          children: [
+            Expanded(
+              child: BentoStatWidget(
+                icon: Icon(Icons.directions_walk_rounded, color: AppColors.sage, size: 20),
+                iconBg: AppColors.sageSurface,
+                label: 'Screenings',
+                value: '${context.read<ScreeningProvider>().screenings.length}',
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: BentoStatWidget(
+                icon: Icon(
+                  isOnline ? Icons.cloud_done_rounded : Icons.cloud_off_rounded,
+                  color: isOnline ? AppColors.riskLow : AppColors.textMuted,
+                  size: 20,
+                ),
+                iconBg: isOnline ? AppColors.riskLowSurface : AppColors.surfaceVariant,
+                label: 'Sync Status',
+                value: isOnline ? 'Online' : 'Offline',
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // QUICK ACTIONS
+  // ─────────────────────────────────────────────────────────────────────────
+  Widget _buildQuickActions() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        QuickActionWidget(
+          icon: Icon(Icons.person_add_rounded, color: Colors.white, size: 28),
+          bg: const Color(0xFF4F6757), // Forest
+          label: 'New Patient',
+          onTap: 'navigate:AddPatient',
+        ),
+        QuickActionWidget(
+          icon: Icon(Icons.medical_services_rounded, color: Colors.white, size: 28),
+          bg: const Color(0xFFB87070), // Dusty rose
+          label: 'Screening',
+          onTap: 'navigate:Screening',
+        ),
+        QuickActionWidget(
+          icon: Icon(Icons.insights_rounded, color: Colors.white, size: 26),
+          bg: const Color(0xFFA8B6A0), // Sage
+          label: 'Analytics',
+          onTap: 'navigate:Analytics',
+        ),
+        QuickActionWidget(
+          icon: Icon(Icons.self_improvement_rounded, color: AppColors.textPrimary, size: 26),
+          bg: const Color(0xFFE9DFC9), // Warm beige
+          label: 'Self Check',
+          onTap: 'navigate:SelfCheck',
+        ),
+      ],
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // AI INSIGHT CARD
+  // ─────────────────────────────────────────────────────────────────────────
+  Widget _buildAIInsightCard() {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
+        border: Border.all(color: AppColors.softBorder, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.shadowSoft,
+            blurRadius: 12,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(AppSpacing.cardPaddingMd),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: AppColors.primarySurface,
+              borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+            ),
+            alignment: Alignment.center,
+            child: const Icon(
+              Icons.auto_awesome_rounded,
+              color: AppColors.primary,
+              size: 18,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'AI Insight',
+                  style: AppTypography.titleSmall.copyWith(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Knee osteoarthritis risk has increased by 12% in your last 10 screenings. Consider focusing on gait stability exercises.',
+                  style: AppTypography.bodySmall.copyWith(
+                    color: AppColors.textSecondary,
+                    height: 1.5,
+                    fontSize: 13,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -576,133 +726,22 @@ class _HomeDashboardState extends State<HomeDashboard> {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// PREMIUM GLASS BOTTOM NAV
-// Floating capsule · sliding gradient pill · outline↔filled icon swap
-// ═══════════════════════════════════════════════════════════════════════════
-
-class _PremiumGlassNav extends StatelessWidget {
-  final int currentIndex;
-  final List<_NavItemData> items;
-  final void Function(int) onTap;
-
-  const _PremiumGlassNav({
-    required this.currentIndex,
-    required this.items,
-    required this.onTap,
-  });
+// ─────────────────────────────────────────────────────────────────────────
+// SECTION HEADER HELPER
+// ─────────────────────────────────────────────────────────────────────────
+class _SectionHeader extends StatelessWidget {
+  final String title;
+  const _SectionHeader({required this.title});
 
   @override
   Widget build(BuildContext context) {
-    final bottomPadding = MediaQuery.of(context).padding.bottom;
-
-    return Padding(
-      padding: EdgeInsets.fromLTRB(20, 0, 20, bottomPadding > 0 ? bottomPadding : 16),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(28),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-          child: Container(
-            height: 68,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(28),
-              color: AppColors.surface.withValues(alpha: 0.88),
-              border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.6), width: 1.2),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.shadowDark.withValues(alpha: 0.18),
-                  blurRadius: 24,
-                  offset: const Offset(0, 8),
-                ),
-                BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.12),
-                  blurRadius: 32,
-                  spreadRadius: -4,
-                  offset: const Offset(0, 12),
-                ),
-              ],
-            ),
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final itemWidth = constraints.maxWidth / items.length;
-                return Stack(
-                  children: [
-                    // Sliding gradient pill
-                    AnimatedPositioned(
-                      duration: const Duration(milliseconds: 450),
-                      curve: Curves.easeOutCubic,
-                      left: currentIndex * itemWidth + (itemWidth * 0.12),
-                      top: 8,
-                      bottom: 8,
-                      width: itemWidth * 0.76,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          gradient: AppColors.primaryGradient,
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.primary.withValues(alpha: 0.45),
-                              blurRadius: 16,
-                              offset: const Offset(0, 6),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    // Icons row — outline when unselected, filled when selected
-                    Row(
-                      children: List.generate(items.length, (i) {
-                        final isSelected = currentIndex == i;
-                        return Expanded(
-                          child: GestureDetector(
-                            behavior: HitTestBehavior.opaque,
-                            onTap: () => onTap(i),
-                            child: SizedBox(
-                              height: double.infinity,
-                              child: Center(
-                                child: AnimatedScale(
-                                  scale: isSelected ? 1.15 : 1.0,
-                                  duration: const Duration(milliseconds: 300),
-                                  curve: Curves.easeOutBack,
-                                  // AnimatedSwitcher for the icon swap
-                                  child: AnimatedSwitcher(
-                                    duration: const Duration(milliseconds: 200),
-                                    switchInCurve: Curves.easeOutCubic,
-                                    switchOutCurve: Curves.easeInCubic,
-                                    transitionBuilder: (child, animation) =>
-                                        FadeTransition(
-                                          opacity: animation,
-                                          child: ScaleTransition(
-                                            scale: Tween<double>(begin: 0.7, end: 1.0)
-                                                .animate(animation),
-                                            child: child,
-                                          ),
-                                        ),
-                                    child: Icon(
-                                      isSelected
-                                          ? items[i].selectedIcon
-                                          : items[i].icon,
-                                      key: ValueKey(isSelected),
-                                      color: isSelected
-                                          ? Colors.white
-                                          : AppColors.textTertiary,
-                                      size: 24,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        );
-                      }),
-                    ),
-                  ],
-                );
-              },
-            ),
-          ),
-        ),
+    return Text(
+      title,
+      style: AppTypography.titleSmall.copyWith(
+        color: AppColors.textPrimary,
+        fontWeight: FontWeight.w700,
+        fontSize: 17,
+        letterSpacing: -0.2,
       ),
     );
   }

@@ -58,7 +58,6 @@ dependencies:
   flutter_animate: ^4.3.0
   flutter_svg: ^2.0.9
   smooth_page_indicator: ^1.1.0
-  flutter_staggered_animations: ^1.0.0
   
   # Maps
   geolocator: ^10.1.0
@@ -77,6 +76,8 @@ dependencies:
   animations: ^3.0.0
   confetti: ^0.7.0
   path_provider: any
+  percent_indicator: ^4.2.1
+  material_palette: ^0.1.0
 
 dev_dependencies:
   flutter_test:
@@ -91,6 +92,7 @@ flutter:
     - assets/images/
     - assets/icons/
     - assets/models/
+    - assets/images/JointSaathi_dotted_particle_background.gif
 
 flutter_launcher_icons:
   android: true

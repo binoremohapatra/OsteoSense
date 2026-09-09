@@ -14,6 +14,21 @@ class RoleSelectionScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
+      appBar: AppBar(
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_ios, color: AppColors.textPrimary),
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/language');
+            }
+          },
+        ),
+        backgroundColor: AppColors.surface,
+        foregroundColor: AppColors.textPrimary,
+        elevation: 0,
+      ),
       body: AmbientBackground(
         primaryColor: AppColors.primary,
         secondaryColor: AppColors.accent,
@@ -115,7 +130,7 @@ class RoleSelectionScreen extends StatelessWidget {
             child: InkWell(
               onTap: () {
                 final role = title == 'Health Worker' ? 'agent' : 'user';
-                context.go('/login?role=$role');
+                context.push('/login?role=$role');
               },
               borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
               child: Container(

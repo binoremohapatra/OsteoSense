@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
 import '../../providers/screening_provider.dart';
 import '../../providers/patient_provider.dart';
 import '../../theme/app_colors.dart';
@@ -9,6 +10,8 @@ import '../../theme/app_spacing.dart';
 import '../../theme/app_typography.dart';
 import '../../theme/app_motion.dart';
 import '../../widgets/common/index.dart';
+import '../../widgets/premium/inputs/premium_inputs.dart';
+import '../../widgets/premium/buttons/premium_buttons.dart';
 import 'gait_test_screen.dart';
 
 class SymptomQuestionnaireScreen extends StatefulWidget {
@@ -68,6 +71,9 @@ class _SymptomQuestionnaireScreenState
         duration: AppMotion.standard,
         curve: AppMotion.curve,
       );
+    } else {
+      // If on first page, go directly to dashboard
+      context.go('/agent/home');
     }
   }
 
@@ -103,25 +109,7 @@ class _SymptomQuestionnaireScreenState
 
     if (!mounted) return;
 
-    Navigator.of(context).push(
-      PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) =>
-            const GaitTestScreen(),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return SlideTransition(
-            position: Tween<Offset>(
-              begin: const Offset(0, 1),
-              end: Offset.zero,
-            ).animate(CurvedAnimation(
-              parent: animation,
-              curve: AppMotion.curve,
-            )),
-            child: child,
-          );
-        },
-        transitionDuration: AppMotion.standard,
-      ),
-    );
+    context.push('/screening/gait');
 
     setState(() => _isNavigating = false);
   }
@@ -133,23 +121,46 @@ class _SymptomQuestionnaireScreenState
       appBar: CustomAppBar(
         title: 'Symptom Assessment',
         centerTitle: false,
+        showBackButton: true,
+        onLeadingPressed: () => context.go('/agent/home'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new),
+          onPressed: () => context.go('/agent/home'),
+        ),
         actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: AppSpacing.md),
-            child: Center(
-              child: Text(
-                '${_currentPage + 1} of 4',
-                style: AppTypography.labelMedium.copyWith(
-                  color: AppColors.textSecondary,
-                  fontWeight: AppTypography.medium,
-                ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.xs),
+            decoration: BoxDecoration(
+              color: AppColors.surfaceVariant,
+              borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
+            ),
+            child: Text(
+              '${_currentPage + 1} of 4',
+              style: AppTypography.labelMedium.copyWith(
+                color: AppColors.textSecondary,
+                fontWeight: AppTypography.semiBold,
               ),
             ),
           ),
         ],
       ),
-      body: Column(
+      body: Stack(
         children: [
+          Positioned.fill(
+            child: IgnorePointer(
+              child: Opacity(
+                opacity: 0.22,
+                child: Image.asset(
+                  'assets/images/05_joint_selection.gif',
+                  fit: BoxFit.cover,
+                  gaplessPlayback: true,
+                  errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                ),
+              ),
+            ),
+          ),
+          Column(
+            children: [
           // ── Progress bar
           _buildProgressBar(),
 
@@ -170,6 +181,8 @@ class _SymptomQuestionnaireScreenState
 
           // ── Navigation buttons
           _buildNavButtons(),
+        ],
+      ),
         ],
       ),
     );
@@ -643,7 +656,7 @@ class _SymptomQuestionnaireScreenState
                       if (!val) _injuryDetailController.clear();
                     });
                   },
-                  activeColor: AppColors.riskMedium,
+                  activeTrackColor: AppColors.riskMedium,
                 ),
               ],
             ),
@@ -656,11 +669,10 @@ class _SymptomQuestionnaireScreenState
             child: _pastInjury
                 ? Padding(
                     padding: const EdgeInsets.only(top: AppSpacing.md),
-                    child: CustomTextField(
+                    child: PremiumTextField(
                       controller: _injuryDetailController,
                       label: 'Describe the injury or surgery',
                       hint: 'e.g., Left knee ligament tear in 2020, surgery done',
-                      maxLines: 3,
                       keyboardType: TextInputType.multiline,
                     ),
                   )
@@ -771,25 +783,20 @@ class _SymptomQuestionnaireScreenState
           if (_currentPage > 0) ...[
             Expanded(
               flex: 2,
-              child: CustomButton(
+              child: GlassButton(
                 text: 'Back',
                 onPressed: _prevPage,
-                variant: ButtonVariant.outline,
-                size: ButtonSize.large,
-                icon: const Icon(Icons.arrow_back_rounded),
+                icon: const Icon(Icons.arrow_back_rounded, color: AppColors.primary),
               ),
             ),
             const SizedBox(width: AppSpacing.md),
           ],
           Expanded(
             flex: 3,
-            child: CustomButton(
+            child: MagneticButton(
               text: isLastPage ? 'Start Gait Test' : 'Next',
-              onPressed: _isNavigating ? null : _nextPage,
-              variant: ButtonVariant.primary,
-              size: ButtonSize.large,
+              onPressed: _isNavigating ? () {} : _nextPage,
               isLoading: _isNavigating,
-              trailingIcon: Icon(isLastPage ? Icons.directions_walk : Icons.arrow_forward_rounded),
             ),
           ),
         ],

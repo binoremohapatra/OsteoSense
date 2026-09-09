@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
+import 'package:go_router/go_router.dart';
 import '../../models/screening.dart';
 import '../../models/patient.dart';
 import '../../theme/app_colors.dart';
@@ -8,6 +9,7 @@ import '../../theme/app_spacing.dart';
 import '../../theme/app_typography.dart';
 import '../../theme/app_motion.dart';
 import '../../widgets/common/index.dart';
+import '../../widgets/premium/buttons/premium_buttons.dart';
 import 'pdf_preview_screen.dart';
 
 class DetailedReportScreen extends StatelessWidget {
@@ -30,19 +32,34 @@ class DetailedReportScreen extends StatelessWidget {
       appBar: CustomAppBar(
         title: 'Full Report',
         centerTitle: false,
+        showBackButton: true,
         actions: [
           IconButton(
             icon: const Icon(Icons.picture_as_pdf_outlined),
             tooltip: 'PDF Preview',
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => PdfPreviewScreen(screening: screening, patient: patient),
-              ),
-            ),
+            onPressed: () => context.push('/screening/pdf', extra: {
+              'screening': screening,
+              'patient': patient,
+            }),
           ),
         ],
       ),
-      body: SingleChildScrollView(
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: IgnorePointer(
+              child: Opacity(
+                opacity: 0.22,
+                child: Image.asset(
+                  'assets/images/08_detailed_report.gif',
+                  fit: BoxFit.cover,
+                  gaplessPlayback: true,
+                  errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                ),
+              ),
+            ),
+          ),
+          SingleChildScrollView(
         padding: const EdgeInsets.all(AppSpacing.screenPaddingLg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -106,16 +123,13 @@ class DetailedReportScreen extends StatelessWidget {
             Row(
               children: [
                 Expanded(
-                  child: CustomButton(
+                  child: MagneticButton(
                     text: 'Share PDF',
                     onPressed: () => Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (_) => PdfPreviewScreen(screening: screening, patient: patient),
                       ),
                     ),
-                    variant: ButtonVariant.primary,
-                    size: ButtonSize.large,
-                    icon: const Icon(Icons.share_outlined),
                   ),
                 ),
               ],
@@ -124,6 +138,8 @@ class DetailedReportScreen extends StatelessWidget {
             const SizedBox(height: AppSpacing.lg),
           ],
         ),
+          ),
+        ],
       ),
     );
   }
