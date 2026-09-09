@@ -61,13 +61,15 @@ class _LoginScreenState extends State<LoginScreen> {
           fullName: _nameCtrl.text.trim(),
           phoneNumber: _emailCtrl.text.trim(),
           password: _passwordCtrl.text,
-          healthCenterId: null,
+          healthCenterId: widget.role == 'agent' ? 'HC-001' : null,
           location: null,
         );
         success = await auth.signup(user);
       }
       if (!mounted) return;
       if (success) {
+        // Ensure role is set after successful auth
+        await auth.saveUserRole();
         context.go('/agent/home');
       } else {
         setState(() => _errorMsg = auth.errorMessage ?? 'Authentication failed');

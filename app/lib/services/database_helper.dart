@@ -24,7 +24,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 3,
+      version: 4,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -84,6 +84,8 @@ class DatabaseHelper {
         doctor_recommendations TEXT,
         synced INTEGER DEFAULT 0,
         deleted INTEGER DEFAULT 0,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       )
@@ -194,13 +196,32 @@ class DatabaseHelper {
         // Column might already exist, ignore error
       }
     }
+
+    if (oldVersion < 4) {
+      // Add created_at and updated_at columns to screenings table if they don't exist
+      try {
+        await db.execute('ALTER TABLE screenings ADD COLUMN created_at TEXT DEFAULT CURRENT_TIMESTAMP');
+      } catch (e) {
+        // Column might already exist, ignore error
+      }
+      try {
+        await db.execute('ALTER TABLE screenings ADD COLUMN updated_at TEXT DEFAULT CURRENT_TIMESTAMP');
+      } catch (e) {
+        // Column might already exist, ignore error
+      }
+    }
   }
 
   // Generic CRUD operations
   Future<int> insert(String table, Map<String, dynamic> data) async {
     final db = await database;
-    data['created_at'] = DateTime.now().toIso8601String();
-    data['updated_at'] = DateTime.now().toIso8601String();
+    // Only add timestamps if not already present
+    if (!data.containsKey('created_at')) {
+      data['created_at'] = DateTime.now().toIso8601String();
+    }
+    if (!data.containsKey('updated_at')) {
+      data['updated_at'] = DateTime.now().toIso8601String();
+    }
     return await db.insert(table, data);
   }
 

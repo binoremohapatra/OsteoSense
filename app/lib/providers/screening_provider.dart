@@ -38,6 +38,36 @@ class ScreeningProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  set draftPatientId(int? value) {
+    _draftPatientId = value;
+    notifyListeners();
+  }
+
+  set draftPainLevel(int value) {
+    _draftPainLevel = value;
+    notifyListeners();
+  }
+
+  set draftStiffnessDuration(String value) {
+    _draftStiffnessDuration = value;
+    notifyListeners();
+  }
+
+  set draftSwelling(bool value) {
+    _draftSwelling = value;
+    notifyListeners();
+  }
+
+  set draftPastInjury(bool value) {
+    _draftPastInjury = value;
+    notifyListeners();
+  }
+
+  set draftPastInjuryDetail(String value) {
+    _draftPastInjuryDetail = value;
+    notifyListeners();
+  }
+
   Future<void> loadScreenings() async {
     _isLoading = true;
     _errorMessage = null;

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
 import '../../providers/settings_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_spacing.dart';
 import '../../theme/app_typography.dart';
@@ -390,9 +392,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           CustomButton(
             text: 'Logout',
-            onPressed: () {
-              // TODO: Implement logout logic
+            onPressed: () async {
+              final authProvider = Provider.of<AuthProvider>(context, listen: false);
+              await authProvider.logout();
               Navigator.pop(context);
+              Future.microtask(() {
+                if (context.mounted) {
+                  context.go('/role');
+                }
+              });
             },
             variant: ButtonVariant.danger,
             size: ButtonSize.small,

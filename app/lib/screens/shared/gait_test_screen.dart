@@ -111,6 +111,24 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
     }
 
     final screeningProvider = Provider.of<ScreeningProvider>(context, listen: false);
+    final patientProvider = Provider.of<PatientProvider>(context, listen: false);
+    
+    // Set default values for a gait-only test if not already set
+    if (screeningProvider.draftPatientId == null && patientProvider.selectedPatient != null) {
+      screeningProvider.draftPatientId = patientProvider.selectedPatient!.id!;
+    }
+    
+    if (screeningProvider.draftPainLevel == 0) {
+      screeningProvider.draftPainLevel = 5; // Default moderate pain
+    }
+    
+    if (screeningProvider.draftStiffnessDuration == 'none') {
+      screeningProvider.draftStiffnessDuration = '30 minutes';
+    }
+    
+    if (!screeningProvider.draftSwelling) {
+      screeningProvider.draftSwelling = true;
+    }
 
     // Get gait features from pipeline
     final features = _sensorPipeline.currentFeatures;
@@ -930,19 +948,29 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
         children: [
           Text('Signal Processing Pipeline', style: AppTypography.titleSmall),
           const SizedBox(height: AppSpacing.sm),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _buildPipelineStage('BLE Receiving', _sensorPipeline.bleStatus),
-              Icon(Icons.arrow_downward, size: 16, color: AppColors.textMuted),
-              _buildPipelineStage('Buffer', _sensorPipeline.bufferStatus),
-              Icon(Icons.arrow_downward, size: 16, color: AppColors.textMuted),
-              _buildPipelineStage('Processing', _sensorPipeline.preprocessingStatus),
-              Icon(Icons.arrow_downward, size: 16, color: AppColors.textMuted),
-              _buildPipelineStage('Features', _sensorPipeline.featureExtractionStatus),
-              Icon(Icons.arrow_downward, size: 16, color: AppColors.textMuted),
-              _buildPipelineStage('ML Inference', _sensorPipeline.mlInferenceStatus),
-            ],
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _buildPipelineStage('BLE', _sensorPipeline.bleStatus),
+                const SizedBox(width: 8),
+                Icon(Icons.arrow_forward, size: 16, color: AppColors.textMuted),
+                const SizedBox(width: 8),
+                _buildPipelineStage('Buffer', _sensorPipeline.bufferStatus),
+                const SizedBox(width: 8),
+                Icon(Icons.arrow_forward, size: 16, color: AppColors.textMuted),
+                const SizedBox(width: 8),
+                _buildPipelineStage('Process', _sensorPipeline.preprocessingStatus),
+                const SizedBox(width: 8),
+                Icon(Icons.arrow_forward, size: 16, color: AppColors.textMuted),
+                const SizedBox(width: 8),
+                _buildPipelineStage('Features', _sensorPipeline.featureExtractionStatus),
+                const SizedBox(width: 8),
+                Icon(Icons.arrow_forward, size: 16, color: AppColors.textMuted),
+                const SizedBox(width: 8),
+                _buildPipelineStage('ML', _sensorPipeline.mlInferenceStatus),
+              ],
+            ),
           ),
         ],
       ),

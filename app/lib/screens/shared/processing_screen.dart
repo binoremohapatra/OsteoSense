@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lottie/lottie.dart';
 import '../../providers/screening_provider.dart';
+import '../../providers/patient_provider.dart';
 import '../../services/tflite_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_spacing.dart';
@@ -12,6 +12,7 @@ import '../../theme/app_motion.dart';
 import '../../widgets/common/index.dart';
 import '../shared/risk_result_screen.dart';
 import '../../models/screening.dart';
+import '../../models/patient.dart';
 
 class ProcessingScreen extends StatefulWidget {
   const ProcessingScreen({super.key});
@@ -99,12 +100,7 @@ class _ProcessingScreenState extends State<ProcessingScreen>
     await Future.delayed(const Duration(seconds: 1));
     _updateStep(3, StepStatus.completed);
 
-    // Brief checkmark delight moment (400ms) before navigating
-    setState(() => _showSuccess = true);
-    await _checkmarkController.forward();
-    await Future.delayed(const Duration(milliseconds: 600));
-
-    // Construct the final screening object
+    // Construct the final screening object first
     final newScreening = Screening(
       patientId: screeningProvider.draftPatientId!,
       userId: 1, // Temporarily hardcoded until auth is integrated
@@ -128,15 +124,32 @@ class _ProcessingScreenState extends State<ProcessingScreen>
     // Clear draft answers after submission
     screeningProvider.clearDraft();
 
-    if (mounted) {
-      if (success) {
-        context.push('/screening/result', extra: screeningProvider.currentScreening ?? newScreening);
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to save screening: ${screeningProvider.errorMessage}')),
-        );
-        context.pop();
+    if (!mounted) return;
+
+    if (success) {
+      // Show success state before navigating
+      setState(() => _showSuccess = true);
+      await _checkmarkController.forward();
+      await Future.delayed(const Duration(milliseconds: 1500));
+      
+      if (mounted) {
+        // Navigate to report page instead of result page
+        final patientProvider = Provider.of<PatientProvider>(context, listen: false);
+        final patient = patientProvider.selectedPatient;
+        
+        if (patient != null) {
+          context.push('/screening/report', extra: {
+            'screening': screeningProvider.currentScreening ?? newScreening,
+            'patient': patient,
+          });
+        } else {
+          // Fallback to result page if no patient
+          context.push('/screening/result', extra: screeningProvider.currentScreening ?? newScreening);
+        }
       }
+    } else {
+      // Just navigate back without showing SnackBar to avoid lifecycle issues
+      context.pop();
     }
   }
 
@@ -170,42 +183,64 @@ class _ProcessingScreenState extends State<ProcessingScreen>
         showBackButton: true,
       ),
       body: SafeArea(
-        child: AnimatedSwitcher(
-          duration: AppMotion.moderate,
-          transitionBuilder: (child, animation) =>
-              FadeTransition(opacity: animation, child: child),
-          child: _showSuccess
-              // Delight moment: crisp checkmark before results
-              ? _buildSuccessState()
-              : _buildProcessingState(),
+        child: SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minHeight: MediaQuery.of(context).size.height - 
+                         MediaQuery.of(context).padding.top - 
+                         kToolbarHeight,
+            ),
+            child: AnimatedSwitcher(
+              duration: AppMotion.moderate,
+              transitionBuilder: (child, animation) =>
+                  FadeTransition(opacity: animation, child: child),
+              child: _showSuccess
+                  // Delight moment: crisp checkmark before results
+                  ? _buildSuccessState()
+                  : _buildProcessingState(),
+            ),
+          ),
         ),
       ),
     );
   }
 
   Widget _buildProcessingState() {
-    return Column(
+    return Padding(
       key: const ValueKey('processing'),
-      mainAxisAlignment: MainAxisAlignment.center,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // Lottie animation — the focal point, clean surroundings
-        Center(
-          child: SizedBox(
-            width: 200,
-            height: 200,
-            child: Lottie.asset(
-              'assets/animations/scanning.json',
-              repeat: true,
-            ),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPaddingLg),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Processing animation — the focal point, clean surroundings
+          Center(
+            child: Container(
+              width: 140,
+              height: 140,
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: SizedBox(
+                  width: 80,
+                  height: 80,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 6,
+                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                    backgroundColor: AppColors.primary.withValues(alpha: 0.2),
+                  ),
+                ),
+              ),
+            ).animate(
+              onPlay: (controller) => controller.repeat(),
+            ).scale(begin: const Offset(0.95, 0.95), end: const Offset(1.05, 1.05), duration: const Duration(seconds: 2), curve: Curves.easeInOut),
           ),
-        ),
-        const SizedBox(height: AppSpacing.xxxl),
+          const SizedBox(height: AppSpacing.xxxl),
 
-        // Heading — minimal, clean
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPaddingLg),
-          child: Column(
+          // Heading — minimal, clean
+          Column(
             children: [
               Text(
                 'Analyzing Results',
@@ -225,85 +260,102 @@ class _ProcessingScreenState extends State<ProcessingScreen>
               ).animate().fadeIn(duration: AppMotion.slow, delay: 100.ms),
             ],
           ),
-        ),
-        const SizedBox(height: AppSpacing.xxxl),
+          const SizedBox(height: AppSpacing.xl),
 
-        // Processing steps
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPaddingLg),
-          child: Column(
-            children: List.generate(
-              _steps.length,
-              (index) {
-                final step = _steps[index];
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-                  child: _buildStepRow(step, index)
-                      .animate()
-                      .fadeIn(
-                        duration: AppMotion.slow,
-                        delay: Duration(milliseconds: 100 * (index + 1)),
-                      ),
-                );
-              },
+          // Processing steps
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Column(
+              children: List.generate(
+                _steps.length,
+                (index) {
+                  final step = _steps[index];
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                    child: _buildStepRow(step, index)
+                        .animate()
+                        .fadeIn(
+                          duration: AppMotion.slow,
+                          delay: Duration(milliseconds: 100 * (index + 1)),
+                        ),
+                  );
+                },
+              ),
             ),
           ),
-        ),
 
-        const SizedBox(height: AppSpacing.xl),
-        Padding(
-          padding: const EdgeInsets.all(AppSpacing.screenPaddingLg),
-          child: Text(
+          const SizedBox(height: AppSpacing.xl),
+          Text(
             'This may take a few moments…',
             style: AppTypography.labelSmall.copyWith(
               color: AppColors.textTertiary,
             ),
             textAlign: TextAlign.center,
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
   Widget _buildStepRow(ProcessingStep step, int index) {
-    return Row(
-      children: [
-        // Step indicator — pulse dot for in-progress, not a spinner
-        SizedBox(
-          width: 32,
-          height: 32,
-          child: Center(
-            child: _buildStepIndicator(step),
-          ),
-        ),
-        const SizedBox(width: AppSpacing.md),
-        Expanded(
-          child: AnimatedDefaultTextStyle(
-            duration: AppMotion.standard,
-            curve: AppMotion.curve,
-            style: AppTypography.bodySmall.copyWith(
-              color: step.status == StepStatus.pending
-                  ? AppColors.textTertiary
-                  : AppColors.textPrimary,
-              fontWeight: step.status == StepStatus.inProgress
-                  ? AppTypography.semiBold
-                  : AppTypography.regular,
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
+      decoration: BoxDecoration(
+        color: step.status == StepStatus.inProgress 
+            ? AppColors.primary.withValues(alpha: 0.1)
+            : step.status == StepStatus.completed
+                ? AppColors.success.withValues(alpha: 0.1)
+                : Colors.transparent,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+      ),
+      child: Row(
+        children: [
+          // Step indicator — pulse dot for in-progress, not a spinner
+          SizedBox(
+            width: 32,
+            height: 32,
+            child: Center(
+              child: _buildStepIndicator(step),
             ),
-            child: Text(step.label),
           ),
-        ),
-        if (step.status == StepStatus.completed)
-          const Icon(
-            Icons.check,
-            color: AppColors.success,
-            size: 16,
-          ).animate().scale(
-            begin: const Offset(0, 0),
-            end: const Offset(1, 1),
-            duration: AppMotion.fast,
-            curve: AppMotion.curvePop,
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: AnimatedDefaultTextStyle(
+              duration: AppMotion.standard,
+              curve: AppMotion.curve,
+              style: AppTypography.bodySmall.copyWith(
+                color: step.status == StepStatus.pending
+                    ? AppColors.textTertiary
+                    : AppColors.textPrimary,
+                fontWeight: step.status == StepStatus.inProgress
+                    ? AppTypography.semiBold
+                    : AppTypography.regular,
+              ),
+              child: Text(
+                step.label,
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+              ),
+            ),
           ),
-      ],
+          if (step.status == StepStatus.completed)
+            const Icon(
+              Icons.check_circle,
+              color: AppColors.success,
+              size: 20,
+            ).animate().scale(
+              begin: const Offset(0, 0),
+              end: const Offset(1, 1),
+              duration: AppMotion.fast,
+              curve: AppMotion.curvePop,
+            ),
+        ],
+      ),
     );
   }
 
@@ -312,25 +364,32 @@ class _ProcessingScreenState extends State<ProcessingScreen>
       case StepStatus.inProgress:
         // Pulsing teal dot — branded, not generic spinner
         return Container(
-          width: 10,
-          height: 10,
-          decoration: const BoxDecoration(
+          width: 14,
+          height: 14,
+          decoration: BoxDecoration(
             color: AppColors.primary,
             shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primary.withValues(alpha: 0.4),
+                blurRadius: 8,
+                spreadRadius: 2,
+              ),
+            ],
           ),
         ).animate(
           onPlay: (controller) => controller.repeat(reverse: true),
         ).scaleXY(
-          begin: 0.7,
-          end: 1.3,
+          begin: 0.8,
+          end: 1.2,
           duration: 800.ms,
           curve: Curves.easeInOut,
         ).animate().fadeIn(duration: AppMotion.fast);
 
       case StepStatus.completed:
         return Container(
-          width: 10,
-          height: 10,
+          width: 14,
+          height: 14,
           decoration: const BoxDecoration(
             color: AppColors.success,
             shape: BoxShape.circle,
@@ -339,39 +398,55 @@ class _ProcessingScreenState extends State<ProcessingScreen>
 
       case StepStatus.pending:
         return Container(
-          width: 8,
-          height: 8,
-          decoration: const BoxDecoration(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(
             color: AppColors.gray300,
             shape: BoxShape.circle,
+            border: Border.all(color: AppColors.gray400, width: 1),
           ),
         );
     }
   }
 
   Widget _buildSuccessState() {
-    return Column(
+    return Padding(
       key: const ValueKey('success'),
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        // Crisp checkmark animation — draw-on circle + check, 400ms
-        _DrawOnCheckmark(controller: _checkmarkController),
-        const SizedBox(height: AppSpacing.xl),
-        Text(
-          'Analysis Complete',
-          style: AppTypography.titleMedium.copyWith(
-            fontWeight: AppTypography.semiBold,
-            color: AppColors.textPrimary,
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPaddingLg),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // Crisp checkmark animation — draw-on circle + check, 400ms
+          Center(
+            child: _DrawOnCheckmark(controller: _checkmarkController),
           ),
-        ).animate().fadeIn(duration: AppMotion.slow, delay: 200.ms),
-        const SizedBox(height: AppSpacing.sm),
-        Text(
-          'Preparing your results…',
-          style: AppTypography.bodySmall.copyWith(
-            color: AppColors.textSecondary,
-          ),
-        ).animate().fadeIn(duration: AppMotion.slow, delay: 300.ms),
-      ],
+          const SizedBox(height: AppSpacing.xl),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+            decoration: BoxDecoration(
+              color: AppColors.success.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+              border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
+            ),
+            child: Text(
+              'Analysis Complete',
+              style: AppTypography.titleMedium.copyWith(
+                fontWeight: AppTypography.semiBold,
+                color: AppColors.success,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ).animate().fadeIn(duration: AppMotion.slow, delay: 200.ms).scale(begin: const Offset(0.9, 0.9), end: const Offset(1.0, 1.0), duration: AppMotion.fast, curve: AppMotion.curvePop),
+          const SizedBox(height: AppSpacing.md),
+          Text(
+            'Preparing your results…',
+            style: AppTypography.bodyMedium.copyWith(
+              color: AppColors.textSecondary,
+            ),
+            textAlign: TextAlign.center,
+          ).animate().fadeIn(duration: AppMotion.slow, delay: 300.ms),
+        ],
+      ),
     );
   }
 }
@@ -391,12 +466,18 @@ class _DrawOnCheckmark extends StatelessWidget {
         final circleProgress = (controller.value * 2).clamp(0.0, 1.0);
         final checkProgress = ((controller.value * 2) - 1).clamp(0.0, 1.0);
 
-        return CustomPaint(
-          size: const Size(80, 80),
-          painter: _CheckmarkPainter(
-            circleProgress: circleProgress,
-            checkProgress: checkProgress,
-            color: AppColors.success,
+        return Container(
+          decoration: BoxDecoration(
+            color: AppColors.success.withValues(alpha: 0.1),
+            shape: BoxShape.circle,
+          ),
+          child: CustomPaint(
+            size: const Size(100, 100),
+            painter: _CheckmarkPainter(
+              circleProgress: circleProgress,
+              checkProgress: checkProgress,
+              color: AppColors.success,
+            ),
           ),
         );
       },
@@ -424,7 +505,7 @@ class _CheckmarkPainter extends CustomPainter {
     if (circleProgress > 0) {
       final circlePaint = Paint()
         ..color = color
-        ..strokeWidth = 3.0
+        ..strokeWidth = 4.0
         ..style = PaintingStyle.stroke
         ..strokeCap = StrokeCap.round;
 
@@ -441,7 +522,7 @@ class _CheckmarkPainter extends CustomPainter {
     if (checkProgress > 0) {
       final checkPaint = Paint()
         ..color = color
-        ..strokeWidth = 3.0
+        ..strokeWidth = 4.0
         ..strokeCap = StrokeCap.round
         ..strokeJoin = StrokeJoin.round
         ..style = PaintingStyle.stroke;

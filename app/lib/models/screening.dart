@@ -15,6 +15,8 @@ class Screening {
   final String? aiReasoning;
   final String? doctorRecommendations;
   final bool synced;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
 
   Screening({
     this.id,
@@ -33,6 +35,8 @@ class Screening {
     this.aiReasoning,
     this.doctorRecommendations,
     this.synced = false,
+    this.createdAt,
+    this.updatedAt,
   }) : screeningDate = screeningDate ?? DateTime.now();
 
   Map<String, dynamic> toMap() {
@@ -53,6 +57,8 @@ class Screening {
       'ai_reasoning': aiReasoning,
       'doctor_recommendations': doctorRecommendations,
       'synced': synced ? 1 : 0,
+      'created_at': createdAt?.toIso8601String(),
+      'updated_at': updatedAt?.toIso8601String(),
     };
   }
 
@@ -74,6 +80,8 @@ class Screening {
       aiReasoning: map['ai_reasoning'] as String?,
       doctorRecommendations: map['doctor_recommendations'] as String?,
       synced: (map['synced'] as int?) == 1,
+      createdAt: map['created_at'] != null ? DateTime.parse(map['created_at'] as String) : null,
+      updatedAt: map['updated_at'] != null ? DateTime.parse(map['updated_at'] as String) : null,
     );
   }
 
@@ -94,6 +102,8 @@ class Screening {
     String? aiReasoning,
     String? doctorRecommendations,
     bool? synced,
+    DateTime? createdAt,
+    DateTime? updatedAt,
   }) {
     return Screening(
       id: id ?? this.id,
@@ -112,6 +122,8 @@ class Screening {
       aiReasoning: aiReasoning ?? this.aiReasoning,
       doctorRecommendations: doctorRecommendations ?? this.doctorRecommendations,
       synced: synced ?? this.synced,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 }

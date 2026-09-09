@@ -14,6 +14,7 @@ import '../../widgets/premium/navigation/premium_navigation.dart';
 import '../../components/bento_stat/bento_stat_widget.dart';
 import '../../components/patient_row/patient_row_widget.dart';
 import '../../components/quick_action/quick_action_widget.dart';
+import '../../services/location_service.dart';
 import 'patient_list_screen.dart';
 import 'reports_screen.dart';
 import 'settings_screen.dart';
@@ -39,6 +40,23 @@ class _HomeScreenState extends State<HomeScreen> {
       const SettingsScreen(),
     ];
     _loadData();
+    
+    // Listen to route changes
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final router = GoRouter.of(context);
+      router.routerDelegate.addListener(_onRouteChanged);
+      _handleTabFromRoute();
+    });
+  }
+
+  @override
+  void dispose() {
+    final router = GoRouter.of(context);
+    router.routerDelegate.removeListener(_onRouteChanged);
+    super.dispose();
+  }
+
+  void _onRouteChanged() {
     _handleTabFromRoute();
   }
 
@@ -47,29 +65,46 @@ class _HomeScreenState extends State<HomeScreen> {
       final router = GoRouter.of(context);
       final uri = router.routeInformationProvider.value.uri;
       final tabParam = uri.queryParameters['tab'];
+      debugPrint('HomeScreen: Route tab parameter: $tabParam, current index: $_currentIndex');
       
       if (tabParam != null) {
         switch (tabParam.toLowerCase()) {
           case 'patients':
+            debugPrint('HomeScreen: Switching to patients tab (index 1)');
             if (_currentIndex != 1) {
-              setState(() => _currentIndex = 1);
+              setState(() {
+                _currentIndex = 1;
+                debugPrint('HomeScreen: Changed index to 1');
+              });
             }
             break;
           case 'analytics':
           case 'reports':
+            debugPrint('HomeScreen: Switching to analytics tab (index 2)');
             if (_currentIndex != 2) {
-              setState(() => _currentIndex = 2);
+              setState(() {
+                _currentIndex = 2;
+                debugPrint('HomeScreen: Changed index to 2');
+              });
             }
             break;
           case 'settings':
+            debugPrint('HomeScreen: Switching to settings tab (index 3)');
             if (_currentIndex != 3) {
-              setState(() => _currentIndex = 3);
+              setState(() {
+                _currentIndex = 3;
+                debugPrint('HomeScreen: Changed index to 3');
+              });
             }
             break;
           default:
+            debugPrint('HomeScreen: Unknown tab, defaulting to home (index 0)');
             // Default to home tab (index 0)
             if (_currentIndex != 0) {
-              setState(() => _currentIndex = 0);
+              setState(() {
+                _currentIndex = 0;
+                debugPrint('HomeScreen: Changed index to 0');
+              });
             }
         }
       }
@@ -78,13 +113,17 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _loadData() {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final patientProvider = Provider.of<PatientProvider>(context, listen: false);
-      final screeningProvider = Provider.of<ScreeningProvider>(context, listen: false);
-      final settingsProvider = Provider.of<SettingsProvider>(context, listen: false);
-      await patientProvider.loadPatients();
-      await screeningProvider.loadScreenings();
-      await settingsProvider.checkConnectivity();
-      settingsProvider.startConnectivityListener();
+      try {
+        final patientProvider = Provider.of<PatientProvider>(context, listen: false);
+        final screeningProvider = Provider.of<ScreeningProvider>(context, listen: false);
+        final settingsProvider = Provider.of<SettingsProvider>(context, listen: false);
+        await patientProvider.loadPatients();
+        await screeningProvider.loadScreenings();
+        await settingsProvider.checkConnectivity();
+        settingsProvider.startConnectivityListener();
+      } catch (e) {
+        debugPrint('Error loading data: $e');
+      }
     });
   }
 
@@ -150,12 +189,38 @@ class HomeDashboard extends StatefulWidget {
 
 class _HomeDashboardState extends State<HomeDashboard> {
   late Future<Map<String, int>> _riskDistributionFuture;
+  String _currentLocation = 'Getting location...';
+  final LocationService _locationService = LocationService();
+
+  // Method to trigger tab switch from parent
+  static void navigateToAnalytics(BuildContext context) {
+    debugPrint('HomeDashboard: Static method called to navigate to analytics');
+    context.go('/agent/home?tab=analytics');
+  }
 
   @override
   void initState() {
     super.initState();
     _riskDistributionFuture = Provider.of<ScreeningProvider>(context, listen: false)
         .getRiskDistribution();
+    _loadLocation();
+  }
+
+  Future<void> _loadLocation() async {
+    try {
+      final location = await _locationService.getCurrentLocation();
+      if (mounted) {
+        setState(() {
+          _currentLocation = location;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _currentLocation = 'Location unavailable';
+        });
+      }
+    }
   }
 
   @override
@@ -431,7 +496,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
                     ),
                     const SizedBox(width: 3),
                     Text(
-                      'Rural Health Center, Sector 4',
+                      _currentLocation,
                       style: AppTypography.bodySmall.copyWith(
                         color: AppColors.textSecondary,
                         fontSize: 12,
@@ -442,38 +507,41 @@ class _HomeDashboardState extends State<HomeDashboard> {
               ],
             ),
           ),
-          // Avatar + sync badge
-          Stack(
-            clipBehavior: Clip.none,
-            children: [
-              Container(
-                width: 46,
-                height: 46,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: AppColors.primarySurface,
-                  border: Border.all(color: AppColors.softBorder, width: 1.5),
-                ),
-                child: const Icon(
-                  Icons.person_rounded,
-                  color: AppColors.primary,
-                  size: 26,
-                ),
-              ),
-              Positioned(
-                bottom: -2,
-                right: -2,
-                child: Container(
-                  width: 14,
-                  height: 14,
+          // Avatar + sync badge (clickable - navigates to profile page)
+          GestureDetector(
+            onTap: () => context.go('/agent/profile'),
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Container(
+                  width: 46,
+                  height: 46,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: isOnline ? AppColors.riskLow : AppColors.textMuted,
-                    border: Border.all(color: AppColors.background, width: 2),
+                    color: AppColors.primarySurface,
+                    border: Border.all(color: AppColors.softBorder, width: 1.5),
+                  ),
+                  child: const Icon(
+                    Icons.medical_services_rounded,
+                    color: AppColors.primary,
+                    size: 26,
                   ),
                 ),
-              ),
-            ],
+                Positioned(
+                  bottom: -2,
+                  right: -2,
+                  child: Container(
+                    width: 14,
+                    height: 14,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: isOnline ? AppColors.riskLow : AppColors.textMuted,
+                      border: Border.all(color: AppColors.background, width: 2),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),

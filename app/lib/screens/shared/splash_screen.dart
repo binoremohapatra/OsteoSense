@@ -60,11 +60,6 @@ class _SplashScreenState extends State<SplashScreen>
     if (!mounted) return;
 
     try {
-      debugPrint('Splash: loading settings...');
-      final settingsProvider = Provider.of<SettingsProvider>(context, listen: false);
-      await settingsProvider.loadSettings();
-      debugPrint('Splash: settings loaded.');
-
       debugPrint('Splash: loading auth...');
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       await authProvider.loadCurrentUser();

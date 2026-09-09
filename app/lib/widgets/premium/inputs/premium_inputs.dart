@@ -356,7 +356,9 @@ class _ComboBoxState<T> extends State<ComboBox<T>> {
   void _hideOverlay() {
     _overlayEntry?.remove();
     _overlayEntry = null;
-    setState(() => _isOpen = false);
+    if (mounted) {
+      setState(() => _isOpen = false);
+    }
   }
 
   void _filterItems(String query) {
