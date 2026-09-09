@@ -1,0 +1,26 @@
+{
+  "best_model": "logistic_regression",
+  "cv_results": {
+    "logistic_regression": {
+      "cv_auc_mean": 1.0,
+      "cv_auc_std": 0.0
+    },
+    "random_forest": {
+      "cv_auc_mean": 1.0,
+      "cv_auc_std": 0.0
+    },
+    "svm_rbf": {
+      "cv_auc_mean": 1.0,
+      "cv_auc_std": 0.0
+    },
+    "xgboost": {
+      "cv_auc_mean": 1.0,
+      "cv_auc_std": 0.0
+    }
+  },
+  "test_auc": 1.0,
+  "n_features": 33,
+  "n_train": 240,
+  "n_test": 60,
+  "note": "Trained on SYNTHETIC data. Re-train on real sensor data before clinical use."
+}
