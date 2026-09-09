@@ -75,4 +75,43 @@ router.get('/risk-distribution', analyticsController.getRiskDistribution);
  */
 router.get('/locations', analyticsController.getLocations);
 
+/**
+ * @swagger
+ * /analytics/screening-trends:
+ *   get:
+ *     summary: Alias for /analytics/trends — screening volume over time
+ *     description: >
+ *       The Flutter mobile app calls this path via getAnalyticsData('screening-trends').
+ *       Internally delegates to the same handler as GET /analytics/trends.
+ *     tags: [Analytics]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: period
+ *         schema: { type: string, enum: [7d, 30d, 90d], default: 30d }
+ *     responses:
+ *       200:
+ *         description: Array of { date, count }
+ */
+router.get('/screening-trends', analyticsController.getTrends);
+
+/**
+ * @swagger
+ * /analytics/population-insights:
+ *   get:
+ *     summary: Population-level OA risk insights (alias for overview)
+ *     description: >
+ *       The Flutter mobile app's api_service.dart calls this path via
+ *       getPopulationInsights(). Returns the same overview payload
+ *       (totalPatients, totalScreenings, riskDistribution, avgConfidence).
+ *     tags: [Analytics]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Overview stats with risk distribution
+ */
+router.get('/population-insights', analyticsController.getOverview);
+
 module.exports = router;

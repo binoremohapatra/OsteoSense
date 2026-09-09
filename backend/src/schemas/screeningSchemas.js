@@ -41,8 +41,31 @@ const patientIdParamSchema = z.object({
   patientId: objectId('patientId'),
 });
 
+/**
+ * Schema for PUT /screenings/:id — all fields optional (patch-style update).
+ * AI-derived fields (riskLevel, confidence, source) are intentionally excluded
+ * and stripped in the controller anyway.
+ */
+const updateScreeningSchema = z.object({
+  painLevel: z.coerce.number().min(0).max(10).optional(),
+  stiffnessDuration: z.string().trim().nullish().transform((v) => v || ''),
+  swelling: z
+    .preprocess((val) => (val === true || val === 1 || val === '1' || val === 'true' ? true : false), z.boolean())
+    .optional(),
+  pastInjury: z.string().trim().nullish().transform((v) => v || ''),
+  gaitFeatures: z.array(z.coerce.number()).optional(),
+  gaitData: z.any().optional(),
+  notes: z.string().trim().optional(),
+});
+
+const screeningIdParamSchema = z.object({
+  id: objectId('id'),
+});
+
 module.exports = {
   createScreeningSchema,
   listScreeningsQuerySchema,
   patientIdParamSchema,
+  updateScreeningSchema,
+  screeningIdParamSchema,
 };

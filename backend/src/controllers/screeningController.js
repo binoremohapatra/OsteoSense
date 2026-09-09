@@ -184,10 +184,65 @@ const getScreeningReport = asyncHandler(async (req, res) => {
   res.status(200).send(pdfBuffer);
 });
 
+/**
+ * PUT /api/v1/screenings/:id
+ * Allows partial update of mutable fields (painLevel, notes, etc.).
+ * AI-generated fields (riskLevel, confidence, etc.) are NOT re-run
+ * automatically — the client should create a new screening to get a
+ * fresh prediction.
+ */
+const updateScreening = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    throw ApiError.notFound('Screening not found');
+  }
+
+  // Strip fields the client must not overwrite
+  const allowed = { ...req.body };
+  for (const f of ['_id', 'id', 'agentId', 'patientId', 'source', 'riskLevel', 'confidence', 'synced']) {
+    delete allowed[f];
+  }
+
+  const screening = await Screening.findOneAndUpdate(
+    { _id: id, agentId: req.user._id },
+    { $set: allowed },
+    { new: true, runValidators: true }
+  );
+
+  if (!screening) {
+    throw ApiError.notFound('Screening not found');
+  }
+
+  const screeningObj = formatScreeningForApp(screening);
+  res.status(200).json({ success: true, screening: screeningObj, data: screeningObj });
+});
+
+/**
+ * DELETE /api/v1/screenings/:id
+ * Hard-deletes the record (screenings have no business need for soft-delete,
+ * unlike patients). Returns 200 to match the mobile app's expectation.
+ */
+const deleteScreening = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    throw ApiError.notFound('Screening not found');
+  }
+
+  const screening = await Screening.findOneAndDelete({ _id: id, agentId: req.user._id });
+
+  if (!screening) {
+    throw ApiError.notFound('Screening not found');
+  }
+
+  res.status(200).json({ success: true, message: 'Screening deleted' });
+});
+
 module.exports = {
   createScreening,
   listScreenings,
   getScreeningById,
   getScreeningsByPatient,
   getScreeningReport,
+  updateScreening,
+  deleteScreening,
 };

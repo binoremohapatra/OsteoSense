@@ -8,6 +8,8 @@ const {
   createScreeningSchema,
   listScreeningsQuerySchema,
   patientIdParamSchema,
+  updateScreeningSchema,
+  screeningIdParamSchema,
 } = require('../schemas/screeningSchemas');
 
 const router = express.Router();
@@ -149,7 +151,6 @@ router.get(
  *       404:
  *         description: Screening not found
  */
-router.get('/:id', screeningController.getScreeningById);
 
 /**
  * @swagger
@@ -174,5 +175,49 @@ router.get('/:id', screeningController.getScreeningById);
  *         description: Screening not found
  */
 router.get('/:id/report', screeningController.getScreeningReport);
+
+/**
+ * @swagger
+ * /screenings/{id}:
+ *   put:
+ *     summary: Update mutable fields of an existing screening
+ *     description: >
+ *       Updates non-AI fields (painLevel, stiffnessDuration, swelling, pastInjury,
+ *       gaitFeatures). AI-derived fields (riskLevel, confidence, source) are
+ *       intentionally excluded — create a new screening to get a fresh prediction.
+ *     tags: [Screenings]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Updated screening
+ *       404:
+ *         description: Screening not found
+ *   delete:
+ *     summary: Delete a screening record
+ *     tags: [Screenings]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Screening deleted
+ *       404:
+ *         description: Screening not found
+ */
+router
+  .route('/:id')
+  .get(screeningController.getScreeningById)
+  .put(validate(updateScreeningSchema), screeningController.updateScreening)
+  .delete(screeningController.deleteScreening);
 
 module.exports = router;
