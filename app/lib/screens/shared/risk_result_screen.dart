@@ -260,7 +260,11 @@ class _RiskResultScreenState extends State<RiskResultScreen> {
                   ),
                   const SizedBox(height: AppSpacing.md),
                   Text(
-                    _getRecommendation(screening.riskLevel ?? 'low'),
+                    // Use AI-returned doctor recommendations if available
+                    (screening.doctorRecommendations != null &&
+                            screening.doctorRecommendations!.isNotEmpty)
+                        ? screening.doctorRecommendations!
+                        : _getRecommendation(screening.riskLevel ?? 'low'),
                     style: AppTypography.bodySmall.copyWith(
                       color: AppColors.textPrimary,
                       height: 1.6,
@@ -269,6 +273,51 @@ class _RiskResultScreenState extends State<RiskResultScreen> {
                 ],
               ),
             ).animate().fadeIn(duration: AppMotion.slow, delay: 420.ms),
+
+            // AI Reasoning — show only when AI has provided reasoning
+            if (screening.aiReasoning != null &&
+                screening.aiReasoning!.isNotEmpty) ...[
+              const SizedBox(height: AppSpacing.xl),
+              Text(
+                'AI Analysis',
+                style: AppTypography.titleSmall.copyWith(
+                  fontWeight: AppTypography.semiBold,
+                  letterSpacing: -0.2,
+                ),
+              ).animate().fadeIn(duration: AppMotion.slow, delay: 460.ms),
+              const SizedBox(height: AppSpacing.md),
+              CustomCard(
+                variant: CardVariant.outlined,
+                padding: const EdgeInsets.all(AppSpacing.cardPaddingMd),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                      ),
+                      child: const Icon(
+                        Icons.psychology_outlined,
+                        color: AppColors.primary,
+                        size: 18,
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: Text(
+                        screening.aiReasoning!,
+                        style: AppTypography.bodySmall.copyWith(
+                          color: AppColors.textSecondary,
+                          height: 1.6,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ).animate().fadeIn(duration: AppMotion.slow, delay: 480.ms),
+            ],
 
             const SizedBox(height: AppSpacing.xl),
 
@@ -295,7 +344,7 @@ class _RiskResultScreenState extends State<RiskResultScreen> {
                   ),
                 ),
               ],
-            ).animate().fadeIn(duration: AppMotion.slow, delay: 480.ms),
+            ).animate().fadeIn(duration: AppMotion.slow, delay: 540.ms),
 
             const SizedBox(height: AppSpacing.xl),
                 ],
@@ -332,13 +381,24 @@ class _RiskResultScreenState extends State<RiskResultScreen> {
   }
 
   Widget _buildFactorsCard(Screening screening) {
-    final factors = <String>[
+    // Use AI-returned contributing factors if available (comma-separated string)
+    final aiFactors = (screening.contributingFactors ?? '')
+        .split(',')
+        .map((f) => f.trim())
+        .where((f) => f.isNotEmpty)
+        .toList();
+
+    // Fallback: derive factors from raw fields when AI factors are absent
+    final fallbackFactors = <String>[
       if ((screening.painLevel ?? 0) >= 5) 'High pain level detected',
-      if ((int.tryParse(screening.stiffnessDuration ?? '0') ?? 0) >= 30) 'Prolonged morning stiffness',
+      if ((int.tryParse(screening.stiffnessDuration ?? '0') ?? 0) >= 30)
+        'Prolonged morning stiffness',
       if (screening.swelling == true) 'Joint swelling observed',
-      if (screening.pastInjury != null && screening.pastInjury!.isNotEmpty) 'History of joint injury',
-      if ((double.tryParse(screening.gaitData ?? '0') ?? 0.0) > 0.5) 'Irregular gait pattern',
+      if (screening.pastInjury != null && screening.pastInjury!.isNotEmpty)
+        'History of joint injury',
     ];
+
+    final factors = aiFactors.isNotEmpty ? aiFactors : fallbackFactors;
 
     return CustomCard(
       variant: CardVariant.outlined,

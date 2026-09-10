@@ -704,7 +704,11 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
                     const SizedBox(width: 4),
                     Text(
                       labels[index],
-                      style: AppTypography.caption,
+                      style: AppTypography.caption.copyWith(
+                        letterSpacing: 0, // prevent "Z" rendering as "7"
+                        fontWeight: FontWeight.w500,
+                        fontSize: 12,
+                      ),
                     ),
                   ],
                 ),
