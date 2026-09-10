@@ -130,7 +130,16 @@ async function predictRisk({ painLevel, stiffnessDuration, swelling, pastInjury,
     stiffness_duration: mapStiffnessToCategory(stiffnessDuration, stiffnessMinutes),
     swelling: Boolean(swelling),
     past_injury: Boolean(pastInjury && pastInjury.toString().trim().length > 0),
-    gait_data: JSON.stringify({ variance }),
+    gait_data: JSON.stringify({
+      variance,
+      feature_count: Array.isArray(gaitFeatures) ? gaitFeatures.length : 0,
+      accel_mean_x: Array.isArray(gaitFeatures) && gaitFeatures.length > 0 ? gaitFeatures[0] : 0,
+      accel_mean_y: Array.isArray(gaitFeatures) && gaitFeatures.length > 1 ? gaitFeatures[1] : 0,
+      accel_mean_z: Array.isArray(gaitFeatures) && gaitFeatures.length > 2 ? gaitFeatures[2] : 0,
+      gyro_mean_x: Array.isArray(gaitFeatures) && gaitFeatures.length > 6 ? gaitFeatures[6] : 0,
+      gyro_mean_y: Array.isArray(gaitFeatures) && gaitFeatures.length > 7 ? gaitFeatures[7] : 0,
+      gyro_mean_z: Array.isArray(gaitFeatures) && gaitFeatures.length > 8 ? gaitFeatures[8] : 0,
+    }),
   };
 
   try {

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
@@ -77,10 +78,31 @@ class _ProcessingScreenState extends State<ProcessingScreen>
     List<double> gaitFeatures = [];
     if (screeningProvider.draftGaitData != null) {
       try {
-        final parsed = screeningProvider.draftGaitData!.replaceAll('[', '').replaceAll(']', '').split(',');
-        gaitFeatures = parsed.map((e) => double.tryParse(e.trim()) ?? 0.0).toList();
+        final decoded = jsonDecode(screeningProvider.draftGaitData!);
+        if (decoded is Map<String, dynamic>) {
+          // Extract numeric values from the features JSON map
+          gaitFeatures = decoded.values
+              .whereType<num>()
+              .map((v) => v.toDouble())
+              .toList();
+        } else if (decoded is List) {
+          gaitFeatures = decoded
+              .whereType<num>()
+              .map((v) => v.toDouble())
+              .toList();
+        }
       } catch (e) {
-        // Handle parsing error
+        // Legacy fallback: plain comma-separated string
+        try {
+          final parsed = screeningProvider.draftGaitData!
+              .replaceAll('[', '')
+              .replaceAll(']', '')
+              .split(',');
+          gaitFeatures =
+              parsed.map((e) => double.tryParse(e.trim()) ?? 0.0).toList();
+        } catch (_) {
+          // ignore — gaitFeatures stays empty
+        }
       }
     }
 

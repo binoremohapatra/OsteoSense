@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lottie/lottie.dart';
@@ -133,12 +134,12 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
     // Get gait features from pipeline
     final features = _sensorPipeline.currentFeatures;
     if (features != null) {
-      // Convert features to JSON string for storage
-      screeningProvider.setDraftGaitData(features.toJson().toString());
+      // Convert features to valid JSON string for storage
+      screeningProvider.setDraftGaitData(jsonEncode(features.toJson()));
     } else {
       // Fallback to sensor service
       final gaitFeatures = _sensorService.getFeatureVector();
-      screeningProvider.setDraftGaitData(gaitFeatures.toString());
+      screeningProvider.setDraftGaitData(jsonEncode(gaitFeatures));
     }
 
     setState(() {
