@@ -27,6 +27,8 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
   final _villageController = TextEditingController();
   final _addressController = TextEditingController();
   final _occupationController = TextEditingController();
+  final _weightController = TextEditingController();
+  final _heightController = TextEditingController();
   String _gender = 'male';
 
   @override
@@ -37,6 +39,8 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
     _villageController.dispose();
     _addressController.dispose();
     _occupationController.dispose();
+    _weightController.dispose();
+    _heightController.dispose();
     super.dispose();
   }
 
@@ -53,6 +57,8 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
       village: _villageController.text.trim().isEmpty ? null : _villageController.text.trim(),
       address: _addressController.text.trim().isEmpty ? null : _addressController.text.trim(),
       occupation: _occupationController.text.trim().isEmpty ? null : _occupationController.text.trim(),
+      weightKg: double.tryParse(_weightController.text.trim()),
+      heightCm: double.tryParse(_heightController.text.trim()),
     );
 
     final success = await patientProvider.addPatient(patient);
@@ -162,6 +168,47 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
               hint: 'e.g., Farmer, Teacher',
               prefixIcon: const Icon(Icons.work_outline),
             ).animate().fadeIn(duration: AppMotion.standard, delay: 150.ms).slideY(begin: 0.1, end: 0, duration: AppMotion.standard),
+
+            const SizedBox(height: AppSpacing.xl),
+            _buildSectionHeader('Physical Measurements', Icons.monitor_weight_outlined),
+            const SizedBox(height: AppSpacing.md),
+
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: PremiumTextField(
+                    controller: _weightController,
+                    label: 'Weight (kg)',
+                    hint: 'e.g., 65',
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    prefixIcon: const Icon(Icons.monitor_weight_outlined),
+                    validator: (v) {
+                      if (v == null || v.trim().isEmpty) return null; // optional
+                      final w = double.tryParse(v);
+                      if (w == null || w <= 0 || w > 300) return 'Invalid weight';
+                      return null;
+                    },
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: PremiumTextField(
+                    controller: _heightController,
+                    label: 'Height (cm)',
+                    hint: 'e.g., 165',
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    prefixIcon: const Icon(Icons.height_outlined),
+                    validator: (v) {
+                      if (v == null || v.trim().isEmpty) return null; // optional
+                      final h = double.tryParse(v);
+                      if (h == null || h <= 0 || h > 300) return 'Invalid height';
+                      return null;
+                    },
+                  ),
+                ),
+              ],
+            ).animate().fadeIn(duration: AppMotion.standard, delay: 175.ms).slideY(begin: 0.1, end: 0, duration: AppMotion.standard),
 
             const SizedBox(height: AppSpacing.xl),
             _buildSectionHeader('Contact & Location', Icons.location_on_outlined),

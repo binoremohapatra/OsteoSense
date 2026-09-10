@@ -155,6 +155,70 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
     final patient = patientProvider.selectedPatient;
     final progress = (_totalSeconds - _remainingSeconds) / _totalSeconds;
 
+    // Guard: patient must be selected before starting gait test
+    if (patient == null) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: const CustomAppBar(
+          title: 'Gait Assessment Test',
+          centerTitle: true,
+          showBackButton: true,
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.screenPaddingLg),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    color: AppColors.warning.withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.person_search_outlined,
+                    size: 40,
+                    color: AppColors.warning,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xl),
+                Text(
+                  'Select a Patient First',
+                  style: AppTypography.titleMedium.copyWith(
+                    fontWeight: AppTypography.bold,
+                    color: AppColors.textPrimary,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  'Please select which patient this gait test is for before starting the recording.',
+                  style: AppTypography.bodySmall.copyWith(
+                    color: AppColors.textSecondary,
+                    height: 1.5,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: AppSpacing.xxxl),
+                MagneticButton(
+                  text: 'Select Patient',
+                  onPressed: () => context.push('/agent/patients'),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                if (Navigator.canPop(context))
+                  GlassButton(
+                    text: 'Go Back',
+                    onPressed: () => Navigator.pop(context),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: const CustomAppBar(
@@ -183,14 +247,13 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Patient info card
-              if (patient != null)
-                PatientCard(
-                  name: patient.name,
-                  subtitle: '${patient.age} years',
-                  riskLevel: 'medium', // Default for testing context
-                  onTap: () {},
-                ).animate().fadeIn(duration: 300.ms),
+              // Patient info card — always visible so agent knows whose test this is
+              PatientCard(
+                name: patient.name,
+                subtitle: _buildPatientSubtitle(patient),
+                riskLevel: 'medium',
+                onTap: () {},
+              ).animate().fadeIn(duration: 300.ms),
               const SizedBox(height: AppSpacing.xl),
 
               // Instructions card
@@ -363,6 +426,19 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
         ],
       ),
     );
+  }
+
+  String _buildPatientSubtitle(patient) {
+    final parts = <String>['${patient.age} yrs • ${patient.gender}'];
+    if (patient.village != null && patient.village!.isNotEmpty) {
+      parts.add(patient.village!);
+    }
+    final measurements = <String>[];
+    if (patient.weightKg != null) measurements.add('${patient.weightKg!.toStringAsFixed(0)} kg');
+    if (patient.heightCm != null) measurements.add('${patient.heightCm!.toStringAsFixed(0)} cm');
+    if (patient.bmi != null) measurements.add('BMI ${patient.bmi!.toStringAsFixed(1)}');
+    if (measurements.isNotEmpty) parts.add(measurements.join(' • '));
+    return parts.join('\n');
   }
 
   Widget _buildInstructionItem(String text) {

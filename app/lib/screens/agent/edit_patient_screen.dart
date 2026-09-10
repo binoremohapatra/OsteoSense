@@ -43,6 +43,8 @@ class _EditPatientScreenState extends State<EditPatientScreen> {
       _addressController = TextEditingController(text: p.address ?? '');
       _occupationController = TextEditingController(text: p.occupation ?? '');
       _gender = p.gender;
+      _weightController = TextEditingController(text: p.weightKg?.toString() ?? '');
+      _heightController = TextEditingController(text: p.heightCm?.toString() ?? '');
     } else {
       _nameController = TextEditingController();
       _ageController = TextEditingController();
@@ -51,9 +53,9 @@ class _EditPatientScreenState extends State<EditPatientScreen> {
       _addressController = TextEditingController();
       _occupationController = TextEditingController();
       _gender = 'male';
+      _weightController = TextEditingController();
+      _heightController = TextEditingController();
     }
-    _heightController = TextEditingController();
-    _weightController = TextEditingController();
   }
 
   @override
@@ -83,6 +85,8 @@ class _EditPatientScreenState extends State<EditPatientScreen> {
       village: _villageController.text.trim().isEmpty ? null : _villageController.text.trim(),
       address: _addressController.text.trim().isEmpty ? null : _addressController.text.trim(),
       occupation: _occupationController.text.trim().isEmpty ? null : _occupationController.text.trim(),
+      weightKg: double.tryParse(_weightController.text.trim()),
+      heightCm: double.tryParse(_heightController.text.trim()),
       updatedAt: DateTime.now(),
       synced: false,
     );
