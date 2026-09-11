@@ -17,7 +17,7 @@ network connection is available.
 - Offline-first patient and screening workflows
 - On-device TFLite OA risk assessment
 - Phone-sensor gait analysis using the accelerometer and gyroscope
-- English and Hindi localization
+- Multilingual support for 12 Indian languages (English, Hindi, Assamese, Bengali, Gujarati, Kannada, Malayalam, Marathi, Odia, Punjabi, Tamil, Telugu)
 - Risk results with confidence, contributing factors, and recommendations
 - PDF report generation and sharing
 - Local SQLite storage with online synchronization
@@ -164,12 +164,11 @@ npm test
 
 ## Localization
 
-English and Hindi translations live in `app/lib/l10n/`. To add a language:
+Translations for 12 supported languages live in `app/assets/translations/` as JSON files. To add or update a language:
 
-1. Add an ARB file such as `app/lib/l10n/app_as.arb`.
-2. Follow the keys and metadata in `app_en.arb`.
-3. Add the locale to the supported locales in `app/lib/main.dart`.
-4. Regenerate Flutter localization output if required.
+1. Add or modify the JSON file such as `app/assets/translations/as.json`.
+2. Follow the key-value structure present in `en.json`.
+3. Add the locale to the supported locales in the app configuration.
 
 ## Troubleshooting
 
@@ -195,7 +194,6 @@ the API URL, CORS origins, authentication secrets, and network connectivity.
 
 ## Future improvements
 
-- Regional NER languages such as Assamese and Bengali
 - Wearable sensor integration
 - Doctor and administrator portals
 - Telemedicine consultation support

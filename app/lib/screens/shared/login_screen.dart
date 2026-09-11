@@ -169,10 +169,14 @@ class _LoginScreenState extends State<LoginScreen> {
                               ],
                             ),
                             alignment: Alignment.center,
-                            child: Icon(
-                              Icons.health_and_safety_rounded,
-                              color: ff.primary,
-                              size: 42,
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(24),
+                              child: Image.asset(
+                                'assets/icons/app_icon.png',
+                                width: 80,
+                                height: 80,
+                                fit: BoxFit.cover,
+                              ),
                             ),
                           ),
                           const SizedBox(height: 16),
