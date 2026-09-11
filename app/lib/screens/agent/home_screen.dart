@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/patient_provider.dart';
 import '../../providers/screening_provider.dart';
@@ -141,26 +142,26 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       bottomNavigationBar: CenteredFabBottomNav(
         currentIndex: _currentIndex,
-        items: const [
+        items: [
           CenteredNavItem(
             icon: Icons.dashboard_outlined,
             selectedIcon: Icons.dashboard_rounded,
-            label: 'Home',
+            label: 'home'.tr(),
           ),
           CenteredNavItem(
             icon: Icons.group_outlined,
             selectedIcon: Icons.group_rounded,
-            label: 'Patients',
+            label: 'patients'.tr(),
           ),
           CenteredNavItem(
             icon: Icons.insights_outlined,
             selectedIcon: Icons.insights_rounded,
-            label: 'Analytics',
+            label: 'analytics'.tr(),
           ),
           CenteredNavItem(
             icon: Icons.settings_outlined,
             selectedIcon: Icons.settings_rounded,
-            label: 'Settings',
+            label: 'settings'.tr(),
           ),
         ],
         onTap: (index) {
@@ -218,7 +219,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _currentLocation = 'Location unavailable';
+          _currentLocation = 'location_unavailable'.tr();
         });
       }
     }
@@ -312,7 +313,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _SectionHeader(title: 'Quick Actions'),
+                  _SectionHeader(title: 'quick_actions'.tr()),
                   const SizedBox(height: AppSpacing.md),
                   _buildQuickActions(),
                 ],
@@ -350,11 +351,11 @@ class _HomeDashboardState extends State<HomeDashboard> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      _SectionHeader(title: 'Recent Patients'),
+                      _SectionHeader(title: 'recent_patients'.tr()),
                       GestureDetector(
                         onTap: () => context.go('/agent/patients'),
                         child: Text(
-                          'See All',
+                          'see_all'.tr(),
                           style: AppTypography.labelMedium.copyWith(
                             color: AppColors.primary,
                             fontWeight: FontWeight.w600,
@@ -385,14 +386,14 @@ class _HomeDashboardState extends State<HomeDashboard> {
                             ),
                             const SizedBox(height: AppSpacing.sm),
                             Text(
-                              'No patients yet',
+                              'no_patients'.tr(),
                               style: AppTypography.bodyMedium.copyWith(
                                 color: AppColors.textSecondary,
                               ),
                             ),
                             const SizedBox(height: AppSpacing.xs),
                             Text(
-                              'Add your first patient to get started',
+                              'add_first_patient'.tr(),
                               style: AppTypography.bodySmall.copyWith(
                                 color: AppColors.textTertiary,
                               ),
@@ -430,7 +431,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
                           initials: initials,
                           name: patient.name,
                           lastScreening: '${patient.age} yrs • Knee',
-                          riskLabel: 'LOW RISK',
+                          riskLabel: 'low_risk'.tr(),
                           riskBg: AppColors.riskLowSurface,
                           riskText: AppColors.riskLow,
                           bgColor: avatarColors[i % avatarColors.length],
@@ -459,9 +460,9 @@ class _HomeDashboardState extends State<HomeDashboard> {
   // HEADER — Namaste, Dr. Sharma with location + avatar
   // ─────────────────────────────────────────────────────────────────────────
   Widget _buildHeader(BuildContext context, AuthProvider auth, bool isOnline) {
-    final name = auth.currentUser?.fullName ?? 'Health Worker';
+    final name = auth.currentUser?.fullName ?? 'health_worker'.tr();
     final hour = DateTime.now().hour;
-    final greeting = hour < 12 ? 'Good Morning' : hour < 17 ? 'Good Afternoon' : 'Good Evening';
+    final greeting = hour < 12 ? 'good_morning'.tr() : hour < 17 ? 'good_afternoon'.tr() : 'good_evening'.tr();
 
     return Padding(
       padding: EdgeInsets.fromLTRB(
@@ -479,7 +480,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '$greeting, $name',
+                  'greeting_with_name'.tr(namedArgs: {'greeting': greeting, 'name': name}),
                   style: AppTypography.headlineSmall.copyWith(
                     color: AppColors.textPrimary,
                     fontWeight: FontWeight.w800,
@@ -583,7 +584,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Weekly Screening Goal',
+                'weekly_screening_goal'.tr(),
                 style: AppTypography.titleSmall.copyWith(
                   color: Colors.white.withValues(alpha: 0.9),
                   fontWeight: FontWeight.w600,
@@ -619,7 +620,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
               ),
               const SizedBox(width: 5),
               Text(
-                '$completedThisWeek screenings completed this week',
+                'screenings_completed_this_week'.tr(namedArgs: {'count': '$completedThisWeek'}),
                 style: AppTypography.bodySmall.copyWith(
                   color: Colors.white.withValues(alpha: 0.8),
                   fontSize: 12,
@@ -649,7 +650,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
               child: BentoStatWidget(
                 icon: Icon(Icons.people_rounded, color: AppColors.primary, size: 20),
                 iconBg: AppColors.primarySurface,
-                label: 'Total Patient',
+                label: 'total_patient'.tr(),
                 value: '$totalPatients',
               ),
             ),
@@ -658,7 +659,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
               child: BentoStatWidget(
                 icon: Icon(Icons.warning_amber_rounded, color: AppColors.dustyRose, size: 20),
                 iconBg: AppColors.dustyRoseSurface,
-                label: 'High Risk',
+                label: 'high_risk'.tr(),
                 value: '$highRisk',
               ),
             ),
@@ -671,7 +672,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
               child: BentoStatWidget(
                 icon: Icon(Icons.directions_walk_rounded, color: AppColors.sage, size: 20),
                 iconBg: AppColors.sageSurface,
-                label: 'Screenings',
+                label: 'screenings'.tr(),
                 value: '${context.read<ScreeningProvider>().screenings.length}',
               ),
             ),
@@ -684,8 +685,8 @@ class _HomeDashboardState extends State<HomeDashboard> {
                   size: 20,
                 ),
                 iconBg: isOnline ? AppColors.riskLowSurface : AppColors.surfaceVariant,
-                label: 'Sync Status',
-                value: isOnline ? 'Online' : 'Offline',
+                label: 'sync_status'.tr(),
+                value: isOnline ? 'online'.tr() : 'offline'.tr(),
               ),
             ),
           ],
@@ -704,25 +705,25 @@ class _HomeDashboardState extends State<HomeDashboard> {
         QuickActionWidget(
           icon: Icon(Icons.person_add_rounded, color: Colors.white, size: 28),
           bg: const Color(0xFF4F6757), // Forest
-          label: 'New Patient',
+          label: 'new_patient'.tr(),
           onTap: 'navigate:AddPatient',
         ),
         QuickActionWidget(
           icon: Icon(Icons.medical_services_rounded, color: Colors.white, size: 28),
           bg: const Color(0xFFB87070), // Dusty rose
-          label: 'Screening',
+          label: 'screening'.tr(),
           onTap: 'navigate:Screening',
         ),
         QuickActionWidget(
           icon: Icon(Icons.insights_rounded, color: Colors.white, size: 26),
           bg: const Color(0xFFA8B6A0), // Sage
-          label: 'Analytics',
+          label: 'analytics'.tr(),
           onTap: 'navigate:Analytics',
         ),
         QuickActionWidget(
           icon: Icon(Icons.self_improvement_rounded, color: AppColors.textPrimary, size: 26),
           bg: const Color(0xFFE9DFC9), // Warm beige
-          label: 'Self Check',
+          label: 'self_check'.tr(),
           onTap: 'navigate:SelfCheck',
         ),
       ],
@@ -770,7 +771,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'AI Insight',
+                  'ai_insight'.tr(),
                   style: AppTypography.titleSmall.copyWith(
                     color: AppColors.textPrimary,
                     fontWeight: FontWeight.w700,
@@ -779,7 +780,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Knee osteoarthritis risk has increased by 12% in your last 10 screenings. Consider focusing on gait stability exercises.',
+                  'ai_insight_description'.tr(),
                   style: AppTypography.bodySmall.copyWith(
                     color: AppColors.textSecondary,
                     height: 1.5,

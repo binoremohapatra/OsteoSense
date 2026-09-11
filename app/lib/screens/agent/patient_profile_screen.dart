@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../../models/screening.dart';
 import '../../providers/patient_provider.dart';
 import '../../providers/screening_provider.dart';
@@ -48,7 +49,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: CustomAppBar(
-        title: 'Patient Details',
+        title: 'patient_details'.tr(),
         centerTitle: false,
         showBackButton: true,
         leading: IconButton(
@@ -90,7 +91,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
                   ),
                   const SizedBox(height: AppSpacing.md),
                   Text(
-                    'Loading patient profile...',
+                    'loading_patient_profile'.tr(),
                     style: AppTypography.bodyMedium.copyWith(
                       color: AppColors.textSecondary,
                     ),
@@ -110,14 +111,14 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
                       ),
                       const SizedBox(height: AppSpacing.lg),
                       Text(
-                        'Patient Not Found',
+                        'patient_not_found'.tr(),
                         style: AppTypography.headlineSmall.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       const SizedBox(height: AppSpacing.sm),
                       CustomButton(
-                        text: 'Go Back',
+                        text: 'go_back'.tr(),
                         onPressed: () => Navigator.pop(context),
                         variant: ButtonVariant.primary,
                         size: ButtonSize.medium,
@@ -141,7 +142,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
                             child: Column(
                               children: [
                                 Text(
-                                  'Current Risk Level',
+                                  'current_risk_level'.tr(),
                                   style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.bold),
                                 ),
                                 const SizedBox(height: AppSpacing.lg),
@@ -157,7 +158,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
 
                         // Patient details using MetricCards
                         Text(
-                          'Patient Metrics',
+                          'patient_metrics'.tr(),
                           style: AppTypography.titleMedium.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -170,7 +171,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
 
                         // Screening history
                         Text(
-                          'Screening Timeline',
+                          'screening_timeline'.tr(),
                           style: AppTypography.titleMedium.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -214,7 +215,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
                   children: [
                     const PulsingDot(color: Colors.green),
                     const SizedBox(width: AppSpacing.xs),
-                    Text('Active', style: AppTypography.bodySmall.copyWith(
+                    Text('active'.tr(), style: AppTypography.bodySmall.copyWith(
                       color: Colors.green, fontWeight: FontWeight.w600,
                     )),
                   ],
@@ -223,7 +224,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
                 Row(
                   children: [
                     Text(
-                      '${patient.age} years • ${patient.gender}',
+                      '${patient.age} ${'years'.tr()} • ${patient.gender}',
                       style: AppTypography.bodyMedium.copyWith(
                         color: AppColors.textSecondary,
                       ),
@@ -271,23 +272,23 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
       childAspectRatio: 1.8,
       children: [
         MetricCard(
-          title: 'Age',
+          title: 'age'.tr(),
           value: '${patient.age}',
           icon: Icons.cake_rounded,
         ),
         MetricCard(
-          title: 'Gender',
+          title: 'gender'.tr(),
           value: patient.gender.substring(0, 1).toUpperCase() + patient.gender.substring(1),
           icon: Icons.person_rounded,
         ),
         MetricCard(
-          title: 'Height',
-          value: patient.heightCm != null ? '${patient.heightCm!.toStringAsFixed(0)} cm' : '--',
+          title: 'height'.tr(),
+          value: patient.heightCm != null ? '${patient.heightCm!.toStringAsFixed(0)} ${'cm'.tr()}' : '--',
           icon: Icons.height_rounded,
         ),
         MetricCard(
-          title: 'Weight',
-          value: patient.weightKg != null ? '${patient.weightKg!.toStringAsFixed(1)} kg' : '--',
+          title: 'weight'.tr(),
+          value: patient.weightKg != null ? '${patient.weightKg!.toStringAsFixed(1)} ${'kg'.tr()}' : '--',
           icon: Icons.monitor_weight_rounded,
         ),
       ],
@@ -309,7 +310,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
             ),
             const SizedBox(height: AppSpacing.md),
             Text(
-              'No Screenings Yet',
+              'no_screenings_yet'.tr(),
               style: AppTypography.bodyMedium.copyWith(
                 color: AppColors.textSecondary,
               ),
@@ -411,7 +412,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
                 Row(
                   children: [
                     Text(
-                      'Risk Level: ${(screening.riskLevel ?? 'low').toUpperCase()}',
+                      '${'risk_level_colon'.tr()} ${(screening.riskLevel ?? 'low').toUpperCase()}',
                       style: AppTypography.bodySmall.copyWith(
                         color: riskColor,
                         fontWeight: FontWeight.w600,
@@ -440,7 +441,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
                     screening.contributingFactors!.isNotEmpty) ...[
                   const SizedBox(height: AppSpacing.sm),
                   Text(
-                    'Factors: ${screening.contributingFactors}',
+                    '${'factors_colon'.tr()} ${screening.contributingFactors}',
                     style: AppTypography.bodySmall.copyWith(
                       color: AppColors.textSecondary,
                     ),

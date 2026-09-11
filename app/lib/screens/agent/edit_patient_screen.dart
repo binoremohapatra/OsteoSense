@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../../providers/patient_provider.dart';
 import '../../models/patient.dart';
 import '../../theme/app_colors.dart';
@@ -98,10 +99,10 @@ class _EditPatientScreenState extends State<EditPatientScreen> {
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Row(children: [
-            Icon(Icons.check_circle_rounded, color: Colors.white, size: 18),
-            SizedBox(width: 8),
-            Text('Patient updated successfully'),
+          content: Row(children: [
+            const Icon(Icons.check_circle_rounded, color: Colors.white, size: 18),
+            const SizedBox(width: 8),
+            Text('patient_updated_successfully'.tr()),
           ]),
           backgroundColor: AppColors.riskLow,
           behavior: SnackBarBehavior.floating,

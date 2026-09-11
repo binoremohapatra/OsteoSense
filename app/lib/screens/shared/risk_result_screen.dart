@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:confetti/confetti.dart';
 import 'package:go_router/go_router.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_spacing.dart';
 import '../../theme/app_typography.dart';
@@ -47,8 +48,8 @@ class _RiskResultScreenState extends State<RiskResultScreen> {
   Widget build(BuildContext context) {
     final screening = widget.screening;
     if (screening == null) {
-      return const Scaffold(
-        body: Center(child: Text('No screening result available')),
+      return Scaffold(
+        body: Center(child: Text('no_screening_result_available'.tr())),
       );
     }
     final riskColor = AppColors.getRiskColor(screening.riskLevel ?? 'low');
@@ -170,7 +171,7 @@ class _RiskResultScreenState extends State<RiskResultScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Risk Level',
+                              'risk_level'.tr(),
                               style: AppTypography.labelSmall.copyWith(
                                 color: AppColors.textTertiary,
                                 letterSpacing: 0.5,
@@ -337,9 +338,9 @@ class _RiskResultScreenState extends State<RiskResultScreen> {
                 const SizedBox(width: AppSpacing.md),
                 Expanded(
                   child: MagneticButton(
-                    text: 'Share Report',
+                    text: 'share_report'.tr(),
                     onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Share feature coming soon')),
+                      SnackBar(content: Text('share_feature_coming_soon'.tr())),
                     ),
                   ),
                 ),

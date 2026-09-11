@@ -9,6 +9,16 @@ class SettingsProvider with ChangeNotifier {
   ConnectivityResult _connectionStatus = ConnectivityResult.none;
   int _pendingSyncCount = 0;
 
+  // Notification settings
+  bool _pushNotificationsEnabled = true;
+  bool _screeningRemindersEnabled = true;
+  bool _healthAlertsEnabled = true;
+  bool _vibrationEnabled = true;
+  String _notificationSound = 'Default';
+  String _quietHoursStart = '22:00';
+  String _quietHoursEnd = '07:00';
+  bool _quietHoursEnabled = false;
+
   String get language => _language;
   bool get notificationsEnabled => _notificationsEnabled;
   bool get autoSyncEnabled => _autoSyncEnabled;
@@ -16,16 +26,36 @@ class SettingsProvider with ChangeNotifier {
   bool get isConnected => _connectionStatus != ConnectivityResult.none;
   int get pendingSyncCount => _pendingSyncCount;
 
+  // Notification getters
+  bool get pushNotificationsEnabled => _pushNotificationsEnabled;
+  bool get screeningRemindersEnabled => _screeningRemindersEnabled;
+  bool get healthAlertsEnabled => _healthAlertsEnabled;
+  bool get vibrationEnabled => _vibrationEnabled;
+  String get notificationSound => _notificationSound;
+  String get quietHoursStart => _quietHoursStart;
+  String get quietHoursEnd => _quietHoursEnd;
+  bool get quietHoursEnabled => _quietHoursEnabled;
+
   Future<void> loadSettings() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       _language = prefs.getString('language') ?? 'en';
       _notificationsEnabled = prefs.getBool('notifications_enabled') ?? true;
       _autoSyncEnabled = prefs.getBool('auto_sync_enabled') ?? true;
-      
+
+      // Load notification settings
+      _pushNotificationsEnabled = prefs.getBool('push_notifications_enabled') ?? true;
+      _screeningRemindersEnabled = prefs.getBool('screening_reminders_enabled') ?? true;
+      _healthAlertsEnabled = prefs.getBool('health_alerts_enabled') ?? true;
+      _vibrationEnabled = prefs.getBool('vibration_enabled') ?? true;
+      _notificationSound = prefs.getString('notification_sound') ?? 'Default';
+      _quietHoursStart = prefs.getString('quiet_hours_start') ?? '22:00';
+      _quietHoursEnd = prefs.getString('quiet_hours_end') ?? '07:00';
+      _quietHoursEnabled = prefs.getBool('quiet_hours_enabled') ?? false;
+
       await checkConnectivity();
       await updatePendingSyncCount();
-      
+
       notifyListeners();
     } catch (e) {
       debugPrint('Error loading settings: $e');
@@ -65,6 +95,103 @@ class SettingsProvider with ChangeNotifier {
       await prefs.setBool('auto_sync_enabled', enabled);
     } catch (e) {
       debugPrint('Error saving auto sync preference: $e');
+    }
+  }
+
+  // Notification settings methods
+  Future<void> setPushNotificationsEnabled(bool enabled) async {
+    _pushNotificationsEnabled = enabled;
+    notifyListeners();
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('push_notifications_enabled', enabled);
+    } catch (e) {
+      debugPrint('Error saving push notification preference: $e');
+    }
+  }
+
+  Future<void> setScreeningRemindersEnabled(bool enabled) async {
+    _screeningRemindersEnabled = enabled;
+    notifyListeners();
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('screening_reminders_enabled', enabled);
+    } catch (e) {
+      debugPrint('Error saving screening reminder preference: $e');
+    }
+  }
+
+  Future<void> setHealthAlertsEnabled(bool enabled) async {
+    _healthAlertsEnabled = enabled;
+    notifyListeners();
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('health_alerts_enabled', enabled);
+    } catch (e) {
+      debugPrint('Error saving health alert preference: $e');
+    }
+  }
+
+  Future<void> setVibrationEnabled(bool enabled) async {
+    _vibrationEnabled = enabled;
+    notifyListeners();
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('vibration_enabled', enabled);
+    } catch (e) {
+      debugPrint('Error saving vibration preference: $e');
+    }
+  }
+
+  Future<void> setNotificationSound(String sound) async {
+    _notificationSound = sound;
+    notifyListeners();
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('notification_sound', sound);
+    } catch (e) {
+      debugPrint('Error saving notification sound: $e');
+    }
+  }
+
+  Future<void> setQuietHoursEnabled(bool enabled) async {
+    _quietHoursEnabled = enabled;
+    notifyListeners();
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('quiet_hours_enabled', enabled);
+    } catch (e) {
+      debugPrint('Error saving quiet hours enabled: $e');
+    }
+  }
+
+  Future<void> setQuietHoursStart(String time) async {
+    _quietHoursStart = time;
+    notifyListeners();
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('quiet_hours_start', time);
+    } catch (e) {
+      debugPrint('Error saving quiet hours start: $e');
+    }
+  }
+
+  Future<void> setQuietHoursEnd(String time) async {
+    _quietHoursEnd = time;
+    notifyListeners();
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('quiet_hours_end', time);
+    } catch (e) {
+      debugPrint('Error saving quiet hours end: $e');
     }
   }
 

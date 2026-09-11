@@ -227,6 +227,13 @@ final appRouter = GoRouter(
       ),
     ),
     GoRoute(
+      path: '/language-selection',
+      pageBuilder: (context, state) => CalmFadeTransitionPage(
+        key: state.pageKey,
+        child: const LanguageSelectionScreen(),
+      ),
+    ),
+    GoRoute(
       path: '/onboarding',
       pageBuilder: (context, state) => CalmFadeTransitionPage(
         key: state.pageKey,

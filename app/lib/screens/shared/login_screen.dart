@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../../flutter_flow/flutter_flow_util.dart';
 import '../../providers/auth_provider.dart';
 import '../../models/user.dart';
@@ -174,7 +175,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           const SizedBox(height: 16),
                           Text(
-                            'JointSaathi',
+                            'app_name'.tr(),
                             textAlign: TextAlign.center,
                             style: GoogleFonts.dmSans(
                               fontSize: 28,
@@ -185,7 +186,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'AI-Assisted Osteoarthritis Screening',
+                            'ai_assisted_screening'.tr(),
                             textAlign: TextAlign.center,
                             style: GoogleFonts.dmSans(
                               fontSize: 14,
@@ -212,12 +213,12 @@ class _LoginScreenState extends State<LoginScreen> {
                               child: Row(
                                 children: [
                                   _Tab(
-                                    label: 'Login',
+                                    label: 'login'.tr(),
                                     active: _isLogin,
                                     onTap: () => setState(() => _isLogin = true),
                                   ),
                                   _Tab(
-                                    label: 'Register',
+                                    label: 'register'.tr(),
                                     active: !_isLogin,
                                     onTap: () => setState(() => _isLogin = false),
                                   ),
@@ -233,24 +234,24 @@ class _LoginScreenState extends State<LoginScreen> {
                       if (!_isLogin) ...[
                         _OutlinedField(
                           controller: _nameCtrl,
-                          label: 'Full Name',
-                          hint: 'Dr. Your Name',
+                          label: 'name'.tr(),
+                          hint: 'name_hint'.tr(),
                           icon: Icons.person_outline_rounded,
                         ),
                         const SizedBox(height: 16),
                       ],
                       _OutlinedField(
                         controller: _emailCtrl,
-                        label: 'Phone Number',
-                        hint: 'Enter 10-digit mobile number',
+                        label: 'phone'.tr(),
+                        hint: 'phone_hint'.tr(),
                         icon: Icons.phone_outlined,
                         keyboardType: TextInputType.phone,
                       ),
                       const SizedBox(height: 16),
                       _OutlinedField(
                         controller: _passwordCtrl,
-                        label: 'Password',
-                        hint: '••••••••',
+                        label: 'password'.tr(),
+                        hint: 'password_hint'.tr(),
                         icon: Icons.lock_outline_rounded,
                         obscureText: _obscurePassword,
                         trailing: IconButton(
@@ -273,7 +274,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           child: GestureDetector(
                             onTap: () {},
                             child: Text(
-                              'Forgot Password?',
+                              'forgot_password'.tr(),
                               style: GoogleFonts.dmSans(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
@@ -310,7 +311,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                       // ── Sign In button ────────────────────────────────
                       FFButton(
-                        content: _isLogin ? 'Sign In to Dashboard' : 'Create Account',
+                        content: _isLogin ? 'sign_in_dashboard'.tr() : 'sign_up'.tr(),
                         variant: 'primary',
                         size: 'large',
                         fullWidth: true,
@@ -333,7 +334,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             padding:
                                 const EdgeInsets.symmetric(horizontal: 16),
                             child: Text(
-                              'OR',
+                              'or'.tr(),
                               style: GoogleFonts.dmSans(
                                 fontSize: 11,
                                 color: ff.onSurface,
@@ -352,7 +353,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           Expanded(
                             child: _SocialTile(
                               icon: Icons.g_mobiledata_rounded,
-                              label: 'Google',
+                              label: 'google'.tr(),
                               onTap: () {},
                             ),
                           ),
@@ -360,7 +361,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           Expanded(
                             child: _SocialTile(
                               icon: Icons.apple_rounded,
-                              label: 'Apple',
+                              label: 'apple'.tr(),
                               onTap: () {},
                             ),
                           ),
@@ -388,7 +389,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'Offline Access Enabled',
+                                      'offline_access_description'.tr(),
                                       style: GoogleFonts.dmSans(
                                         fontSize: 14,
                                         fontWeight: FontWeight.bold,
@@ -398,7 +399,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     ),
                                     const SizedBox(height: 2),
                                     Text(
-                                      'You can log in with cached credentials when offline.',
+                                      'offline_access_description'.tr(),
                                       maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
                                       style: GoogleFonts.dmSans(
@@ -420,7 +421,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       Column(
                         children: [
                           Text(
-                            'By signing in, you agree to our',
+                            'terms_agreement'.tr(),
                             textAlign: TextAlign.center,
                             style: GoogleFonts.dmSans(
                               fontSize: 11,
@@ -433,7 +434,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             spacing: 4,
                             children: [
                               Text(
-                                'Privacy Policy',
+                                'privacy_policy'.tr(),
                                 style: GoogleFonts.dmSans(
                                   fontSize: 11,
                                   color: ff.primary,
@@ -444,7 +445,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   style: GoogleFonts.dmSans(
                                       fontSize: 11, color: ff.secondaryText)),
                               Text(
-                                'Terms of Service',
+                                'terms_of_service'.tr(),
                                 style: GoogleFonts.dmSans(
                                   fontSize: 11,
                                   color: ff.primary,
@@ -491,7 +492,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          'Server Online',
+                          'server_online'.tr(),
                           style: GoogleFonts.dmSans(
                             fontSize: 11,
                             fontWeight: FontWeight.w500,

@@ -1,6 +1,7 @@
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../../../theme/app_colors.dart';
 import '../../../theme/app_spacing.dart';
 import '../../../theme/app_typography.dart';
@@ -304,19 +305,23 @@ class PatientCard extends StatelessWidget {
   Widget build(BuildContext context) {
     CardVariant variant;
     Color badgeColor;
+    String translatedRiskLevel;
     switch (riskLevel.toLowerCase()) {
       case 'high':
         variant = CardVariant.riskHigh;
         badgeColor = AppColors.riskHigh;
+        translatedRiskLevel = 'risk_high'.tr();
         break;
       case 'medium':
         variant = CardVariant.riskMedium;
         badgeColor = AppColors.riskMedium;
+        translatedRiskLevel = 'risk_medium'.tr();
         break;
       case 'low':
       default:
         variant = CardVariant.riskLow;
         badgeColor = AppColors.riskLow;
+        translatedRiskLevel = 'risk_low'.tr();
         break;
     }
 
@@ -351,7 +356,7 @@ class PatientCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(16),
             ),
             child: Text(
-              riskLevel.toUpperCase(),
+              translatedRiskLevel,
               style: AppTypography.caption.copyWith(
                 color: badgeColor,
                 fontWeight: FontWeight.bold,

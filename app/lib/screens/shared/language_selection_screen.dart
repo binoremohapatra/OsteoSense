@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../../providers/settings_provider.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_spacing.dart';
@@ -120,8 +121,16 @@ class LanguageSelectionScreen extends StatelessWidget {
         final settingsProvider = Provider.of<SettingsProvider>(context, listen: false);
         await settingsProvider.setLanguage(languageCode);
         
+        // Change app locale
         if (context.mounted) {
-          context.go('/role');
+          await context.setLocale(Locale(languageCode));
+          
+          // Go back or navigate to next screen
+          if (context.canPop()) {
+            context.pop();
+          } else {
+            context.go('/role');
+          }
         }
       },
       child: Row(

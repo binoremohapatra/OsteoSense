@@ -2,6 +2,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_spacing.dart';
 import '../../theme/app_typography.dart';
@@ -46,7 +47,7 @@ class RoleSelectionScreen extends StatelessWidget {
                     Rect.fromLTWH(0, 0, bounds.width, bounds.height),
                   ),
                   child: Text(
-                    'Welcome to JointSaathi',
+                    'welcome_to_jointsaathi'.tr(),
                     style: AppTypography.headlineLarge.copyWith(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
@@ -60,7 +61,7 @@ class RoleSelectionScreen extends StatelessWidget {
 
                 const SizedBox(height: AppSpacing.sm),
                 Text(
-                  'Select your role to get started',
+                  'select_role_to_get_started'.tr(),
                   style: AppTypography.bodyLarge.copyWith(
                     color: AppColors.textSecondary,
                   ),
@@ -75,21 +76,23 @@ class RoleSelectionScreen extends StatelessWidget {
                 // Role cards with glassmorphism
                 _buildRoleCard(
                   context,
-                  'Health Worker',
-                  'I\'m a healthcare professional conducting screenings',
+                  'health_worker'.tr(),
+                  'health_worker_role_description'.tr(),
                   Icons.medical_services,
                   AppColors.primary,
                   0,
+                  'agent',
                 ),
                 const SizedBox(height: AppSpacing.md),
 
                 _buildRoleCard(
                   context,
-                  'Self-Check User',
-                  'I want to check my own osteoarthritis risk',
+                  'self_check_user'.tr(),
+                  'user_role_description'.tr(),
                   Icons.person,
                   AppColors.accent,
                   200,
+                  'user',
                 ),
 
                 const SizedBox(height: AppSpacing.xxl),
@@ -108,6 +111,7 @@ class RoleSelectionScreen extends StatelessWidget {
     IconData icon,
     Color color,
     int delayMs,
+    String role,
   ) {
     return Container(
       decoration: BoxDecoration(
@@ -129,7 +133,6 @@ class RoleSelectionScreen extends StatelessWidget {
             color: Colors.transparent,
             child: InkWell(
               onTap: () {
-                final role = title == 'Health Worker' ? 'agent' : 'user';
                 context.push('/login?role=$role');
               },
               borderRadius: BorderRadius.circular(AppSpacing.radiusMd),

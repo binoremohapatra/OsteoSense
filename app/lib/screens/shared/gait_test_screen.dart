@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lottie/lottie.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../../providers/screening_provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
@@ -161,8 +162,8 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
     if (patient == null) {
       return Scaffold(
         backgroundColor: AppColors.background,
-        appBar: const CustomAppBar(
-          title: 'Gait Assessment Test',
+        appBar: CustomAppBar(
+          title: 'gait_assessment_test'.tr(),
           centerTitle: true,
           showBackButton: true,
         ),
@@ -187,7 +188,7 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
                 ),
                 const SizedBox(height: AppSpacing.xl),
                 Text(
-                  'Select a Patient First',
+                  'select_patient_first'.tr(),
                   style: AppTypography.titleMedium.copyWith(
                     fontWeight: AppTypography.bold,
                     color: AppColors.textPrimary,
@@ -196,7 +197,7 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 Text(
-                  'Please select which patient this gait test is for before starting the recording.',
+                  'select_patient_gait_test'.tr(),
                   style: AppTypography.bodySmall.copyWith(
                     color: AppColors.textSecondary,
                     height: 1.5,
@@ -205,13 +206,13 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
                 ),
                 const SizedBox(height: AppSpacing.xxxl),
                 MagneticButton(
-                  text: 'Select Patient',
+                  text: 'select_patient'.tr(),
                   onPressed: () => context.push('/agent/patients'),
                 ),
                 const SizedBox(height: AppSpacing.md),
                 if (Navigator.canPop(context))
                   GlassButton(
-                    text: 'Go Back',
+                    text: 'go_back'.tr(),
                     onPressed: () => Navigator.pop(context),
                   ),
               ],
@@ -223,8 +224,8 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: const CustomAppBar(
-        title: 'Gait Assessment Test',
+      appBar: CustomAppBar(
+        title: 'gait_assessment_test'.tr(),
         centerTitle: true,
         showBackButton: true,
       ),
@@ -283,7 +284,7 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
                         const SizedBox(width: AppSpacing.md),
                         Expanded(
                           child: Text(
-                            'How to Perform',
+                            'how_to_perform'.tr(),
                             style: AppTypography.titleSmall.copyWith(
                               fontWeight: FontWeight.w700,
                               color: AppColors.textPrimary,
@@ -295,19 +296,19 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
                     ),
                     const SizedBox(height: AppSpacing.md),
                     _buildInstructionItem(
-                      '1. Stand naturally with your device in your pocket',
+                      '1. ${'stand_naturally_device'.tr()}',
                     ),
                     const SizedBox(height: AppSpacing.sm),
                     _buildInstructionItem(
-                      '2. Walk at a normal, comfortable pace',
+                      '2. ${'walk_normal_comfortable'.tr()}',
                     ),
                     const SizedBox(height: AppSpacing.sm),
                     _buildInstructionItem(
-                      '3. Test duration: 30 seconds',
+                      '3. ${'test_duration_30_seconds'.tr()}',
                     ),
                     const SizedBox(height: AppSpacing.sm),
                     _buildInstructionItem(
-                      '4. Walk in a straight line if possible',
+                      '4. ${'walk_straight_line'.tr()}',
                     ),
                   ],
                 ),
@@ -381,7 +382,7 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
                 ).animate().fadeIn(duration: 300.ms)
               else
                 MagneticButton(
-                  text: 'Start Gait Test',
+                  text: 'start_gait_test'.tr(),
                   onPressed: _startRecording,
                 ).animate().fadeIn(duration: 400.ms).scale(
                   begin: const Offset(0.9, 0.9),
@@ -391,7 +392,7 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
               if (Navigator.canPop(context)) ...[
                 const SizedBox(height: AppSpacing.md),
                 GlassButton(
-                  text: 'Skip Test',
+                  text: 'skip_test'.tr(),
                   onPressed: () => Navigator.pop(context),
                 ),
               ],
@@ -431,13 +432,13 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
   }
 
   String _buildPatientSubtitle(patient) {
-    final parts = <String>['${patient.age} yrs • ${patient.gender}'];
+    final parts = <String>['${patient.age} ${'yrs'.tr()} • ${patient.gender}'];
     if (patient.village != null && patient.village!.isNotEmpty) {
       parts.add(patient.village!);
     }
     final measurements = <String>[];
-    if (patient.weightKg != null) measurements.add('${patient.weightKg!.toStringAsFixed(0)} kg');
-    if (patient.heightCm != null) measurements.add('${patient.heightCm!.toStringAsFixed(0)} cm');
+    if (patient.weightKg != null) measurements.add('${patient.weightKg!.toStringAsFixed(0)} ${'kg'.tr()}');
+    if (patient.heightCm != null) measurements.add('${patient.heightCm!.toStringAsFixed(0)} ${'cm'.tr()}');
     if (patient.bmi != null) measurements.add('BMI ${patient.bmi!.toStringAsFixed(1)}');
     if (measurements.isNotEmpty) parts.add(measurements.join(' • '));
     return parts.join('\n');
@@ -479,7 +480,7 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
               ),
               const SizedBox(width: AppSpacing.sm),
               Text(
-                'Data Source',
+                'data_source'.tr(),
                 style: AppTypography.titleSmall,
               ),
             ],
@@ -514,7 +515,7 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
                 }
               },
               icon: const Icon(Icons.bluetooth, size: 18),
-              label: const Text('Connect Device'),
+              label: Text('connect_device'.tr()),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
@@ -534,7 +535,7 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Simulation Parameters', style: AppTypography.labelSmall),
+        Text('simulation_parameters'.tr(), style: AppTypography.labelSmall),
         const SizedBox(height: AppSpacing.xs),
         Row(
           children: [
@@ -542,7 +543,7 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Noise Level', style: AppTypography.caption),
+                  Text('noise_level'.tr(), style: AppTypography.caption),
                   Slider(
                     value: _simParams.noiseLevel,
                     min: 0.0,
@@ -603,7 +604,7 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
               ),
               const SizedBox(width: AppSpacing.sm),
               Text(
-                'Device Status',
+                'device_status'.tr(),
                 style: AppTypography.titleSmall,
               ),
               const Spacer(),
@@ -629,9 +630,9 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
           ),
           const SizedBox(height: AppSpacing.sm),
           _buildStatusRow('Device', isSimulated ? 'Simulation' : 'ESP32/Phone'),
-          _buildStatusRow('Connection', isConnected ? 'Connected' : 'Disconnected'),
-          _buildStatusRow('Data Source', isSimulated ? 'Simulated' : 'Hardware'),
-          _buildStatusRow('Sampling', _isRecording ? 'Active' : 'Stopped'),
+          _buildStatusRow('connection'.tr(), isConnected ? 'connected'.tr() : 'disconnected'.tr()),
+          _buildStatusRow('data_source'.tr(), isSimulated ? 'simulated'.tr() : 'hardware'.tr()),
+          _buildStatusRow('sampling'.tr(), _isRecording ? 'active'.tr() : 'stopped'.tr()),
         ],
       ),
     );
@@ -664,7 +665,7 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Sensor Summary', style: AppTypography.titleSmall),
+          Text('sensor_summary'.tr(), style: AppTypography.titleSmall),
           const SizedBox(height: AppSpacing.sm),
           _buildSensorStatus('Accelerometer', _sensorPipeline.hasAccelerometer),
           _buildSensorStatus('Gyroscope', _sensorPipeline.hasGyroscope),
@@ -782,7 +783,7 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
             child: channel1.isEmpty
                 ? Center(
                     child: Text(
-                      _isRecording ? 'Waiting for data...' : 'No data',
+                      _isRecording ? 'waiting_for_data'.tr() : 'no_data'.tr(),
                       style: AppTypography.bodySmall.copyWith(
                         color: AppColors.textMuted,
                       ),
@@ -872,7 +873,7 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
               )
             else if (!hasData)
               Text(
-                'Not Available',
+                'not_available'.tr(),
                 style: AppTypography.caption.copyWith(
                   color: AppColors.textMuted,
                 ),
@@ -958,7 +959,7 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
                 )
               else if (!hasData)
                 Text(
-                  'Not Available',
+                  'not_available'.tr(),
                   style: AppTypography.caption.copyWith(
                     color: AppColors.textMuted,
                   ),
@@ -1029,7 +1030,7 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Extracted Features', style: AppTypography.titleSmall),
+          Text('extracted_features'.tr(), style: AppTypography.titleSmall),
           const SizedBox(height: AppSpacing.sm),
           
           if (features == null)
@@ -1048,16 +1049,16 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
               crossAxisSpacing: AppSpacing.sm,
               childAspectRatio: 2.5,
               children: [
-                _buildFeatureCard('Accel Mean X', features.accelMeanX.toStringAsFixed(3)),
-                _buildFeatureCard('Accel Mean Y', features.accelMeanY.toStringAsFixed(3)),
-                _buildFeatureCard('Accel Mean Z', features.accelMeanZ.toStringAsFixed(3)),
-                _buildFeatureCard('Accel RMS', features.accelRms.toStringAsFixed(3)),
-                _buildFeatureCard('Gyro Mean X', features.gyroMeanX.toStringAsFixed(3)),
-                _buildFeatureCard('Gyro Mean Y', features.gyroMeanY.toStringAsFixed(3)),
-                _buildFeatureCard('Gyro Mean Z', features.gyroMeanZ.toStringAsFixed(3)),
-                _buildFeatureCard('Gyro RMS', features.gyroRms.toStringAsFixed(3)),
-                _buildFeatureCard('Estimated Steps', features.estimatedSteps.toString()),
-                _buildFeatureCard('Regularity Score', features.regularityScore.toStringAsFixed(3)),
+                _buildFeatureCard('accel_mean_x'.tr(), features.accelMeanX.toStringAsFixed(3)),
+                _buildFeatureCard('accel_mean_y'.tr(), features.accelMeanY.toStringAsFixed(3)),
+                _buildFeatureCard('accel_mean_z'.tr(), features.accelMeanZ.toStringAsFixed(3)),
+                _buildFeatureCard('accel_rms'.tr(), features.accelRms.toStringAsFixed(3)),
+                _buildFeatureCard('gyro_mean_x'.tr(), features.gyroMeanX.toStringAsFixed(3)),
+                _buildFeatureCard('gyro_mean_y'.tr(), features.gyroMeanY.toStringAsFixed(3)),
+                _buildFeatureCard('gyro_mean_z'.tr(), features.gyroMeanZ.toStringAsFixed(3)),
+                _buildFeatureCard('gyro_rms'.tr(), features.gyroRms.toStringAsFixed(3)),
+                _buildFeatureCard('estimated_steps'.tr(), features.estimatedSteps.toString()),
+                _buildFeatureCard('regularity_score'.tr(), features.regularityScore.toStringAsFixed(3)),
               ],
             ),
         ],

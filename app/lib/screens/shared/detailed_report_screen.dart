@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../../models/screening.dart';
 import '../../models/patient.dart';
 import '../../theme/app_colors.dart';
@@ -30,7 +31,7 @@ class DetailedReportScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: CustomAppBar(
-        title: 'Full Report',
+        title: 'full_report'.tr(),
         centerTitle: false,
         showBackButton: true,
         actions: [
@@ -78,7 +79,7 @@ class DetailedReportScreen extends StatelessWidget {
             const SizedBox(height: AppSpacing.xl),
 
             // ── Symptom answers
-            _buildSectionTitle('Symptom Questionnaire', Icons.assignment_outlined),
+            _buildSectionTitle('symptom_questionnaire'.tr(), Icons.assignment_outlined),
             const SizedBox(height: AppSpacing.md),
             _buildSymptomsCard()
                 .animate().fadeIn(duration: AppMotion.standard, delay: 160.ms),
@@ -87,7 +88,7 @@ class DetailedReportScreen extends StatelessWidget {
 
             // ── Gait data
             if (screening.gaitData != null) ...[
-              _buildSectionTitle('Gait Analysis', Icons.directions_walk_rounded),
+              _buildSectionTitle('gait_analysis'.tr(), Icons.directions_walk_rounded),
               const SizedBox(height: AppSpacing.md),
               _buildGaitCard()
                   .animate().fadeIn(duration: AppMotion.standard, delay: 240.ms),
@@ -95,7 +96,7 @@ class DetailedReportScreen extends StatelessWidget {
             ],
 
             // ── Contributing factors
-            _buildSectionTitle('Contributing Factors', Icons.analytics_outlined),
+            _buildSectionTitle('contributing_factors'.tr(), Icons.analytics_outlined),
             const SizedBox(height: AppSpacing.md),
             _buildFactorsCard(riskColor)
                 .animate().fadeIn(duration: AppMotion.standard, delay: 320.ms),
@@ -104,7 +105,7 @@ class DetailedReportScreen extends StatelessWidget {
 
             // ── AI Reasoning
             if (screening.aiReasoning != null) ...[
-              _buildSectionTitle('AI Clinical Reasoning', Icons.psychology_outlined),
+              _buildSectionTitle('ai_clinical_reasoning'.tr(), Icons.psychology_outlined),
               const SizedBox(height: AppSpacing.md),
               _buildReasoningCard()
                   .animate().fadeIn(duration: AppMotion.standard, delay: 400.ms),
@@ -112,7 +113,7 @@ class DetailedReportScreen extends StatelessWidget {
             ],
 
             // ── Recommendations
-            _buildSectionTitle('Recommendations', Icons.lightbulb_outline),
+            _buildSectionTitle('recommendations'.tr(), Icons.lightbulb_outline),
             const SizedBox(height: AppSpacing.md),
             _buildRecommendationsCard(riskColor)
                 .animate().fadeIn(duration: AppMotion.standard, delay: 480.ms),
@@ -124,7 +125,7 @@ class DetailedReportScreen extends StatelessWidget {
               children: [
                 Expanded(
                   child: MagneticButton(
-                    text: 'Share PDF',
+                    text: 'share_pdf'.tr(),
                     onPressed: () => Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (_) => PdfPreviewScreen(screening: screening, patient: patient),
@@ -247,7 +248,7 @@ class DetailedReportScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('OA Risk Assessment', style: AppTypography.labelSmall.copyWith(color: riskColor.withValues(alpha: 0.8))),
+                Text('oa_risk_assessment'.tr(), style: AppTypography.labelSmall.copyWith(color: riskColor.withValues(alpha: 0.8))),
                 const SizedBox(height: 4),
                 Text(
                   '${(screening.riskLevel ?? 'low').toUpperCase()} RISK',
@@ -274,7 +275,7 @@ class DetailedReportScreen extends StatelessWidget {
                 '${((screening.confidence ?? 0) * 100).round()}%',
                 style: AppTypography.headlineLarge.copyWith(color: riskColor, fontWeight: AppTypography.bold),
               ),
-              Text('confidence', style: AppTypography.labelSmall.copyWith(color: AppColors.textTertiary)),
+              Text('confidence'.tr(), style: AppTypography.labelSmall.copyWith(color: AppColors.textTertiary)),
             ],
           ),
         ],
@@ -288,17 +289,17 @@ class DetailedReportScreen extends StatelessWidget {
       padding: const EdgeInsets.all(AppSpacing.cardPaddingMd),
       child: Column(
         children: [
-          _answerRow('Pain Level', '${screening.painLevel ?? 0} / 10', Icons.healing_outlined),
+          _answerRow('pain_level'.tr(), '${screening.painLevel ?? 0} / 10', Icons.healing_outlined),
           _divider(),
-          _answerRow('Morning Stiffness', _stiffnessLabel(screening.stiffnessDuration), Icons.schedule_outlined),
+          _answerRow('morning_stiffness'.tr(), _stiffnessLabel(screening.stiffnessDuration), Icons.schedule_outlined),
           _divider(),
-          _answerRow('Joint Swelling', screening.swelling == true ? 'Yes — swelling present' : 'No swelling', Icons.water_drop_outlined),
+          _answerRow('swelling'.tr(), screening.swelling == true ? 'swelling_present'.tr() : 'no_swelling'.tr(), Icons.water_drop_outlined),
           _divider(),
           _answerRow(
-            'Past Injury',
+            'past_injury'.tr(),
             screening.pastInjury != null && screening.pastInjury!.isNotEmpty
-                ? 'Yes — ${screening.pastInjury}'
-                : 'No prior injury',
+                ? 'yes'.tr() + ' — ${screening.pastInjury}'
+                : 'no_history_of_injury'.tr(),
             Icons.personal_injury_outlined,
           ),
         ],
@@ -325,8 +326,8 @@ class DetailedReportScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Gait Data Recorded', style: AppTypography.bodyMedium.copyWith(fontWeight: AppTypography.semiBold)),
-                Text('Accelerometer + gyroscope data captured during walk test', style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary)),
+                Text('gait_data_recorded'.tr(), style: AppTypography.bodyMedium.copyWith(fontWeight: AppTypography.semiBold)),
+                Text('accelerometer_data'.tr(), style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary)),
               ],
             ),
           ),
@@ -347,7 +348,7 @@ class DetailedReportScreen extends StatelessWidget {
               children: [
                 const Icon(Icons.check_circle_outline, color: AppColors.success, size: 20),
                 const SizedBox(width: AppSpacing.md),
-                Text('No significant risk factors detected', style: AppTypography.bodySmall.copyWith(color: AppColors.success)),
+                Text('no_significant_risk_factors'.tr(), style: AppTypography.bodySmall.copyWith(color: AppColors.success)),
               ],
             )
           : Column(
@@ -390,7 +391,7 @@ class DetailedReportScreen extends StatelessWidget {
             children: [
               const Icon(Icons.psychology_outlined, color: AppColors.primary, size: 18),
               const SizedBox(width: AppSpacing.sm),
-              Text('AI Reasoning', style: AppTypography.labelMedium.copyWith(color: AppColors.primary, fontWeight: AppTypography.semiBold)),
+              Text('ai_reasoning'.tr(), style: AppTypography.labelMedium.copyWith(color: AppColors.primary, fontWeight: AppTypography.semiBold)),
             ],
           ),
           const SizedBox(height: AppSpacing.md),
@@ -471,10 +472,10 @@ class DetailedReportScreen extends StatelessWidget {
 
   String _stiffnessLabel(String? val) {
     switch (val) {
-      case '<30': return 'Less than 30 minutes';
-      case '30-60': return '30–60 minutes';
-      case '>60': return 'More than 60 minutes';
-      default: return 'No stiffness';
+      case '<30': return 'less_than_30_minutes'.tr();
+      case '30-60': return '30_60_minutes'.tr();
+      case '>60': return 'more_than_60_minutes'.tr();
+      default: return 'no_stiffness'.tr();
     }
   }
 
@@ -482,26 +483,26 @@ class DetailedReportScreen extends StatelessWidget {
     switch (riskLevel) {
       case 'high':
         return [
-          'Refer urgently to an orthopedic specialist',
-          'Consider X-ray or MRI imaging',
-          'Prescribe analgesics per clinical guidelines',
-          'Educate on joint protection techniques',
-          'Schedule follow-up within 2 weeks',
+          'refer_urgently_orthopedic'.tr(),
+          'consider_xray_mri'.tr(),
+          'prescribe_analgesics'.tr(),
+          'educate_joint_protection'.tr(),
+          'schedule_follow_up_2_weeks'.tr(),
         ];
       case 'medium':
         return [
-          'Consult physician within 1 month',
-          'Physiotherapy assessment recommended',
-          'Encourage weight management if BMI > 25',
-          'Prescribe low-impact exercise program',
-          'Follow-up screening in 3 months',
+          'consult_physician_1_month'.tr(),
+          'physiotherapy_recommended'.tr(),
+          'encourage_weight_management'.tr(),
+          'prescribe_low_impact_exercise'.tr(),
+          'follow_up_screening_3_months'.tr(),
         ];
       default:
         return [
-          'Maintain healthy lifestyle and regular exercise',
-          'Ensure adequate calcium and vitamin D intake',
-          'Schedule routine screening in 6–12 months',
-          'Educate on early OA symptoms to watch for',
+          'maintain_healthy_weight'.tr(),
+          'regular_physical_activity'.tr(),
+          'healthy_diet'.tr(),
+          'adequate_sleep'.tr(),
         ];
     }
   }

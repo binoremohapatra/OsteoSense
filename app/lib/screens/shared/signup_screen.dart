@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_typography.dart';
@@ -123,13 +124,13 @@ class _SignupScreenState extends State<SignupScreen> {
                     const SizedBox(height: AppSpacing.xl),
 
                     Text(
-                      isAgent ? 'Create Health Worker Account' : 'Create Account',
+                      isAgent ? 'create_health_worker_account'.tr() : 'create_account'.tr(),
                       style: AppTypography.headlineMedium.copyWith(color: Colors.white, fontWeight: AppTypography.bold),
                     ),
                     Text(
                       isAgent
-                          ? 'Join the network of health workers screening for osteoarthritis'
-                          : 'Join JointSaathi to manage your osteoarthritis risk',
+                          ? 'health_worker_description'.tr()
+                          : 'user_description'.tr(),
                       style: AppTypography.bodyMedium.copyWith(color: Colors.white.withValues(alpha: 0.85), height: 1.4),
                     ),
                   ],
@@ -148,11 +149,11 @@ class _SignupScreenState extends State<SignupScreen> {
 
                       PremiumTextField(
                         controller: _nameController,
-                        label: 'Full Name',
-                        hint: 'Enter your full name',
+                        label: 'full_name'.tr(),
+                        hint: 'enter_full_name'.tr(),
                         prefixIcon: const Icon(Icons.person_outline),
                         validator: (v) {
-                          if (v == null || v.trim().isEmpty) return 'Full name required';
+                          if (v == null || v.trim().isEmpty) return 'full_name_required'.tr();
                           return null;
                         },
                       ).animate().fadeIn(duration: AppMotion.standard, delay: 50.ms).slideY(begin: 0.1, end: 0, duration: AppMotion.standard, curve: AppMotion.curve),
@@ -161,13 +162,13 @@ class _SignupScreenState extends State<SignupScreen> {
 
                       PremiumTextField(
                         controller: _phoneController,
-                        label: 'Phone Number',
-                        hint: '10-digit mobile number',
+                        label: 'phone_number'.tr(),
+                        hint: 'phone_number_hint'.tr(),
                         keyboardType: TextInputType.phone,
                         prefixIcon: const Icon(Icons.phone_outlined),
                         validator: (v) {
-                          if (v == null || v.isEmpty) return 'Phone number required';
-                          if (v.length < 10) return 'Enter a valid 10-digit number';
+                          if (v == null || v.isEmpty) return 'phone_number_required'.tr();
+                          if (v.length < 10) return 'valid_phone_number'.tr();
                           return null;
                         },
                         inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(10)],
@@ -177,8 +178,8 @@ class _SignupScreenState extends State<SignupScreen> {
 
                       PremiumTextField(
                         controller: _passwordController,
-                        label: 'Password',
-                        hint: 'Create a password (min 6 chars)',
+                        label: 'password'.tr(),
+                        hint: 'create_password_hint'.tr(),
                         obscureText: _obscurePassword,
                         prefixIcon: const Icon(Icons.lock_outline),
                         suffixIcon: GestureDetector(
@@ -186,8 +187,8 @@ class _SignupScreenState extends State<SignupScreen> {
                           child: Icon(_obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined, color: AppColors.textTertiary, size: 20),
                         ),
                         validator: (v) {
-                          if (v == null || v.isEmpty) return 'Password required';
-                          if (v.length < 6) return 'Password must be at least 6 characters';
+                          if (v == null || v.isEmpty) return 'password_required'.tr();
+                          if (v.length < 6) return 'password_min_length'.tr();
                           return null;
                         },
                       ).animate().fadeIn(duration: AppMotion.standard, delay: 150.ms).slideY(begin: 0.1, end: 0, duration: AppMotion.standard, curve: AppMotion.curve),
@@ -196,16 +197,16 @@ class _SignupScreenState extends State<SignupScreen> {
                         const SizedBox(height: AppSpacing.md),
                         PremiumTextField(
                           controller: _healthCenterController,
-                          label: 'Health Center / Clinic',
-                          hint: 'Optional: name of your health center',
+                          label: 'health_center'.tr(),
+                          hint: 'health_center_hint'.tr(),
                           prefixIcon: const Icon(Icons.local_hospital_outlined),
                         ).animate().fadeIn(duration: AppMotion.standard, delay: 200.ms).slideY(begin: 0.1, end: 0, duration: AppMotion.standard, curve: AppMotion.curve),
 
                         const SizedBox(height: AppSpacing.md),
                         PremiumTextField(
                           controller: _locationController,
-                          label: 'Location (Village / Block)',
-                          hint: 'Optional: your operating area',
+                          label: 'location'.tr(),
+                          hint: 'operating_area_hint'.tr(),
                           prefixIcon: const Icon(Icons.location_city_outlined),
                         ).animate().fadeIn(duration: AppMotion.standard, delay: 250.ms).slideY(begin: 0.1, end: 0, duration: AppMotion.standard, curve: AppMotion.curve),
                       ],
@@ -213,7 +214,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       const SizedBox(height: AppSpacing.xxl),
 
                       GradientButton(
-                        text: 'Sign Up',
+                        text: 'sign_up'.tr(),
                         onPressed: _isLoading ? () {} : _signup,
                         isLoading: _isLoading,
                         gradient: AppColors.fullPrimaryGradient,
@@ -228,10 +229,10 @@ class _SignupScreenState extends State<SignupScreen> {
                         child: Wrap(
                           alignment: WrapAlignment.center,
                           children: [
-                            Text('Already have an account? ', style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary)),
+                            Text('already_have_account'.tr() + ' ', style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary)),
                             GestureDetector(
                               onTap: () => context.go('/login?role=${widget.role}'),
-                              child: Text('Login', style: AppTypography.bodySmall.copyWith(color: AppColors.primary, fontWeight: AppTypography.semiBold)),
+                              child: Text('login'.tr(), style: AppTypography.bodySmall.copyWith(color: AppColors.primary, fontWeight: AppTypography.semiBold)),
                             ),
                           ],
                         ),

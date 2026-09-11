@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../../providers/screening_provider.dart';
 import '../../providers/patient_provider.dart';
 import '../../services/tflite_service.dart';
@@ -25,18 +26,19 @@ class ProcessingScreen extends StatefulWidget {
 class _ProcessingScreenState extends State<ProcessingScreen>
     with SingleTickerProviderStateMixin {
   final TFLiteService _tfliteService = TFLiteService();
-  final List<ProcessingStep> _steps = [
-    ProcessingStep(label: 'Analyzing symptoms', status: StepStatus.inProgress),
-    ProcessingStep(label: 'Processing gait data', status: StepStatus.pending),
-    ProcessingStep(label: 'Calculating risk factors', status: StepStatus.pending),
-    ProcessingStep(label: 'Generating recommendations', status: StepStatus.pending),
-  ];
+  late List<ProcessingStep> _steps;
   bool _showSuccess = false;
   late AnimationController _checkmarkController;
 
   @override
   void initState() {
     super.initState();
+    _steps = [
+      ProcessingStep(label: 'analyzing_symptoms'.tr(), status: StepStatus.inProgress),
+      ProcessingStep(label: 'processing_gait_data'.tr(), status: StepStatus.pending),
+      ProcessingStep(label: 'calculating_risk_factors'.tr(), status: StepStatus.pending),
+      ProcessingStep(label: 'generating_recommendations'.tr(), status: StepStatus.pending),
+    ];
     _checkmarkController = AnimationController(
       vsync: this,
       duration: AppMotion.slow,
@@ -266,7 +268,7 @@ class _ProcessingScreenState extends State<ProcessingScreen>
           Column(
             children: [
               Text(
-                'Analyzing Results',
+                'analyzing_results'.tr(),
                 style: AppTypography.headlineSmall.copyWith(
                   fontWeight: AppTypography.bold,
                   color: AppColors.textPrimary,
@@ -275,7 +277,7 @@ class _ProcessingScreenState extends State<ProcessingScreen>
               ).animate().fadeIn(duration: AppMotion.slow),
               const SizedBox(height: AppSpacing.sm),
               Text(
-                'AI model is processing your screening data',
+                'ai_processing_description'.tr(),
                 style: AppTypography.bodySmall.copyWith(
                   color: AppColors.textSecondary,
                 ),
@@ -452,7 +454,7 @@ class _ProcessingScreenState extends State<ProcessingScreen>
               border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
             ),
             child: Text(
-              'Analysis Complete',
+              'analysis_complete'.tr(),
               style: AppTypography.titleMedium.copyWith(
                 fontWeight: AppTypography.semiBold,
                 color: AppColors.success,
@@ -462,7 +464,7 @@ class _ProcessingScreenState extends State<ProcessingScreen>
           ).animate().fadeIn(duration: AppMotion.slow, delay: 200.ms).scale(begin: const Offset(0.9, 0.9), end: const Offset(1.0, 1.0), duration: AppMotion.fast, curve: AppMotion.curvePop),
           const SizedBox(height: AppSpacing.md),
           Text(
-            'Preparing your results…',
+            'preparing_results'.tr(),
             style: AppTypography.bodyMedium.copyWith(
               color: AppColors.textSecondary,
             ),

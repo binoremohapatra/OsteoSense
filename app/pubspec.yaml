@@ -44,9 +44,13 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   intl: 0.20.3
+  easy_localization: ^3.0.7
 
   # Notifications
   flutter_local_notifications: ^17.0.0
+  timezone: ^0.9.4
+  firebase_core: ^2.24.2
+  firebase_messaging: ^14.7.10
 
   # Images
   cached_network_image: ^3.3.0
@@ -66,6 +70,7 @@ dependencies:
 
   # Storage
   shared_preferences: ^2.2.2
+  share_plus: ^7.2.1
 
   # Icons & Splash
   flutter_launcher_icons: ^0.13.1
@@ -94,6 +99,7 @@ flutter:
     - assets/icons/
     - assets/models/
     - assets/images/JointSaathi_dotted_particle_background.gif
+    - assets/translations/
 
 
 # ============================================================

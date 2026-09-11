@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_spacing.dart';
 import '../../theme/app_typography.dart';
@@ -104,14 +105,14 @@ class _JointSelectionScreenState extends State<JointSelectionScreen> {
                     
                     // Header
                     Text(
-                      'Select Joint',
+                      'select_joint'.tr(),
                       style: AppTypography.headlineMedium.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                     ).animate().fadeIn(duration: AppMotion.standard),
                     const SizedBox(height: AppSpacing.sm),
                     Text(
-                      'Which area would you like to screen today?',
+                      'which_area_to_screen'.tr(),
                       style: AppTypography.bodyLarge.copyWith(
                         color: AppColors.textSecondary,
                       ),
@@ -149,7 +150,7 @@ class _JointSelectionScreenState extends State<JointSelectionScreen> {
                     child: OutlinedButton.icon(
                       onPressed: () => context.go('/agent/home'),
                       icon: const Icon(Icons.close, size: 18),
-                      label: const Text('Cancel'),
+                      label: Text('cancel'.tr()),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.textSecondary,
                         side: BorderSide(color: AppColors.border),
@@ -164,7 +165,7 @@ class _JointSelectionScreenState extends State<JointSelectionScreen> {
                           ? () => _selectJoint(_selectedJoint!)
                           : null,
                       icon: const Icon(Icons.arrow_forward, size: 18),
-                      label: const Text('Next'),
+                      label: Text('next'.tr()),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: _selectedJoint != null
                             ? AppColors.primary

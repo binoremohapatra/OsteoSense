@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_spacing.dart';
@@ -67,7 +68,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           onPressed: () => context.go('/agent/home'),
         ),
         title: Text(
-          'Profile',
+          'profile'.tr(),
           style: AppTypography.titleLarge.copyWith(
             color: AppColors.textPrimary,
             fontWeight: FontWeight.w700,
@@ -90,7 +91,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                       const SizedBox(height: AppSpacing.md),
                       Text(
-                        'Failed to load profile',
+                        'failed_to_load_profile'.tr(),
                         style: AppTypography.titleMedium.copyWith(
                           color: AppColors.textSecondary,
                         ),
@@ -117,35 +118,35 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       const SizedBox(height: AppSpacing.xl),
                       
                       // Profile Details
-                      _buildProfileSection('Personal Information', [
+                      _buildProfileSection('personal_information'.tr(), [
                         _ProfileDetailItem(
                           icon: Icons.person_rounded,
-                          label: 'Full Name',
-                          value: _profileData!['fullName'] ?? 'Not provided',
+                          label: 'full_name'.tr(),
+                          value: _profileData!['fullName'] ?? 'not_provided'.tr(),
                         ),
                         _ProfileDetailItem(
                           icon: Icons.phone_rounded,
-                          label: 'Phone Number',
-                          value: _profileData!['phoneNumber'] ?? 'Not provided',
+                          label: 'phone_number'.tr(),
+                          value: _profileData!['phoneNumber'] ?? 'not_provided'.tr(),
                         ),
                       ]).animate(delay: 100.ms).fadeIn(duration: 600.ms),
                       
                       const SizedBox(height: AppSpacing.xl),
                       
-                      _buildProfileSection('Professional Information', [
+                      _buildProfileSection('professional_information'.tr(), [
                         _ProfileDetailItem(
                           icon: Icons.local_hospital_rounded,
-                          label: 'Health Center ID',
-                          value: _profileData!['healthCenterId'] ?? 'Not assigned',
+                          label: 'health_center_id'.tr(),
+                          value: _profileData!['healthCenterId'] ?? 'not_assigned'.tr(),
                         ),
                         _ProfileDetailItem(
                           icon: Icons.location_on_rounded,
-                          label: 'Location',
-                          value: _profileData!['location'] ?? 'Not set',
+                          label: 'location'.tr(),
+                          value: _profileData!['location'] ?? 'not_set'.tr(),
                         ),
                         _ProfileDetailItem(
                           icon: Icons.badge_rounded,
-                          label: 'Role',
+                          label: 'role'.tr(),
                           value: _profileData!['role'] ?? 'Healthcare Provider',
                         ),
                       ]).animate(delay: 200.ms).fadeIn(duration: 600.ms),

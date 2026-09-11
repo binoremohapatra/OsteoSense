@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../../providers/screening_provider.dart';
 import '../../providers/patient_provider.dart';
 import '../../theme/app_colors.dart';
@@ -121,7 +122,7 @@ class _SymptomQuestionnaireScreenState
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: CustomAppBar(
-        title: 'Symptom Assessment',
+        title: 'symptom_assessment'.tr(),
         centerTitle: false,
         showBackButton: true,
         onLeadingPressed: () => context.go('/agent/home'),
@@ -233,9 +234,9 @@ class _SymptomQuestionnaireScreenState
         children: [
           const SizedBox(height: AppSpacing.lg),
           _buildQuestionHeader(
-            questionNumber: 'Question 1',
-            question: 'How would you rate your joint pain right now?',
-            hint: 'Slide to indicate pain level from 0 (no pain) to 10 (worst imaginable)',
+            questionNumber: 'question_1'.tr(),
+            question: 'question_1_text'.tr(),
+            hint: 'question_1_hint'.tr(),
           ),
           const SizedBox(height: AppSpacing.xl),
 
@@ -275,9 +276,9 @@ class _SymptomQuestionnaireScreenState
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('No pain', style: AppTypography.labelSmall.copyWith(color: AppColors.riskLow)),
-              Text('Moderate', style: AppTypography.labelSmall.copyWith(color: AppColors.riskMedium)),
-              Text('Worst', style: AppTypography.labelSmall.copyWith(color: AppColors.riskHigh)),
+              Text('no_pain'.tr(), style: AppTypography.labelSmall.copyWith(color: AppColors.riskLow)),
+              Text('moderate'.tr(), style: AppTypography.labelSmall.copyWith(color: AppColors.riskMedium)),
+              Text('worst'.tr(), style: AppTypography.labelSmall.copyWith(color: AppColors.riskHigh)),
             ],
           ),
           const SizedBox(height: AppSpacing.sm),
@@ -345,27 +346,27 @@ class _SymptomQuestionnaireScreenState
   // ─────────────────────────────────────────────────────
   Widget _buildQ2StiffnessChips() {
     final options = [
-      const _StiffnessOption(
+      _StiffnessOption(
         value: 'none',
-        label: 'No stiffness',
+        label: 'no_stiffness'.tr(),
         icon: Icons.check_circle_outline,
         color: AppColors.riskLow,
       ),
-      const _StiffnessOption(
+      _StiffnessOption(
         value: '<30',
-        label: 'Less than 30 min',
+        label: 'less_than_30_min'.tr(),
         icon: Icons.schedule,
         color: AppColors.riskMedium,
       ),
-      const _StiffnessOption(
+      _StiffnessOption(
         value: '30-60',
-        label: '30 – 60 minutes',
+        label: '30_60_minutes'.tr(),
         icon: Icons.timer,
         color: AppColors.riskMedium,
       ),
-      const _StiffnessOption(
+      _StiffnessOption(
         value: '>60',
-        label: 'More than 60 min',
+        label: 'more_than_60_min'.tr(),
         icon: Icons.warning_amber_outlined,
         color: AppColors.riskHigh,
       ),
@@ -378,9 +379,9 @@ class _SymptomQuestionnaireScreenState
         children: [
           const SizedBox(height: AppSpacing.lg),
           _buildQuestionHeader(
-            questionNumber: 'Question 2',
-            question: 'How long does morning joint stiffness last?',
-            hint: 'This is the stiffness felt after waking up or after long rest periods',
+            questionNumber: 'question_2'.tr(),
+            question: 'question_2_text'.tr(),
+            hint: 'question_2_hint'.tr(),
           ),
           const SizedBox(height: AppSpacing.xl),
 
@@ -451,9 +452,9 @@ class _SymptomQuestionnaireScreenState
         children: [
           const SizedBox(height: AppSpacing.lg),
           _buildQuestionHeader(
-            questionNumber: 'Question 3',
-            question: 'Is there any visible swelling in the joints?',
-            hint: 'Look for swollen, puffy or inflamed areas around the knees, hips or fingers',
+            questionNumber: 'question_3'.tr(),
+            question: 'question_3_text'.tr(),
+            hint: 'question_3_hint'.tr(),
           ),
           const SizedBox(height: AppSpacing.xxl),
 
@@ -496,7 +497,7 @@ class _SymptomQuestionnaireScreenState
                         ),
                         const SizedBox(height: AppSpacing.md),
                         Text(
-                          'No Swelling',
+                          'no_swelling'.tr(),
                           style: AppTypography.titleSmall.copyWith(
                             color: !_swelling ? AppColors.riskLow : AppColors.textSecondary,
                             fontWeight: !_swelling ? AppTypography.semiBold : AppTypography.regular,
@@ -544,7 +545,7 @@ class _SymptomQuestionnaireScreenState
                         ),
                         const SizedBox(height: AppSpacing.md),
                         Text(
-                          'Swelling Present',
+                          'swelling_present'.tr(),
                           style: AppTypography.titleSmall.copyWith(
                             color: _swelling ? AppColors.riskHigh : AppColors.textSecondary,
                             fontWeight: _swelling ? AppTypography.semiBold : AppTypography.regular,
@@ -577,7 +578,7 @@ class _SymptomQuestionnaireScreenState
                   const SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: Text(
-                      'Swelling is an important indicator. Ensure to document and report to specialist.',
+                      'swelling_important_indicator'.tr(),
                       style: AppTypography.bodySmall.copyWith(color: AppColors.riskHigh),
                     ),
                   ),
@@ -600,9 +601,9 @@ class _SymptomQuestionnaireScreenState
         children: [
           const SizedBox(height: AppSpacing.lg),
           _buildQuestionHeader(
-            questionNumber: 'Question 4',
-            question: 'Any history of joint injury or surgery?',
-            hint: 'Previous fractures, dislocations, ligament tears, or joint surgeries',
+            questionNumber: 'question_4'.tr(),
+            question: 'question_4_text'.tr(),
+            hint: 'question_4_hint'.tr(),
           ),
           const SizedBox(height: AppSpacing.xl),
 
@@ -637,13 +638,13 @@ class _SymptomQuestionnaireScreenState
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Previous Injury / Surgery',
+                        'previous_injury_surgery'.tr(),
                         style: AppTypography.bodyMedium.copyWith(
                           fontWeight: AppTypography.semiBold,
                         ),
                       ),
                       Text(
-                        _pastInjury ? 'Yes — tap to add details below' : 'No history of injury',
+                        _pastInjury ? 'yes_tap_add_details'.tr() : 'no_history_of_injury'.tr(),
                         style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
                       ),
                     ],
@@ -673,8 +674,8 @@ class _SymptomQuestionnaireScreenState
                     padding: const EdgeInsets.only(top: AppSpacing.md),
                     child: PremiumTextField(
                       controller: _injuryDetailController,
-                      label: 'Describe the injury or surgery',
-                      hint: 'e.g., Left knee ligament tear in 2020, surgery done',
+                      label: 'describe_injury_surgery'.tr(),
+                      hint: 'injury_example'.tr(),
                       keyboardType: TextInputType.multiline,
                     ),
                   )
@@ -699,7 +700,7 @@ class _SymptomQuestionnaireScreenState
                     const Icon(Icons.summarize_outlined, color: AppColors.primary, size: 18),
                     const SizedBox(width: AppSpacing.sm),
                     Text(
-                      'Your answers so far',
+                      'your_answers_so_far'.tr(),
                       style: AppTypography.labelMedium.copyWith(
                         color: AppColors.primary,
                         fontWeight: AppTypography.semiBold,
@@ -708,10 +709,10 @@ class _SymptomQuestionnaireScreenState
                   ],
                 ),
                 const SizedBox(height: AppSpacing.md),
-                _summaryRow('Pain level', '$_painLevel / 10'),
-                _summaryRow('Morning stiffness', _stiffnessDurationLabel()),
-                _summaryRow('Swelling', _swelling ? 'Yes' : 'No'),
-                _summaryRow('Past injury', _pastInjury ? 'Yes' : 'No'),
+                _summaryRow('pain_level'.tr(), '$_painLevel / 10'),
+                _summaryRow('morning_stiffness'.tr(), _stiffnessDurationLabel()),
+                _summaryRow('swelling'.tr(), _swelling ? 'yes'.tr() : 'no'.tr()),
+                _summaryRow('past_injury'.tr(), _pastInjury ? 'yes'.tr() : 'no'.tr()),
               ],
             ),
           ).animate().fadeIn(duration: AppMotion.standard, delay: 200.ms),
@@ -786,7 +787,7 @@ class _SymptomQuestionnaireScreenState
             Expanded(
               flex: 2,
               child: GlassButton(
-                text: 'Back',
+                text: 'back'.tr(),
                 onPressed: _prevPage,
                 icon: const Icon(Icons.arrow_back_rounded, color: AppColors.primary),
               ),
@@ -796,7 +797,7 @@ class _SymptomQuestionnaireScreenState
           Expanded(
             flex: 3,
             child: MagneticButton(
-              text: isLastPage ? 'Start Gait Test' : 'Next',
+              text: isLastPage ? 'start_gait_test'.tr() : 'next'.tr(),
               onPressed: _isNavigating ? () {} : _nextPage,
               isLoading: _isNavigating,
             ),
@@ -821,10 +822,10 @@ class _SymptomQuestionnaireScreenState
 
   String _stiffnessDurationLabel() {
     switch (_stiffnessDuration) {
-      case '<30': return '< 30 minutes';
-      case '30-60': return '30–60 minutes';
-      case '>60': return '> 60 minutes';
-      default: return 'None';
+      case '<30': return 'less_than_30_minutes'.tr();
+      case '30-60': return '30_60_minutes_duration'.tr();
+      case '>60': return 'more_than_60_minutes'.tr();
+      default: return 'none'.tr();
     }
   }
 
@@ -837,12 +838,12 @@ class _SymptomQuestionnaireScreenState
   }
 
   String _getPainDescription(int level) {
-    if (level == 0) return 'No pain at all';
-    if (level <= 2) return 'Mild pain — barely noticeable';
-    if (level <= 4) return 'Moderate pain — can still do daily activities';
-    if (level <= 6) return 'Significant pain — interferes with activities';
-    if (level <= 8) return 'Severe pain — difficult to concentrate';
-    return 'Worst possible pain — completely disabling';
+    if (level == 0) return 'no_pain_at_all'.tr();
+    if (level <= 2) return 'mild_pain_barely'.tr();
+    if (level <= 4) return 'moderate_pain_activities'.tr();
+    if (level <= 6) return 'significant_pain_interferes'.tr();
+    if (level <= 8) return 'severe_pain_concentrate'.tr();
+    return 'worst_possible_pain'.tr();
   }
 }
 

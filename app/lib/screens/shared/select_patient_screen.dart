@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../../providers/patient_provider.dart';
 import '../../models/patient.dart';
 import '../../theme/app_colors.dart';
@@ -88,10 +89,10 @@ class _SelectPatientScreenState extends State<SelectPatientScreen> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
-          onPressed: () => context.pop(),
+          onPressed: () => context.go('/agent/home'),
         ),
         title: Text(
-          'Select Patient',
+          'select_patient'.tr(),
           style: AppTypography.headlineSmall.copyWith(
             color: AppColors.textPrimary,
             fontWeight: FontWeight.w600,
@@ -123,7 +124,7 @@ class _SelectPatientScreenState extends State<SelectPatientScreen> {
                 child: TextField(
                   controller: _searchController,
                   decoration: InputDecoration(
-                    hintText: 'Search patients...',
+                    hintText: 'search_patient'.tr(),
                     hintStyle: AppTypography.bodyMedium.copyWith(
                       color: AppColors.textSecondary,
                     ),
@@ -171,7 +172,7 @@ class _SelectPatientScreenState extends State<SelectPatientScreen> {
                   onPressed: _addNewPatient,
                   icon: const Icon(Icons.add),
                   label: Text(
-                    'Add New Patient',
+                    'add_new_patient'.tr(),
                     style: AppTypography.labelLarge.copyWith(
                       color: Colors.white,
                       fontWeight: FontWeight.w600,
@@ -206,7 +207,7 @@ class _SelectPatientScreenState extends State<SelectPatientScreen> {
           ),
           const SizedBox(height: AppSpacing.md),
           Text(
-            _isSearching ? 'No patients found' : 'No patients yet',
+            _isSearching ? 'no_patients_found'.tr() : 'no_patients_yet'.tr(),
             style: AppTypography.titleMedium.copyWith(
               color: AppColors.textSecondary,
             ),
@@ -214,8 +215,8 @@ class _SelectPatientScreenState extends State<SelectPatientScreen> {
           const SizedBox(height: AppSpacing.sm),
           Text(
             _isSearching
-                ? 'Try a different search term'
-                : 'Add your first patient to get started',
+                ? 'try_different_search'.tr()
+                : 'add_first_patient'.tr(),
             style: AppTypography.bodyMedium.copyWith(
               color: AppColors.textSecondary.withValues(alpha: 0.7),
             ),

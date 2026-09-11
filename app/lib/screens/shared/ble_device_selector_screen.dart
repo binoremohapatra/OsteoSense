@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_spacing.dart';
 import '../../theme/app_typography.dart';
@@ -85,7 +86,7 @@ class _BLEDeviceSelectorScreenState extends State<BLEDeviceSelectorScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to connect: $e'),
+            content: Text('failed_to_connect'.tr() + ': $e'),
             backgroundColor: AppColors.error,
           ),
         );
@@ -173,7 +174,7 @@ class _BLEDeviceSelectorScreenState extends State<BLEDeviceSelectorScreen> {
             ElevatedButton.icon(
               onPressed: _startScan,
               icon: const Icon(Icons.refresh),
-              label: const Text('Scan Again'),
+              label: Text('scan_again'.tr()),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
