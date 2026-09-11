@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../../providers/auth_provider.dart';
+import '../../models/user.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_typography.dart';
 import '../../theme/app_spacing.dart';
@@ -49,15 +50,28 @@ class _SignupScreenState extends State<SignupScreen> {
 
     final authProvider = context.read<AuthProvider>();
 
-    // For now, call demo login. We will update this during the integration phase.
-    await authProvider.demoLogin(widget.role);
+    final user = User(
+      fullName: _nameController.text.trim(),
+      phoneNumber: _phoneController.text.trim(),
+      password: _passwordController.text,
+      healthCenterId: widget.role == 'agent'
+          ? (_healthCenterController.text.trim().isNotEmpty
+              ? _healthCenterController.text.trim()
+              : 'HC-001')
+          : null,
+      location: _locationController.text.trim().isNotEmpty
+          ? _locationController.text.trim()
+          : null,
+    );
+
+    final success = await authProvider.signup(user);
 
     if (!mounted) return;
     setState(() => _isLoading = false);
 
-    if (authProvider.isAuthenticated) {
-      final route = widget.role == 'agent' ? '/agent/home' : '/user/home';
-      context.go(route);
+    if (success) {
+      final role = authProvider.userRole ?? widget.role;
+      context.go(role == 'user' ? '/user/home' : '/agent/home');
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

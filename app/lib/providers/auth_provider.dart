@@ -251,35 +251,6 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  /// Quick demo login used by the hackathon build — creates a dummy user
-  /// in memory (no DB/backend required) and marks the user authenticated
-  /// with the given role, then persists the role/session locally.
-  Future<void> demoLogin(String role) async {
-    _isLoading = true;
-    notifyListeners();
-
-    _userRole = role;
-
-    _currentUser = User(
-      id: 1,
-      fullName: role == 'agent' ? 'Health Worker' : 'Demo User',
-      phoneNumber: '9999999999',
-      password: '',
-      healthCenterId: role == 'agent' ? 'HC-001' : null,
-      location: 'Your Location',
-    );
-
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setInt('current_user_id', _currentUser!.id!);
-      await prefs.setString('user_role', role);
-    } catch (e) {
-      _errorMessage = e.toString();
-    }
-
-    _isLoading = false;
-    notifyListeners();
-  }
 
   Future<void> logout() async {
     debugPrint('Logging out user...');
