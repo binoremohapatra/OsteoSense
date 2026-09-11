@@ -48,6 +48,14 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
   void initState() {
     super.initState();
     _initializeSensorPipeline();
+    // Auto-load patient from draftPatientId if selectedPatient is not set
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final patientProvider = Provider.of<PatientProvider>(context, listen: false);
+      final screeningProvider = Provider.of<ScreeningProvider>(context, listen: false);
+      if (patientProvider.selectedPatient == null && screeningProvider.draftPatientId != null) {
+        patientProvider.loadPatientById(screeningProvider.draftPatientId!);
+      }
+    });
   }
   
   @override
@@ -155,10 +163,25 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
   @override
   Widget build(BuildContext context) {
     final patientProvider = Provider.of<PatientProvider>(context);
+    final screeningProvider = Provider.of<ScreeningProvider>(context, listen: false);
+    // Resolve patient: prefer selectedPatient, fall back to draft patient ID
     final patient = patientProvider.selectedPatient;
+    final hasDraftPatient = screeningProvider.draftPatientId != null;
     final progress = (_totalSeconds - _remainingSeconds) / _totalSeconds;
 
     // Guard: patient must be selected before starting gait test
+    // If draftPatientId exists but patient isn't loaded yet, show a loading state
+    if (patient == null && hasDraftPatient) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: CustomAppBar(
+          title: 'gait_assessment_test'.tr(),
+          centerTitle: true,
+          showBackButton: true,
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
     if (patient == null) {
       return Scaffold(
         backgroundColor: AppColors.background,

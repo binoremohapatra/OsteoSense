@@ -110,6 +110,16 @@ class _SymptomQuestionnaireScreenState
       pastInjuryDetail: _injuryDetailController.text.trim(),
     );
 
+    // Ensure the patient is set as selected so GaitTestScreen can read it
+    if (patientProvider.selectedPatient?.id != patientId) {
+      final patient = patientProvider.patients.where((p) => p.id == patientId).firstOrNull;
+      if (patient != null) {
+        await patientProvider.selectPatient(patient);
+      } else {
+        await patientProvider.loadPatientById(patientId);
+      }
+    }
+
     if (!mounted) return;
 
     context.push('/screening/gait');
