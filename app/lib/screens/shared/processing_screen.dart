@@ -189,12 +189,12 @@ class _ProcessingScreenState extends State<ProcessingScreen>
   String _generateRecommendations(String riskLevel) {
     switch (riskLevel.toLowerCase()) {
       case 'high':
-        return 'Immediate medical consultation recommended. Consider referral to orthopedic specialist. Avoid high-impact activities. Begin joint-friendly exercises under supervision.';
+        return 'rec_high'.tr();
       case 'medium':
-        return 'Regular monitoring advised. Start low-impact exercises like swimming or walking. Maintain healthy weight. Consider physiotherapy consultation. Use joint protection techniques.';
+        return 'rec_medium'.tr();
       case 'low':
       default:
-        return 'Continue regular health monitoring. Maintain healthy lifestyle with balanced diet and regular exercise. Practice good posture. Stay hydrated and maintain joint flexibility.';
+        return 'rec_low'.tr();
     }
   }
 
@@ -316,7 +316,7 @@ class _ProcessingScreenState extends State<ProcessingScreen>
 
           const SizedBox(height: AppSpacing.xl),
           Text(
-            'This may take a few moments…',
+            'this_may_take_few_moments'.tr(),
             style: AppTypography.labelSmall.copyWith(
               color: AppColors.textTertiary,
             ),
