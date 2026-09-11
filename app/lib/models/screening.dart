@@ -4,6 +4,7 @@ class Screening {
   final int patientId;
   final int userId;
   final DateTime screeningDate;
+  final String? jointId;
   final int? painLevel;
   final String? stiffnessDuration;
   final bool? swelling;
@@ -24,6 +25,7 @@ class Screening {
     required this.patientId,
     required this.userId,
     DateTime? screeningDate,
+    this.jointId,
     this.painLevel,
     this.stiffnessDuration,
     this.swelling,
@@ -46,6 +48,7 @@ class Screening {
       'patient_id': patientId,
       'user_id': userId,
       'screening_date': screeningDate.toIso8601String(),
+      'joint_id': jointId,
       'pain_level': painLevel,
       'stiffness_duration': stiffnessDuration,
       'swelling': swelling == true ? 1 : 0,
@@ -69,6 +72,7 @@ class Screening {
       patientId: map['patient_id'] as int,
       userId: map['user_id'] as int,
       screeningDate: DateTime.parse(map['screening_date'] as String),
+      jointId: map['joint_id'] as String?,
       painLevel: map['pain_level'] as int?,
       stiffnessDuration: map['stiffness_duration'] as String?,
       swelling: (map['swelling'] as int?) == 1,
@@ -91,6 +95,7 @@ class Screening {
     int? patientId,
     int? userId,
     DateTime? screeningDate,
+    String? jointId,
     int? painLevel,
     String? stiffnessDuration,
     bool? swelling,
@@ -111,6 +116,7 @@ class Screening {
       patientId: patientId ?? this.patientId,
       userId: userId ?? this.userId,
       screeningDate: screeningDate ?? this.screeningDate,
+      jointId: jointId ?? this.jointId,
       painLevel: painLevel ?? this.painLevel,
       stiffnessDuration: stiffnessDuration ?? this.stiffnessDuration,
       swelling: swelling ?? this.swelling,

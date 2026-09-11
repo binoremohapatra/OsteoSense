@@ -170,7 +170,7 @@ class _HomeScreenState extends State<HomeScreen> {
         },
         onFabTap: () {
           FocusManager.instance.primaryFocus?.unfocus();
-          context.go('/screening/symptoms');
+          context.go('/screening/select-patient');
         },
       ),
     );

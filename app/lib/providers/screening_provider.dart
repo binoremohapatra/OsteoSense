@@ -13,6 +13,7 @@ class ScreeningProvider with ChangeNotifier {
   // Draft answers from SymptomQuestionnaireScreen — held in memory
   // until ProcessingScreen submits them.
   int? _draftPatientId;
+  String? _draftJointId;
   int _draftPainLevel = 0;
   String _draftStiffnessDuration = 'none';
   bool _draftSwelling = false;
@@ -26,6 +27,7 @@ class ScreeningProvider with ChangeNotifier {
   String? get errorMessage => _errorMessage;
   bool get isOfflineResult => _isOfflineResult;
   int? get draftPatientId => _draftPatientId;
+  String? get draftJointId => _draftJointId;
   int get draftPainLevel => _draftPainLevel;
   String get draftStiffnessDuration => _draftStiffnessDuration;
   bool get draftSwelling => _draftSwelling;
@@ -40,6 +42,11 @@ class ScreeningProvider with ChangeNotifier {
 
   set draftPatientId(int? value) {
     _draftPatientId = value;
+    notifyListeners();
+  }
+
+  set draftJointId(String? value) {
+    _draftJointId = value;
     notifyListeners();
   }
 
@@ -348,6 +355,7 @@ class ScreeningProvider with ChangeNotifier {
   /// Store symptom questionnaire answers in-memory so ProcessingScreen can use them.
   void setDraftAnswers({
     required int patientId,
+    String? jointId,
     required int painLevel,
     required String stiffnessDuration,
     required bool swelling,
@@ -355,6 +363,7 @@ class ScreeningProvider with ChangeNotifier {
     required String pastInjuryDetail,
   }) {
     _draftPatientId = patientId;
+    _draftJointId = jointId;
     _draftPainLevel = painLevel;
     _draftStiffnessDuration = stiffnessDuration;
     _draftSwelling = swelling;
@@ -365,6 +374,7 @@ class ScreeningProvider with ChangeNotifier {
 
   void clearDraft() {
     _draftPatientId = null;
+    _draftJointId = null;
     _draftPainLevel = 0;
     _draftStiffnessDuration = 'none';
     _draftSwelling = false;

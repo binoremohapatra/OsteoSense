@@ -24,7 +24,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 6,
+      version: 7,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -57,6 +57,8 @@ class DatabaseHelper {
         village TEXT,
         address TEXT,
         occupation TEXT,
+        weight_kg REAL,
+        height_cm REAL,
         created_at TEXT DEFAULT CURRENT_TIMESTAMP,
         updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
         synced INTEGER DEFAULT 0,
@@ -72,6 +74,7 @@ class DatabaseHelper {
         patient_id INTEGER NOT NULL,
         user_id INTEGER NOT NULL,
         screening_date TEXT DEFAULT CURRENT_TIMESTAMP,
+        joint_id TEXT,
         pain_level INTEGER,
         stiffness_duration TEXT,
         swelling INTEGER,
@@ -199,6 +202,38 @@ class DatabaseHelper {
     }
 
     if (oldVersion < 4) {
+      // Add weight_kg and height_cm to patients table
+      try {
+        await db.execute('ALTER TABLE patients ADD COLUMN weight_kg REAL');
+      } catch (e) {
+        // Column might already exist, ignore error
+      }
+      try {
+        await db.execute('ALTER TABLE patients ADD COLUMN height_cm REAL');
+      } catch (e) {
+        // Column might already exist, ignore error
+      }
+    }
+
+    if (oldVersion < 5) {
+      // Add updated_at to sync_queue
+      try {
+        await db.execute('ALTER TABLE sync_queue ADD COLUMN updated_at TEXT DEFAULT CURRENT_TIMESTAMP');
+      } catch (e) {
+        // Column might already exist, ignore error
+      }
+    }
+
+    if (oldVersion < 7) {
+      // Add joint_id to screenings table
+      try {
+        await db.execute('ALTER TABLE screenings ADD COLUMN joint_id TEXT');
+      } catch (e) {
+        // Column might already exist, ignore error
+      }
+    }
+
+    if (oldVersion < 4) {
       // Add created_at and updated_at columns to screenings table if they don't exist
       try {
         await db.execute('ALTER TABLE screenings ADD COLUMN created_at TEXT DEFAULT CURRENT_TIMESTAMP');
@@ -216,6 +251,20 @@ class DatabaseHelper {
       // Add updated_at column to sync_queue table if it doesn't exist
       try {
         await db.execute('ALTER TABLE sync_queue ADD COLUMN updated_at TEXT DEFAULT CURRENT_TIMESTAMP');
+      } catch (e) {
+        // Column might already exist, ignore error
+      }
+    }
+
+    if (oldVersion < 6) {
+      // Add weight_kg and height_cm columns to patients table if they don't exist
+      try {
+        await db.execute('ALTER TABLE patients ADD COLUMN weight_kg REAL');
+      } catch (e) {
+        // Column might already exist, ignore error
+      }
+      try {
+        await db.execute('ALTER TABLE patients ADD COLUMN height_cm REAL');
       } catch (e) {
         // Column might already exist, ignore error
       }
@@ -369,6 +418,24 @@ class DatabaseHelper {
     await db.delete('patients');
     await db.delete('screenings');
     await db.delete('sync_queue');
+  }
+
+  // Reset database completely (for development/testing)
+  Future<void> resetDatabase() async {
+    final dbPath = await getDatabasesPath();
+    final path = join(dbPath, 'joint_saathi.db');
+
+    // Close existing connection
+    if (_database != null) {
+      await _database!.close();
+      _database = null;
+    }
+
+    // Delete the database file
+    await deleteDatabase(path);
+
+    // Reinitialize
+    _database = await _initDatabase();
   }
 
   Future<void> close() async {

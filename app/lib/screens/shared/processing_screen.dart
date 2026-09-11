@@ -127,6 +127,7 @@ class _ProcessingScreenState extends State<ProcessingScreen>
       patientId: screeningProvider.draftPatientId!,
       userId: 1, // Temporarily hardcoded until auth is integrated
       screeningDate: DateTime.now(),
+      jointId: screeningProvider.draftJointId,
       painLevel: screeningProvider.draftPainLevel,
       stiffnessDuration: screeningProvider.draftStiffnessDuration,
       swelling: screeningProvider.draftSwelling,

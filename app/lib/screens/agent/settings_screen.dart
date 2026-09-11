@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../providers/settings_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../services/database_helper.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_spacing.dart';
 import '../../theme/app_typography.dart';
@@ -135,6 +136,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 .fadeIn(duration: 300.ms, delay: 350.ms),
             const SizedBox(height: AppSpacing.md),
             _buildSettingGroup([
+              _buildSettingItem(
+                icon: Icons.refresh,
+                title: 'Reset Database',
+                subtitle: 'Clear all data and recreate database',
+                isDanger: true,
+                onTap: () => _showResetDatabaseDialog(context),
+              ),
+              _buildDivider(),
               _buildSettingItem(
                 icon: Icons.logout,
                 title: 'Logout',
@@ -362,6 +371,61 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const SnackBar(content: Text('Cache cleared')),
               );
               Navigator.pop(context);
+            },
+            variant: ButtonVariant.danger,
+            size: ButtonSize.small,
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showResetDatabaseDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          'Reset Database?',
+          style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.bold),
+        ),
+        content: Text(
+          'This will delete ALL data including patients, screenings, and settings. This action cannot be undone. Continue?',
+          style: AppTypography.bodyMedium,
+        ),
+        actions: [
+          CustomButton(
+            text: 'Cancel',
+            onPressed: () => Navigator.pop(context),
+            variant: ButtonVariant.secondary,
+            size: ButtonSize.small,
+          ),
+          CustomButton(
+            text: 'Reset',
+            onPressed: () async {
+              Navigator.pop(context);
+              try {
+                final db = DatabaseHelper();
+                await db.resetDatabase();
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Database reset successfully'),
+                      backgroundColor: AppColors.riskLow,
+                    ),
+                  );
+                  // Navigate to splash screen to reinitialize
+                  context.go('/splash');
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Failed to reset database: $e'),
+                      backgroundColor: AppColors.error,
+                    ),
+                  );
+                }
+              }
             },
             variant: ButtonVariant.danger,
             size: ButtonSize.small,

@@ -146,7 +146,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
                                 ),
                                 const SizedBox(height: AppSpacing.lg),
                                 RiskGauge(
-                                  score: (screeningProvider.screenings.first.confidence ?? 0) / 100.0,
+                                  score: screeningProvider.screenings.first.confidence ?? 0.0,
                                   size: 240,
                                 ),
                               ],
@@ -280,14 +280,14 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
           value: patient.gender.substring(0, 1).toUpperCase() + patient.gender.substring(1),
           icon: Icons.person_rounded,
         ),
-        const MetricCard(
+        MetricCard(
           title: 'Height',
-          value: '--', // Not available in current model
+          value: patient.heightCm != null ? '${patient.heightCm!.toStringAsFixed(0)} cm' : '--',
           icon: Icons.height_rounded,
         ),
-        const MetricCard(
+        MetricCard(
           title: 'Weight',
-          value: '--', // Not available in current model
+          value: patient.weightKg != null ? '${patient.weightKg!.toStringAsFixed(1)} kg' : '--',
           icon: Icons.monitor_weight_rounded,
         ),
       ],
@@ -398,7 +398,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
                         borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
                       ),
                       child: Text(
-                        '${(screening.confidence ?? 0).toInt()}%',
+                        '${((screening.confidence ?? 0.0) * 100).toInt()}%',
                         style: AppTypography.labelSmall.copyWith(
                           color: riskColor,
                           fontWeight: FontWeight.bold,
@@ -408,12 +408,33 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
                   ],
                 ),
                 const SizedBox(height: AppSpacing.xs),
-                Text(
-                  'Risk Level: ${(screening.riskLevel ?? 'low').toUpperCase()}',
-                  style: AppTypography.bodySmall.copyWith(
-                    color: riskColor,
-                    fontWeight: FontWeight.w600,
-                  ),
+                Row(
+                  children: [
+                    Text(
+                      'Risk Level: ${(screening.riskLevel ?? 'low').toUpperCase()}',
+                      style: AppTypography.bodySmall.copyWith(
+                        color: riskColor,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    if (screening.jointId != null) ...[
+                      const SizedBox(width: AppSpacing.sm),
+                      Text(
+                        '•',
+                        style: AppTypography.bodySmall.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Text(
+                        screening.jointId!.toUpperCase(),
+                        style: AppTypography.bodySmall.copyWith(
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
                 if (screening.contributingFactors != null &&
                     screening.contributingFactors!.isNotEmpty) ...[

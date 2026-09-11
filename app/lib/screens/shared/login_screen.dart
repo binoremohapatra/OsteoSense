@@ -81,21 +81,6 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  Future<void> _demoLogin() async {
-    final auth = context.read<AuthProvider>();
-    setState(() { _loading = true; _errorMsg = null; });
-    try {
-      // Use offline/demo login if available
-      await auth.demoLogin(widget.role);
-      if (!mounted) return;
-      if (auth.isAuthenticated) {
-        context.go('/agent/home');
-      }
-    } catch (_) {} finally {
-      if (mounted) setState(() => _loading = false);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final ff = FlutterFlowTheme.of(context);
@@ -223,7 +208,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               borderRadius: BorderRadius.circular(24),
                             ),
                             child: Padding(
-                              padding: const EdgeInsets.all(6),
+                              padding: const EdgeInsets.all(4),
                               child: Row(
                                 children: [
                                   _Tab(
@@ -336,22 +321,6 @@ class _LoginScreenState extends State<LoginScreen> {
                           size: 20,
                         ),
                         onTap: _submit,
-                      ),
-                      const SizedBox(height: 12),
-
-                      // ── Demo Login button ─────────────────────────────
-                      FFButton(
-                        content: 'Demo Login (No Account Required)',
-                        variant: 'secondary',
-                        size: 'medium',
-                        fullWidth: true,
-                        loading: _loading,
-                        icon: Icon(
-                          Icons.play_arrow_rounded,
-                          color: ff.primary,
-                          size: 18,
-                        ),
-                        onTap: _demoLogin,
                       ),
                       const SizedBox(height: 16),
 
@@ -567,7 +536,7 @@ class _Tab extends StatelessWidget {
           child: Text(
             label,
             style: GoogleFonts.dmSans(
-              fontSize: 16,
+              fontSize: 18,
               fontWeight: active ? FontWeight.bold : FontWeight.normal,
               color: active ? Colors.white : ff.secondaryText,
             ),

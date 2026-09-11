@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lottie/lottie.dart';
@@ -19,6 +20,7 @@ import '../../widgets/premium/loading/premium_loading.dart';
 import '../../widgets/premium/buttons/premium_buttons.dart';
 import '../../widgets/premium/selection/premium_selection.dart';
 import 'processing_screen.dart';
+import 'ble_device_selector_screen.dart';
 import 'package:fl_chart/fl_chart.dart';
 
 class GaitTestScreen extends StatefulWidget {
@@ -494,6 +496,31 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
             },
             segmentAsString: (v) => v,
           ),
+          if (_sourceType == SignalSourceType.hardware) ...[
+            const SizedBox(height: AppSpacing.sm),
+            ElevatedButton.icon(
+              onPressed: () async {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const BLEDeviceSelectorScreen()),
+                );
+                if (result == true && mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Device connected successfully'),
+                      backgroundColor: AppColors.riskLow,
+                    ),
+                  );
+                }
+              },
+              icon: const Icon(Icons.bluetooth, size: 18),
+              label: const Text('Connect Device'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+              ),
+            ),
+          ],
           if (_sourceType == SignalSourceType.simulated) ...[
             const SizedBox(height: AppSpacing.sm),
             _buildSimulationControls(),
@@ -631,6 +658,8 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
   }
   
   Widget _buildSensorSummaryCard() {
+    final isSimulated = _sourceType == SignalSourceType.simulated;
+
     return GlassCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -639,8 +668,8 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
           const SizedBox(height: AppSpacing.sm),
           _buildSensorStatus('Accelerometer', _sensorPipeline.hasAccelerometer),
           _buildSensorStatus('Gyroscope', _sensorPipeline.hasGyroscope),
-          _buildSensorStatus('Piezo (Joint Vibration)', _sensorPipeline.hasPiezo, available: false),
-          _buildSensorStatus('EMG (Muscle Activity)', _sensorPipeline.hasEMG, available: false),
+          _buildSensorStatus('Piezo (Joint Vibration)', isSimulated || _sensorPipeline.hasPiezo),
+          _buildSensorStatus('EMG (Muscle Activity)', isSimulated || _sensorPipeline.hasEMG),
           _buildSensorStatus('BLE', _sourceType == SignalSourceType.hardware),
         ],
       ),
@@ -648,14 +677,17 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
   }
   
   Widget _buildSensorStatus(String name, bool isActive, {bool available = true}) {
+    final isSimulated = _sourceType == SignalSourceType.simulated;
+    final effectiveActive = isActive || isSimulated;
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
       child: Row(
         children: [
           Icon(
-            isActive ? Icons.check_circle : Icons.circle_outlined,
+            effectiveActive ? Icons.check_circle : Icons.circle_outlined,
             size: 16,
-            color: isActive ? AppColors.success : (available ? AppColors.textMuted : AppColors.error),
+            color: effectiveActive ? AppColors.success : (available ? AppColors.textMuted : AppColors.error),
           ),
           const SizedBox(width: AppSpacing.sm),
           Text(
@@ -664,12 +696,21 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
               color: available ? null : AppColors.textMuted,
             ),
           ),
-          if (!available) ...[
+          if (!available && !isSimulated) ...[
             const SizedBox(width: AppSpacing.sm),
             Text(
               '(Not Available)',
               style: AppTypography.caption.copyWith(
                 color: AppColors.textMuted,
+              ),
+            ),
+          ],
+          if (isSimulated && !isActive) ...[
+            const SizedBox(width: AppSpacing.sm),
+            Text(
+              '(Simulated)',
+              style: AppTypography.caption.copyWith(
+                color: AppColors.warning,
               ),
             ),
           ],
@@ -809,6 +850,9 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
   }
   
   Widget _buildJointVibrationSection() {
+    final isSimulated = _sourceType == SignalSourceType.simulated;
+    final hasData = isSimulated || _sensorPipeline.hasPiezo;
+
     return GlassCard(
       child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -819,12 +863,20 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
             const SizedBox(width: AppSpacing.sm),
             Text('Joint Vibration / Piezo', style: AppTypography.titleSmall),
             const Spacer(),
-            Text(
-              'Not Available',
-              style: AppTypography.caption.copyWith(
-                color: AppColors.textMuted,
+            if (isSimulated)
+              Text(
+                'SIMULATED',
+                style: AppTypography.caption.copyWith(
+                  color: AppColors.warning,
+                ),
+              )
+            else if (!hasData)
+              Text(
+                'Not Available',
+                style: AppTypography.caption.copyWith(
+                  color: AppColors.textMuted,
+                ),
               ),
-            ),
           ],
         ),
         const SizedBox(height: AppSpacing.sm),
@@ -834,21 +886,59 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
             color: AppColors.surfaceVariant,
             borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
           ),
-          child: Center(
-            child: Text(
-              'Piezo sensor not connected',
-              style: AppTypography.bodySmall.copyWith(
-                color: AppColors.textMuted,
-              ),
-            ),
-          ),
+          child: hasData
+              ? _buildSimulatedPiezoGraph()
+              : Center(
+                  child: Text(
+                    isSimulated ? 'Starting simulation...' : 'Piezo sensor not connected',
+                    style: AppTypography.bodySmall.copyWith(
+                      color: AppColors.textMuted,
+                    ),
+                  ),
+                ),
         ),
       ],
     ),
     );
   }
+
+  Widget _buildSimulatedPiezoGraph() {
+    // Generate simulated piezo data
+    final random = math.Random();
+    final data = List.generate(50, (index) {
+      final time = index / 50.0;
+      final vibration = math.sin(time * 10 * math.pi) * 0.5 +
+                       math.sin(time * 20 * math.pi) * 0.3 +
+                       (random.nextDouble() - 0.5) * 0.2;
+      return vibration;
+    });
+
+    return LineChart(
+      LineChartData(
+        gridData: FlGridData(show: false),
+        titlesData: FlTitlesData(show: false),
+        borderData: FlBorderData(show: false),
+        lineBarsData: [
+          LineChartBarData(
+            spots: data.asMap().entries.map((entry) {
+              return FlSpot(entry.key.toDouble(), entry.value);
+            }).toList(),
+            isCurved: true,
+            color: AppColors.primary,
+            barWidth: 2,
+            dotData: const FlDotData(show: false),
+          ),
+        ],
+        minY: -1,
+        maxY: 1,
+      ),
+    );
+  }
   
   Widget _buildEMGSection() {
+    final isSimulated = _sourceType == SignalSourceType.simulated;
+    final hasData = isSimulated || _sensorPipeline.hasEMG;
+
     return GlassCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -859,13 +949,21 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
               const SizedBox(width: AppSpacing.sm),
               Text('Muscle Activity / EMG', style: AppTypography.titleSmall),
               const Spacer(),
-              Text(
-                'Not Available',
-                style: AppTypography.caption.copyWith(
-                  color: AppColors.textMuted,
+              if (isSimulated)
+                Text(
+                  'SIMULATED',
+                  style: AppTypography.caption.copyWith(
+                    color: AppColors.warning,
+                  ),
+                )
+              else if (!hasData)
+                Text(
+                  'Not Available',
+                  style: AppTypography.caption.copyWith(
+                    color: AppColors.textMuted,
+                  ),
                 ),
-              ),
-            ],
+          ],
           ),
           const SizedBox(height: AppSpacing.sm),
           Container(
@@ -874,16 +972,52 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
               color: AppColors.surfaceVariant,
               borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
             ),
-            child: Center(
-              child: Text(
-                'EMG sensor not connected',
-                style: AppTypography.bodySmall.copyWith(
-                  color: AppColors.textMuted,
-                ),
-              ),
-            ),
+            child: hasData
+                ? _buildSimulatedEMGGraph()
+                : Center(
+                    child: Text(
+                      isSimulated ? 'Starting simulation...' : 'EMG sensor not connected',
+                      style: AppTypography.bodySmall.copyWith(
+                        color: AppColors.textMuted,
+                      ),
+                    ),
+                  ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSimulatedEMGGraph() {
+    // Generate simulated EMG data (muscle activity patterns)
+    final random = math.Random();
+    final data = List.generate(50, (index) {
+      final time = index / 50.0;
+      // EMG has bursts of activity followed by rest periods
+      final burst = (math.sin(time * 5 * math.pi) + 1) / 2; // 0 to 1
+      final activity = burst * (random.nextDouble() * 0.8 + 0.2) +
+                      (random.nextDouble() - 0.5) * 0.1;
+      return activity;
+    });
+
+    return LineChart(
+      LineChartData(
+        gridData: FlGridData(show: false),
+        titlesData: FlTitlesData(show: false),
+        borderData: FlBorderData(show: false),
+        lineBarsData: [
+          LineChartBarData(
+            spots: data.asMap().entries.map((entry) {
+              return FlSpot(entry.key.toDouble(), entry.value);
+            }).toList(),
+            isCurved: true,
+            color: AppColors.sage,
+            barWidth: 2,
+            dotData: const FlDotData(show: false),
+          ),
+        ],
+        minY: 0,
+        maxY: 1.2,
       ),
     );
   }

@@ -182,6 +182,26 @@ class DetailedReportScreen extends StatelessWidget {
                   '${patient.age} yrs • ${patient.gender.capitalize()} • ${patient.village ?? 'Location not set'}',
                   style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
                 ),
+                if (screening.jointId != null) ...[
+                  const SizedBox(height: 2),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.accessibility_new,
+                        size: 12,
+                        color: AppColors.primary,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        screening.jointId!.toUpperCase(),
+                        style: AppTypography.labelSmall.copyWith(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
                 if (patient.occupation != null) ...[
                   const SizedBox(height: 2),
                   Text(patient.occupation!, style: AppTypography.labelSmall.copyWith(color: AppColors.textTertiary)),
@@ -234,6 +254,16 @@ class DetailedReportScreen extends StatelessWidget {
                   style: AppTypography.headlineSmall.copyWith(color: riskColor, fontWeight: AppTypography.bold),
                 ),
                 const SizedBox(height: 4),
+                if (screening.jointId != null) ...[
+                  Text(
+                    screening.jointId!.toUpperCase(),
+                    style: AppTypography.bodySmall.copyWith(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                ],
                 Text(dateStr, style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary)),
               ],
             ),

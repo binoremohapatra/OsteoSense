@@ -22,6 +22,12 @@ class PhoneSensorDataSource implements SensorDataSource {
   Stream<SensorData> get gyroscopeStream => _gyroscopeController.stream;
 
   @override
+  Stream<SensorData>? get piezoStream => null; // Phone doesn't have piezo sensor
+
+  @override
+  Stream<SensorData>? get emgStream => null; // Phone doesn't have EMG sensor
+
+  @override
   String get deviceName => 'Phone Sensors';
 
   @override

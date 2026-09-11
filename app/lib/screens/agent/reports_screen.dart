@@ -607,13 +607,19 @@ class _ReportsScreenState extends State<ReportsScreen> {
     final knee = _jointAffection?['knee'] ?? 0;
     final hip = _jointAffection?['hip'] ?? 0;
     final ankle = _jointAffection?['ankle'] ?? 0;
+    final shoulder = _jointAffection?['shoulder'] ?? 0;
+    final elbow = _jointAffection?['elbow'] ?? 0;
+    final wrist = _jointAffection?['wrist'] ?? 0;
     final other = _jointAffection?['other'] ?? 0;
-    final jointTotal = knee + hip + ankle + other;
+    final jointTotal = knee + hip + ankle + shoulder + elbow + wrist + other;
 
     // Use real data only - no demo values
     final displayKnee = knee;
     final displayHip = hip;
     final displayAnkle = ankle;
+    final displayShoulder = shoulder;
+    final displayElbow = elbow;
+    final displayWrist = wrist;
     final displayOther = other;
 
     return _JointSaathiCard(
@@ -652,22 +658,41 @@ class _ReportsScreenState extends State<ReportsScreen> {
               child: PieChart(
                 PieChartData(
                   sections: [
-                    PieChartSectionData(
-                      value: displayKnee.toDouble(), color: AppColors.chartForest,
-                      radius: 52, title: '',
-                    ),
-                    PieChartSectionData(
-                      value: displayHip.toDouble(), color: AppColors.chartSage,
-                      radius: 52, title: '',
-                    ),
-                    PieChartSectionData(
-                      value: displayAnkle.toDouble(), color: AppColors.chartDustyRose,
-                      radius: 52, title: '',
-                    ),
-                    PieChartSectionData(
-                      value: displayOther.toDouble(), color: AppColors.chartBeige,
-                      radius: 52, title: '',
-                    ),
+                    if (displayKnee > 0)
+                      PieChartSectionData(
+                        value: displayKnee.toDouble(), color: AppColors.chartForest,
+                        radius: 52, title: '',
+                      ),
+                    if (displayHip > 0)
+                      PieChartSectionData(
+                        value: displayHip.toDouble(), color: AppColors.chartSage,
+                        radius: 52, title: '',
+                      ),
+                    if (displayAnkle > 0)
+                      PieChartSectionData(
+                        value: displayAnkle.toDouble(), color: AppColors.chartDustyRose,
+                        radius: 52, title: '',
+                      ),
+                    if (displayShoulder > 0)
+                      PieChartSectionData(
+                        value: displayShoulder.toDouble(), color: Colors.blue,
+                        radius: 52, title: '',
+                      ),
+                    if (displayElbow > 0)
+                      PieChartSectionData(
+                        value: displayElbow.toDouble(), color: Colors.purple,
+                        radius: 52, title: '',
+                      ),
+                    if (displayWrist > 0)
+                      PieChartSectionData(
+                        value: displayWrist.toDouble(), color: Colors.orange,
+                        radius: 52, title: '',
+                      ),
+                    if (displayOther > 0)
+                      PieChartSectionData(
+                        value: displayOther.toDouble(), color: AppColors.chartBeige,
+                        radius: 52, title: '',
+                      ),
                   ],
                   centerSpaceRadius: 44,
                   sectionsSpace: 3,
@@ -676,16 +701,18 @@ class _ReportsScreenState extends State<ReportsScreen> {
           ),
           const SizedBox(height: AppSpacing.md),
           if (jointTotal > 0)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+            Wrap(
+              alignment: WrapAlignment.center,
+              spacing: AppSpacing.sm,
+              runSpacing: AppSpacing.xs,
               children: [
-                _LegendDot(color: AppColors.chartForest, label: 'Knee'),
-                const SizedBox(width: AppSpacing.md),
-                _LegendDot(color: AppColors.chartSage, label: 'Hip'),
-                const SizedBox(width: AppSpacing.md),
-                _LegendDot(color: AppColors.chartDustyRose, label: 'Ankle'),
-                const SizedBox(width: AppSpacing.md),
-                _LegendDot(color: AppColors.chartBeige, label: 'Other'),
+                if (displayKnee > 0) _LegendDot(color: AppColors.chartForest, label: 'Knee'),
+                if (displayHip > 0) _LegendDot(color: AppColors.chartSage, label: 'Hip'),
+                if (displayAnkle > 0) _LegendDot(color: AppColors.chartDustyRose, label: 'Ankle'),
+                if (displayShoulder > 0) _LegendDot(color: Colors.blue, label: 'Shoulder'),
+                if (displayElbow > 0) _LegendDot(color: Colors.purple, label: 'Elbow'),
+                if (displayWrist > 0) _LegendDot(color: Colors.orange, label: 'Wrist'),
+                if (displayOther > 0) _LegendDot(color: AppColors.chartBeige, label: 'Other'),
               ],
             ),
         ],

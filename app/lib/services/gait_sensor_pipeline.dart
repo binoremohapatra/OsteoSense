@@ -276,56 +276,80 @@ class GaitSensorPipeline {
         await _hardwareSource!.initialize();
         await _hardwareSource!.startRecording();
         _updatePipelineStatus(1, PipelineStageStatus.receiving);
-        
+
+        // Temporary storage for syncing multi-sensor data
+        SensorData? latestAccel;
+        SensorData? latestGyro;
+        SensorData? latestPiezo;
+        SensorData? latestEMG;
+
         // Subscribe to accelerometer
         _accelSubscription = _hardwareSource!.accelerometerStream.listen((data) {
           if (!_isRecording) return;
-          
-          final sample = SignalSample(
-            timestamp: data.timestamp,
-            accelX: data.x,
-            accelY: data.y,
-            accelZ: data.z,
-            gyroX: 0, // Will be filled by gyroscope stream
-            gyroY: 0,
-            gyroZ: 0,
-            userAccelX: 0,
-            userAccelY: 0,
-            userAccelZ: 0,
-          );
-          
-          _addSampleToBuffer(sample, 0.0, 0.0);
-          onDataUpdate?.call();
+          latestAccel = data;
+          _tryCreateWearableSample(latestAccel, latestGyro, latestPiezo, latestEMG);
         });
-        
+
         // Subscribe to gyroscope
         _gyroSubscription = _hardwareSource!.gyroscopeStream.listen((data) {
-          if (!_isRecording || _signalBuffer.isEmpty) return;
-          
-          // Update last sample with gyroscope data
-          final lastSample = _signalBuffer.last;
-          final updatedSample = SignalSample(
-            timestamp: lastSample.timestamp,
-            accelX: lastSample.accelX,
-            accelY: lastSample.accelY,
-            accelZ: lastSample.accelZ,
-            gyroX: data.x,
-            gyroY: data.y,
-            gyroZ: data.z,
-            userAccelX: lastSample.userAccelX,
-            userAccelY: lastSample.userAccelY,
-            userAccelZ: lastSample.userAccelZ,
-          );
-          
-          _signalBuffer[_signalBuffer.length - 1] = updatedSample;
-          onDataUpdate?.call();
+          if (!_isRecording) return;
+          latestGyro = data;
+          _tryCreateWearableSample(latestAccel, latestGyro, latestPiezo, latestEMG);
         });
-        
+
+        // Subscribe to piezo (joint vibration) if available
+        if (_hardwareSource!.piezoStream != null) {
+          _hardwareSource!.piezoStream!.listen((data) {
+            if (!_isRecording) return;
+            latestPiezo = data;
+            _tryCreateWearableSample(latestAccel, latestGyro, latestPiezo, latestEMG);
+          });
+        }
+
+        // Subscribe to EMG (muscle activity) if available
+        if (_hardwareSource!.emgStream != null) {
+          _hardwareSource!.emgStream!.listen((data) {
+            if (!_isRecording) return;
+            latestEMG = data;
+            _tryCreateWearableSample(latestAccel, latestGyro, latestPiezo, latestEMG);
+          });
+        }
+
       } catch (e) {
         _updatePipelineStatus(0, PipelineStageStatus.error);
         debugPrint('Hardware recording error: $e');
       }
     }
+  }
+
+  /// Try to create a wearable sample when all sensor data is available
+  void _tryCreateWearableSample(
+    SensorData? accel,
+    SensorData? gyro,
+    SensorData? piezo,
+    SensorData? emg,
+  ) {
+    // Wait for accelerometer data as primary trigger
+    if (accel == null) return;
+
+    final piezoValue = piezo?.x ?? 0.0;
+    final emgValue = emg?.x ?? 0.0;
+
+    final sample = SignalSample(
+      timestamp: accel.timestamp,
+      accelX: accel.x,
+      accelY: accel.y,
+      accelZ: accel.z,
+      gyroX: gyro?.x ?? 0.0,
+      gyroY: gyro?.y ?? 0.0,
+      gyroZ: gyro?.z ?? 0.0,
+      userAccelX: accel.x * 0.7, // Approximate user acceleration
+      userAccelY: accel.y * 0.7,
+      userAccelZ: accel.z * 0.7,
+    );
+
+    _addSampleToBuffer(sample, piezoValue, emgValue);
+    onDataUpdate?.call();
   }
   
   /// Stop hardware recording
@@ -334,11 +358,12 @@ class GaitSensorPipeline {
       await _hardwareSource!.stopRecording();
       await _accelSubscription?.cancel();
       await _gyroSubscription?.cancel();
+      // Note: piezo and EMG subscriptions are handled internally by BLE source
     } else {
       final sensorService = SensorService();
       sensorService.stopRecording();
     }
-    
+
     _updatePipelineStatus(1, PipelineStageStatus.ready);
   }
   

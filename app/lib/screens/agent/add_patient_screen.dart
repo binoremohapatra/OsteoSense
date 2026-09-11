@@ -78,7 +78,7 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusSm)),
         ),
       );
-      context.pop();
+      context.pop(true); // Return true to indicate success
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -102,7 +102,16 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
         showBackButton: true,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new),
-          onPressed: () => context.go('/agent/patients'),
+          onPressed: () {
+            // Check if we came from select patient screen
+            final router = GoRouter.of(context);
+            final previousPath = router.routeInformationProvider.value.uri.path;
+            if (previousPath == '/screening/select-patient') {
+              context.pop();
+            } else {
+              context.go('/agent/patients');
+            }
+          },
         ),
       ),
       body: Form(

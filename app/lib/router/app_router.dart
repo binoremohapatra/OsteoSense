@@ -26,6 +26,8 @@ import '../screens/shared/pdf_preview_screen.dart';
 import '../screens/shared/preventive_care_home_screen.dart';
 import '../screens/shared/preventive_care_category_screen.dart';
 import '../screens/shared/preventive_care_article_screen.dart';
+import '../screens/shared/select_patient_screen.dart';
+import '../screens/shared/joint_selection_screen.dart';
 import '../models/patient.dart';
 import '../models/screening.dart';
 
@@ -342,14 +344,41 @@ final appRouter = GoRouter(
       ),
     ),
     GoRoute(
+      path: '/screening/select-patient',
+      pageBuilder: (context, state) => SlideUpTransitionPage(
+        key: state.pageKey,
+        child: const SelectPatientScreen(),
+      ),
+    ),
+    GoRoute(
+      path: '/screening/select-joint',
+      pageBuilder: (context, state) {
+        final patientId = (state.extra as int?) ?? 0;
+        return SlideUpTransitionPage(
+          key: state.pageKey,
+          child: JointSelectionScreen(patientId: patientId),
+        );
+      },
+    ),
+    GoRoute(
       path: '/screening/symptoms',
       pageBuilder: (context, state) {
         // Guard against null extra — GoRouter can re-evaluate routes during
         // a frame rebuild even when this route is not the active one.
-        final patientId = (state.extra as int?) ?? 0;
+        int patientId = 0;
+        String? jointId;
+        
+        if (state.extra is int) {
+          patientId = state.extra as int;
+        } else if (state.extra is Map<String, dynamic>) {
+          final data = state.extra as Map<String, dynamic>;
+          patientId = data['patientId'] as int? ?? 0;
+          jointId = data['jointId'] as String?;
+        }
+        
         return SlideUpTransitionPage(
           key: state.pageKey,
-          child: SymptomQuestionnaireScreen(patientId: patientId),
+          child: SymptomQuestionnaireScreen(patientId: patientId, jointId: jointId),
         );
       },
     ),

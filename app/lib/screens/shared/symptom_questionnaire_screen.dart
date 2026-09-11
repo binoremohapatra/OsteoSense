@@ -16,7 +16,8 @@ import 'gait_test_screen.dart';
 
 class SymptomQuestionnaireScreen extends StatefulWidget {
   final int? patientId;
-  const SymptomQuestionnaireScreen({super.key, this.patientId});
+  final String? jointId;
+  const SymptomQuestionnaireScreen({super.key, this.patientId, this.jointId});
 
   @override
   State<SymptomQuestionnaireScreen> createState() =>
@@ -100,6 +101,7 @@ class _SymptomQuestionnaireScreenState
     // Save draft answers to provider for use in processing screen
     screeningProvider.setDraftAnswers(
       patientId: patientId,
+      jointId: widget.jointId,
       painLevel: _painLevel,
       stiffnessDuration: _stiffnessDuration,
       swelling: _swelling,
