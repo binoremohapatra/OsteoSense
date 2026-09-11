@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'dart:io';
 import '../../theme/app_colors.dart';
 import '../../theme/app_spacing.dart';
@@ -87,7 +88,7 @@ class _StorageUsageScreenState extends State<StorageUsageScreen> {
             onPressed: () => Navigator.pop(context),
           ),
           title: Text(
-            'Storage Usage',
+            'storage_usage'.tr(),
             style: AppTypography.headlineSmall.copyWith(
               color: AppColors.textPrimary,
               fontWeight: FontWeight.w600,
@@ -110,7 +111,7 @@ class _StorageUsageScreenState extends State<StorageUsageScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          'Storage Usage',
+          'storage_usage'.tr(),
           style: AppTypography.headlineSmall.copyWith(
             color: AppColors.textPrimary,
             fontWeight: FontWeight.w600,
@@ -157,7 +158,7 @@ class _StorageUsageScreenState extends State<StorageUsageScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Total Storage',
+                                'total_storage'.tr(),
                                 style: AppTypography.bodyMedium.copyWith(
                                   color: AppColors.textSecondary,
                                 ),
@@ -208,7 +209,7 @@ class _StorageUsageScreenState extends State<StorageUsageScreen> {
             
             // Storage Breakdown
             Text(
-              'Storage Breakdown',
+              'storage_breakdown'.tr(),
               style: AppTypography.titleMedium.copyWith(
                 color: AppColors.textPrimary,
                 fontWeight: FontWeight.bold,
@@ -219,8 +220,8 @@ class _StorageUsageScreenState extends State<StorageUsageScreen> {
             // Database
             _buildStorageItem(
               icon: Icons.table_chart,
-              title: 'Database',
-              subtitle: 'Patients, screenings, users',
+              title: 'storage_db_title'.tr(),
+              subtitle: 'storage_db_subtitle'.tr(),
               size: _databaseSize,
               color: AppColors.primary,
               percentage: _databaseSize / _totalStorage,
@@ -231,8 +232,8 @@ class _StorageUsageScreenState extends State<StorageUsageScreen> {
             // Cache
             _buildStorageItem(
               icon: Icons.cached,
-              title: 'Cache',
-              subtitle: 'Temporary files',
+              title: 'storage_cache_title'.tr(),
+              subtitle: 'storage_cache_subtitle'.tr(),
               size: _cacheSize,
               color: AppColors.warning,
               percentage: _cacheSize / _totalStorage,
@@ -243,8 +244,8 @@ class _StorageUsageScreenState extends State<StorageUsageScreen> {
             // Images
             _buildStorageItem(
               icon: Icons.image,
-              title: 'Images',
-              subtitle: 'Profile pictures, assets',
+              title: 'storage_images_title'.tr(),
+              subtitle: 'storage_images_subtitle'.tr(),
               size: _imagesSize,
               color: AppColors.info,
               percentage: _imagesSize / _totalStorage,
@@ -259,17 +260,17 @@ class _StorageUsageScreenState extends State<StorageUsageScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Storage Tips',
+                    'storage_tips'.tr(),
                     style: AppTypography.titleMedium.copyWith(
                       color: AppColors.textPrimary,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   const SizedBox(height: AppSpacing.md),
-                  _buildTip('Clear cache regularly to free up space'),
-                  _buildTip('Delete old patient records if not needed'),
-                  _buildTip('Limit image uploads and keep them optimized'),
-                  _buildTip('Backup important data before clearing'),
+                  _buildTip('tip_clear_cache_space'.tr()),
+                  _buildTip('tip_delete_old_records'.tr()),
+                  _buildTip('tip_limit_images'.tr()),
+                  _buildTip('tip_backup_data'.tr()),
                 ],
               ),
             ).animate().fadeIn(duration: 600.ms, delay: 500.ms).slideY(begin: 0.1, end: 0),

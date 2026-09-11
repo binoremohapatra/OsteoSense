@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_spacing.dart';
 import '../../theme/app_typography.dart';
@@ -20,7 +21,7 @@ class AppVersionScreen extends StatelessWidget {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          'App Version',
+          'app_version'.tr(),
           style: AppTypography.headlineSmall.copyWith(
             color: AppColors.textPrimary,
             fontWeight: FontWeight.w600,
@@ -65,7 +66,7 @@ class AppVersionScreen extends StatelessWidget {
             // Version Info
             Center(
               child: Text(
-                'Version 1.0.0',
+                '${'version'.tr()} 1.0.0',
                 style: AppTypography.titleLarge.copyWith(
                   color: AppColors.textSecondary,
                 ),
@@ -79,40 +80,40 @@ class AppVersionScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildVersionDetail('Build Number', '1'),
+                  _buildVersionDetail('build_number'.tr(), '1'),
                   _buildDivider(),
-                  _buildVersionDetail('Release Date', 'September 2026'),
+                  _buildVersionDetail('release_date_label'.tr(), 'September 2026'),
                   _buildDivider(),
-                  _buildVersionDetail('Flutter Version', '3.24.0'),
+                  _buildVersionDetail('flutter_version'.tr(), '3.24.0'),
                   _buildDivider(),
-                  _buildVersionDetail('Platform', 'Android & iOS'),
+                  _buildVersionDetail('platform'.tr(), 'Android & iOS'),
                   _buildDivider(),
-                  _buildVersionDetail('Minimum SDK', 'Android 5.0 (API 21)'),
+                  _buildVersionDetail('minimum_sdk'.tr(), 'Android 5.0 (API 21)'),
                 ],
               ),
             ).animate().fadeIn(duration: 600.ms, delay: 400.ms).slideY(begin: 0.1, end: 0),
             const SizedBox(height: AppSpacing.xl),
             
-            // Additional Info
+            // Features Card
             CustomCard(
               variant: CardVariant.elevated,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Features',
+                    'features_title'.tr(),
                     style: AppTypography.titleMedium.copyWith(
                       color: AppColors.textPrimary,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   const SizedBox(height: AppSpacing.md),
-                  _buildFeature('✓ AI-powered OA risk screening'),
-                  _buildFeature('✓ BLE wearable integration'),
-                  _buildFeature('✓ Offline-first architecture'),
-                  _buildFeature('✓ Multi-language support'),
-                  _buildFeature('✓ Patient management'),
-                  _buildFeature('✓ Analytics and reporting'),
+                  _buildFeature('feature_ai_screening'.tr()),
+                  _buildFeature('feature_ble'.tr()),
+                  _buildFeature('feature_offline'.tr()),
+                  _buildFeature('feature_multilang'.tr()),
+                  _buildFeature('feature_patient_mgmt'.tr()),
+                  _buildFeature('feature_analytics'.tr()),
                 ],
               ),
             ).animate().fadeIn(duration: 600.ms, delay: 500.ms).slideY(begin: 0.1, end: 0),
@@ -121,7 +122,7 @@ class AppVersionScreen extends StatelessWidget {
             // Copyright
             Center(
               child: Text(
-                '© 2026 JointSaathi. All rights reserved.',
+                'copyright_text'.tr(),
                 style: AppTypography.bodySmall.copyWith(
                   color: AppColors.textTertiary,
                 ),

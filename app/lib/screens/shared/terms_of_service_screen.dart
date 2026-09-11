@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_spacing.dart';
 import '../../theme/app_typography.dart';
@@ -19,7 +20,7 @@ class TermsOfServiceScreen extends StatelessWidget {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          'Terms of Service',
+          'terms_of_service'.tr(),
           style: AppTypography.headlineSmall.copyWith(
             color: AppColors.textPrimary,
             fontWeight: FontWeight.w600,
@@ -31,46 +32,16 @@ class TermsOfServiceScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildSection(
-              '1. Acceptance of Terms',
-              'By using the JointSaathi application, you agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use the application.',
-            ),
-            _buildSection(
-              '2. Medical Disclaimer',
-              'JointSaathi is an AI-assisted screening tool for osteoarthritis risk assessment. It is not a substitute for professional medical advice, diagnosis, or treatment. Always consult with qualified healthcare professionals for medical decisions.',
-            ),
-            _buildSection(
-              '3. User Responsibilities',
-              'Users are responsible for maintaining the confidentiality of their account information and for all activities that occur under their account. Users agree to notify us immediately of any unauthorized use of their account.',
-            ),
-            _buildSection(
-              '4. Data Collection and Use',
-              'We collect patient data, screening results, and sensor information to provide AI-powered risk assessments. Your data is processed locally on your device and synchronized when connectivity is available.',
-            ),
-            _buildSection(
-              '5. Privacy and Security',
-              'We implement reasonable security measures to protect your data. However, no method of transmission over the internet is completely secure, and we cannot guarantee absolute security.',
-            ),
-            _buildSection(
-              '6. Intellectual Property',
-              'All content, features, and functionality of the JointSaathi application are owned by us and are protected by international copyright, trademark, and other intellectual property laws.',
-            ),
-            _buildSection(
-              '7. Limitation of Liability',
-              'In no event shall we be liable for any indirect, incidental, special, consequential, or punitive damages arising out of or related to your use of the application.',
-            ),
-            _buildSection(
-              '8. Modifications to Terms',
-              'We reserve the right to modify these terms at any time. Your continued use of the application after such modifications constitutes your acceptance of the updated terms.',
-            ),
-            _buildSection(
-              '9. Termination',
-              'We reserve the right to terminate or suspend your access to the application at any time, without prior notice, for any reason, including but not limited to violation of these terms.',
-            ),
-            _buildSection(
-              '10. Governing Law',
-              'These terms shall be governed by and construed in accordance with the laws of India, without regard to its conflict of law provisions.',
-            ),
+            _buildSection('tos_title_1'.tr(), 'tos_content_1'.tr()),
+            _buildSection('tos_title_2'.tr(), 'tos_content_2'.tr()),
+            _buildSection('tos_title_3'.tr(), 'tos_content_3'.tr()),
+            _buildSection('tos_title_4'.tr(), 'tos_content_4'.tr()),
+            _buildSection('tos_title_5'.tr(), 'tos_content_5'.tr()),
+            _buildSection('tos_title_6'.tr(), 'tos_content_6'.tr()),
+            _buildSection('tos_title_7'.tr(), 'tos_content_7'.tr()),
+            _buildSection('tos_title_8'.tr(), 'tos_content_8'.tr()),
+            _buildSection('tos_title_9'.tr(), 'tos_content_9'.tr()),
+            _buildSection('tos_title_10'.tr(), 'tos_content_10'.tr()),
             const SizedBox(height: AppSpacing.xxl),
           ],
         ),
