@@ -116,9 +116,9 @@ class AuthProvider with ChangeNotifier {
       final token = response['token'];
       final refreshToken = response['refreshToken'];
       final userData = response['user'];
-
       _currentUser = User.fromMap(userData);
-
+      final role = _currentUser!.healthCenterId != null ? 'agent' : 'user';
+      _userRole = role;
       final prefs = await SharedPreferences.getInstance();
       if (token != null) {
         await prefs.setString('auth_token', token);
@@ -129,9 +129,9 @@ class AuthProvider with ChangeNotifier {
         debugPrint('Refresh token saved to preferences');
       }
       await prefs.setInt('current_user_id', _currentUser!.id!);
-      await prefs.setString('user_role', _currentUser!.healthCenterId != null ? 'agent' : 'user');
-      await prefs.setBool('is_logged_in', true); // Add login flag
-      debugPrint('User ID: ${_currentUser!.id}, Role: ${_currentUser!.healthCenterId != null ? "agent" : "user"} saved to preferences');
+      await prefs.setString('user_role', role);
+      await prefs.setBool('is_logged_in', true);
+      debugPrint('User ID: ${_currentUser!.id}, Role: $role saved to preferences');
       debugPrint('Login flag set to true');
 
       // Verify saved data
@@ -156,11 +156,13 @@ class AuthProvider with ChangeNotifier {
 
         if (users.isNotEmpty) {
           _currentUser = User.fromMap(users.first);
+          final role = _currentUser!.healthCenterId != null ? 'agent' : 'user';
+          _userRole = role; // Set in memory, not just prefs
           final prefs = await SharedPreferences.getInstance();
           await prefs.setInt('current_user_id', _currentUser!.id!);
-          await prefs.setString('user_role', _currentUser!.healthCenterId != null ? 'agent' : 'user');
-          await prefs.setBool('is_logged_in', true); // Add login flag
-          debugPrint('Offline login - User ID: ${_currentUser!.id}, Role: ${_currentUser!.healthCenterId != null ? "agent" : "user"} saved to preferences');
+          await prefs.setString('user_role', role);
+          await prefs.setBool('is_logged_in', true);
+          debugPrint('Offline login - User ID: ${_currentUser!.id}, Role: $role saved to preferences');
           debugPrint('Login flag set to true');
 
           _isLoading = false;
@@ -333,6 +335,11 @@ class AuthProvider with ChangeNotifier {
 
   Future<void> saveUserRole() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('user_role', _userRole ?? 'agent');
+    // Resolve role: prefer in-memory, fall back to current user, then prefs
+    final role = _userRole ?? 
+        (_currentUser?.healthCenterId != null ? 'agent' : null) ??
+        prefs.getString('user_role') ?? 'agent';
+    _userRole = role; // Keep in-memory in sync
+    await prefs.setString('user_role', role);
   }
 }

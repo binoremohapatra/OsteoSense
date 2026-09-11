@@ -69,9 +69,11 @@ class _LoginScreenState extends State<LoginScreen> {
       }
       if (!mounted) return;
       if (success) {
-        // Ensure role is set after successful auth
+        // Ensure role is persisted
         await auth.saveUserRole();
-        context.go('/agent/home');
+        // Navigate to the correct home based on the resolved role
+        final role = auth.userRole ?? 'agent';
+        context.go(role == 'user' ? '/user/home' : '/agent/home');
       } else {
         setState(() => _errorMsg = auth.errorMessage ?? 'Authentication failed');
       }
