@@ -202,8 +202,8 @@ class _ProcessingScreenState extends State<ProcessingScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: const CustomAppBar(
-        title: 'Processing',
+      appBar: CustomAppBar(
+        title: 'processing'.tr(),
         centerTitle: false,
         showBackButton: true,
       ),
