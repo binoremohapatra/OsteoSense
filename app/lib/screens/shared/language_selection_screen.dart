@@ -32,7 +32,7 @@ class LanguageSelectionScreen extends StatelessWidget {
         elevation: 0,
       ),
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(AppSpacing.screenPaddingLg),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -63,7 +63,7 @@ class LanguageSelectionScreen extends StatelessWidget {
               const SizedBox(height: AppSpacing.xl),
               // Title
               Text(
-                'Select Language',
+                'select_language'.tr(),
                 style: AppTypography.headlineLarge,
                 textAlign: TextAlign.center,
               )
@@ -73,7 +73,7 @@ class LanguageSelectionScreen extends StatelessWidget {
               const SizedBox(height: AppSpacing.sm),
               // Subtitle
               Text(
-                'Choose your preferred language',
+                'choose_language'.tr(),
                 style: AppTypography.bodyMedium.copyWith(
                   color: AppColors.textSecondary,
                 ),
@@ -97,9 +97,89 @@ class LanguageSelectionScreen extends StatelessWidget {
                 'हिंदी',
                 'hi',
                 Icons.translate,
+                50,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              _buildLanguageOption(
+                context,
+                'বাংলা',
+                'bn',
+                Icons.translate,
+                100,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              _buildLanguageOption(
+                context,
+                'অসমীয়া',
+                'as',
+                Icons.translate,
+                150,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              _buildLanguageOption(
+                context,
+                'ગુજરાતી',
+                'gu',
+                Icons.translate,
                 200,
               ),
-              const Spacer(),
+              const SizedBox(height: AppSpacing.md),
+              _buildLanguageOption(
+                context,
+                'ಕನ್ನಡ',
+                'kn',
+                Icons.translate,
+                250,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              _buildLanguageOption(
+                context,
+                'മലയാളം',
+                'ml',
+                Icons.translate,
+                300,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              _buildLanguageOption(
+                context,
+                'मराठी',
+                'mr',
+                Icons.translate,
+                350,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              _buildLanguageOption(
+                context,
+                'ଓଡ଼ିଆ',
+                'or',
+                Icons.translate,
+                400,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              _buildLanguageOption(
+                context,
+                'ਪੰਜਾਬੀ',
+                'pa',
+                Icons.translate,
+                450,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              _buildLanguageOption(
+                context,
+                'தமிழ்',
+                'ta',
+                Icons.translate,
+                500,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              _buildLanguageOption(
+                context,
+                'తెలుగు',
+                'te',
+                Icons.translate,
+                550,
+              ),
+              const SizedBox(height: AppSpacing.xxl),
             ],
           ),
         ),

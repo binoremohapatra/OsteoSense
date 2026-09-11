@@ -30,6 +30,13 @@ class AuthProvider with ChangeNotifier {
 
       debugPrint('Loading current user - Token: ${token != null ? "EXISTS" : "NULL"}, Role: $_userRole, UserID: $userId, LoggedIn: $isLoggedIn');
 
+      // Fix invalid role values
+      if (_userRole != 'agent' && _userRole != 'user') {
+        debugPrint('Invalid role detected: $_userRole, defaulting to agent');
+        _userRole = 'agent';
+        await prefs.setString('user_role', 'agent');
+      }
+
       if (!isLoggedIn) {
         debugPrint('User not logged in according to preferences');
         _currentUser = null;
