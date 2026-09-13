@@ -45,7 +45,7 @@ class InferenceService:
             "fs_piezo": fs_piezo, 
             "fs_emg": fs_emg,
             "pain_level": pain_level,
-            "stiffness_duration": float(str(stiffness_duration).replace('>','').replace('<','').split('-')[0]) if type(stiffness_duration) == str else stiffness_duration,
+            "stiffness_duration": 0.0 if str(stiffness_duration).lower() == "none" else (float(str(stiffness_duration).replace('>','').replace('<','').split('-')[0]) if type(stiffness_duration) == str else stiffness_duration),
             "swelling": float(swelling),
             "past_injury": float(past_injury)
         }
