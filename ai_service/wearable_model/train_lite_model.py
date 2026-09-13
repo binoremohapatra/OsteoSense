@@ -4,10 +4,7 @@ sys.path.append(os.path.dirname(__file__))
 import json
 import numpy as np
 import tensorflow as tf
-try:
-    from simulate_data import build_dataset
-except ImportError:
-    from ai_service.wearable_model.simulate_data import build_dataset
+from simulate_data import build_dataset  # type: ignore
 
 def extract_lite_features(rec):
     # 1. normalizedPain
