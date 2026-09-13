@@ -14,7 +14,7 @@ jobs:
     
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -38,7 +38,7 @@ jobs:
           zip -r ios-app-release.ipa Payload
           
       - name: Upload iOS IPA Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ios-release-unsigned
           path: app/build/ios/iphoneos/ios-app-release.ipa
