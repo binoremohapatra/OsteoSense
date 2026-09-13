@@ -14,8 +14,18 @@ function escapeRegex(text) {
  * POST /api/v1/patients
  */
 const createPatient = asyncHandler(async (req, res) => {
+  const data = { ...req.body };
+  if (!data.name && data.fullName) {
+    data.name = data.fullName;
+  }
+  if (data.height === undefined && data.height_cm !== undefined) {
+    data.height = data.height_cm;
+  }
+  if (data.weight === undefined && data.weight_kg !== undefined) {
+    data.weight = data.weight_kg;
+  }
   const patient = await Patient.create({
-    ...req.body,
+    ...data,
     agentId: req.user._id,
   });
 
@@ -248,6 +258,12 @@ const updatePatient = asyncHandler(async (req, res) => {
   const updateData = { ...req.body };
   if (!updateData.name && updateData.fullName) {
     updateData.name = updateData.fullName;
+  }
+  if (updateData.height === undefined && updateData.height_cm !== undefined) {
+    updateData.height = updateData.height_cm;
+  }
+  if (updateData.weight === undefined && updateData.weight_kg !== undefined) {
+    updateData.weight = updateData.weight_kg;
   }
   delete updateData.agentId;
   delete updateData._id;
