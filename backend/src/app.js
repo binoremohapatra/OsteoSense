@@ -23,6 +23,9 @@ const preventiveCareRoutes = require("./routes/preventiveCareRoutes");
 
 const app = express();
 
+// Trust proxy to allow express-rate-limit to read X-Forwarded-For properly behind Render
+app.set("trust proxy", 1);
+
 // Security headers
 app.use(helmet());
 
