@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:printing/printing.dart';
@@ -214,7 +215,31 @@ class PdfPreviewScreen extends StatelessWidget {
         screening: screening,
         patient: patient,
       );
-      await Printing.layoutPdf(onLayout: (_) async => bytes);
+      
+      if (Platform.isAndroid) {
+        final filename = 'OA_Report_${patient.name.replaceAll(' ', '_')}_${DateTime.now().millisecondsSinceEpoch}.pdf';
+        final file = File('/storage/emulated/0/Download/$filename');
+        await file.writeAsBytes(bytes);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(children: [
+                const Icon(Icons.check_circle_rounded, color: Colors.white, size: 18),
+                const SizedBox(width: 8),
+                Expanded(child: Text('Downloaded successfully to Downloads folder')),
+              ]),
+              backgroundColor: AppColors.riskLow,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusSm)),
+            ),
+          );
+        }
+      } else {
+        await Printing.sharePdf(
+          bytes: bytes,
+          filename: 'OA_Report_${patient.name.replaceAll(' ', '_')}.pdf',
+        );
+      }
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

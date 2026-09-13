@@ -87,14 +87,14 @@ class _QuickActionWidgetState extends State<QuickActionWidget>
       case 'screening':
       case 'newscreening':
       case 'jointselection':
-        context.go('/screening/symptoms');
+        context.go('/screening/select-patient');
         break;
       case 'addpatient':
       case 'addeditpatient':
         context.push('/agent/add-patient');
         break;
       case 'selfcheck':
-        context.go('/screening/symptoms');
+        context.go('/screening/select-patient');
         break;
       default:
         context.go('/agent/home');

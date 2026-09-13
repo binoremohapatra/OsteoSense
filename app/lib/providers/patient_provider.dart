@@ -173,6 +173,8 @@ class PatientProvider with ChangeNotifier {
           'occupation': newPatient.occupation,
           'height_cm': newPatient.heightCm,
           'weight_kg': newPatient.weightKg,
+          'height': newPatient.heightCm,
+          'weight': newPatient.weightKg,
         };
         
         final response = await ApiService().createPatient(apiData);
@@ -238,6 +240,8 @@ class PatientProvider with ChangeNotifier {
             'occupation': patient.occupation,
             'height_cm': patient.heightCm,
             'weight_kg': patient.weightKg,
+            'height': patient.heightCm,
+            'weight': patient.weightKg,
           };
           
           // Call updatePatient API using the mongo _id

@@ -294,7 +294,8 @@ class _ComboBoxState<T> extends State<ComboBox<T>> {
 
   @override
   void dispose() {
-    _hideOverlay();
+    _overlayEntry?.remove();
+    _overlayEntry = null;
     _controller.dispose();
     _focusNode.dispose();
     super.dispose();
