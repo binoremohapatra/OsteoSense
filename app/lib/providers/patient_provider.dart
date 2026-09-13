@@ -26,27 +26,37 @@ class PatientProvider with ChangeNotifier {
       try {
         // Try API first
         final patientsData = await ApiService().getPatients();
-        _patients = patientsData.map((data) {
-          // Normalize backend (camelCase Mongoose) response to local DB snake_case shape
-          // so Patient.fromMap can handle both.
+        final db = DatabaseHelper();
+        _patients = [];
+        
+        for (var data in patientsData) {
           final pData = Map<String, dynamic>.from(data as Map);
-          // Backend toJSON transform: _id → id; we need server_id
           pData['server_id'] = pData['id'] ?? pData['_id'];
-          // Mongoose timestamps are camelCase; Patient.fromMap expects snake_case
           if (pData['createdAt'] != null) {
             pData['created_at'] = pData['createdAt'].toString();
           }
           if (pData['updatedAt'] != null) {
             pData['updated_at'] = pData['updatedAt'].toString();
           }
-          // Ensure required fields for fromMap (local id = 0 since not in local DB yet)
-          pData['id'] ??= 0;
           pData['synced'] = 1;
-          return Patient.fromMap(pData);
-        }).toList();
-
-        // Optional: Update local DB cache with fresh data here
-        // This would require matching by serverId or localId to avoid duplicates
+          
+          final serverId = pData['server_id'];
+          final existing = await db.query('patients', where: 'server_id = ?', whereArgs: [serverId]);
+          
+          if (existing.isNotEmpty) {
+            pData['id'] = existing.first['id'];
+            final patient = Patient.fromMap(pData);
+            await db.update('patients', patient.toMap(), where: 'id = ?', whereArgs: [patient.id]);
+            _patients.add(patient);
+          } else {
+            pData['id'] = 0; 
+            var patient = Patient.fromMap(pData);
+            var mapForDb = patient.toMap();
+            mapForDb.remove('id');
+            final newId = await db.insert('patients', mapForDb);
+            _patients.add(patient.copyWith(id: newId));
+          }
+        }
 
       } catch (apiError) {
         // Fallback to local DB on any API error (including 401 auth errors)
