@@ -488,9 +488,30 @@ class GaitSensorPipeline {
         emgFeatures: null,
       );
       
-      // 2. Run deployed API prediction (REMOVED - 100% Offline Mode)
-      // The app now relies entirely on the powerful local Deep Learning model 
-      // which has been upgraded to match the Web model's capacity exactly.
+      // 2. Run deployed API prediction
+      MLPrediction? serverPrediction;
+      try {
+        final apiService = ApiService();
+        final response = await apiService.submitWearableDataToAI(
+          deviceId: 'mobile-app-01',
+          gyro: _gyroX,
+          piezo: _piezoData,
+          emg: _emgData,
+        );
+        // Convert server response to MLPrediction format
+        serverPrediction = MLPrediction(
+          riskLevel: response['risk_label'] ?? 'unknown',
+          confidence: (response['risk_score'] as num?)?.toDouble() ?? 0.0,
+          contributingFactors: List<String>.from(response['top_contributing_features'] ?? []),
+          reasoning: 'AI prediction from deployed server',
+          timestamp: DateTime.now(),
+          inputSourceType: _sourceType,
+          inferenceTimeMs: DateTime.now().difference(startTime).inMilliseconds,
+          modelVersion: response['model_used'] ?? 'remote_model_v1',
+        );
+      } catch (e) {
+        debugPrint('Failed to reach deployed AI server: $e');
+      }
       
       final inferenceTime = DateTime.now().difference(startTime).inMilliseconds;
       
@@ -500,8 +521,8 @@ class GaitSensorPipeline {
         inferenceTime,
       );
       
-      // Use Local Prediction Exclusively
-      final mlPrediction = localPrediction;
+      // Use Server Prediction if available, else fallback to Local Prediction
+      final mlPrediction = serverPrediction ?? localPrediction;
       
       _currentPrediction = mlPrediction;
       _predictionHistory.add(mlPrediction);
