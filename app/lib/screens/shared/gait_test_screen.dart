@@ -822,8 +822,7 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
                         _buildLineChartData(channel2, colors[1]),
                         _buildLineChartData(channel3, colors[2]),
                       ],
-                      minY: -2,
-                      maxY: 2,
+                      // Removed minY and maxY to allow automatic scaling for hardware sensor data
                     ),
                   ),
           ),
@@ -911,7 +910,7 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
             borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
           ),
           child: hasData
-              ? _buildSimulatedPiezoGraph()
+              ? _buildPiezoGraph()
               : Center(
                   child: Text(
                     isSimulated ? 'Starting simulation...' : 'Piezo sensor not connected',
@@ -926,16 +925,15 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
     );
   }
 
-  Widget _buildSimulatedPiezoGraph() {
-    // Generate simulated piezo data
-    final random = math.Random();
-    final data = List.generate(50, (index) {
-      final time = index / 50.0;
-      final vibration = math.sin(time * 10 * math.pi) * 0.5 +
-                       math.sin(time * 20 * math.pi) * 0.3 +
-                       (random.nextDouble() - 0.5) * 0.2;
-      return vibration;
-    });
+  Widget _buildPiezoGraph() {
+    final data = _sensorPipeline.piezoData.isNotEmpty
+        ? _sensorPipeline.piezoData
+        : List.generate(50, (index) {
+            final time = index / 50.0;
+            return math.sin(time * 10 * math.pi) * 0.5 +
+                math.sin(time * 20 * math.pi) * 0.3 +
+                (math.Random().nextDouble() - 0.5) * 0.2;
+          });
 
     return LineChart(
       LineChartData(
@@ -953,8 +951,7 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
             dotData: const FlDotData(show: false),
           ),
         ],
-        minY: -1,
-        maxY: 1,
+        // Removed fixed minY/maxY to allow scaling
       ),
     );
   }
@@ -997,7 +994,7 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
               borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
             ),
             child: hasData
-                ? _buildSimulatedEMGGraph()
+                ? _buildEMGGraph()
                 : Center(
                     child: Text(
                       isSimulated ? 'Starting simulation...' : 'EMG sensor not connected',
@@ -1012,17 +1009,15 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
     );
   }
 
-  Widget _buildSimulatedEMGGraph() {
-    // Generate simulated EMG data (muscle activity patterns)
-    final random = math.Random();
-    final data = List.generate(50, (index) {
-      final time = index / 50.0;
-      // EMG has bursts of activity followed by rest periods
-      final burst = (math.sin(time * 5 * math.pi) + 1) / 2; // 0 to 1
-      final activity = burst * (random.nextDouble() * 0.8 + 0.2) +
-                      (random.nextDouble() - 0.5) * 0.1;
-      return activity;
-    });
+  Widget _buildEMGGraph() {
+    final data = _sensorPipeline.emgData.isNotEmpty
+        ? _sensorPipeline.emgData
+        : List.generate(50, (index) {
+            final time = index / 50.0;
+            final burst = (math.sin(time * 5 * math.pi) + 1) / 2;
+            return burst * (math.Random().nextDouble() * 0.8 + 0.2) +
+                (math.Random().nextDouble() - 0.5) * 0.1;
+          });
 
     return LineChart(
       LineChartData(
@@ -1040,8 +1035,7 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
             dotData: const FlDotData(show: false),
           ),
         ],
-        minY: 0,
-        maxY: 1.2,
+        // Removed fixed minY/maxY to allow scaling
       ),
     );
   }

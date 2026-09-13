@@ -62,6 +62,8 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
       weightKg: double.tryParse(_weightController.text.trim()),
       heightCm: double.tryParse(_heightController.text.trim()),
     );
+    final messenger = ScaffoldMessenger.of(context);
+    final router = GoRouter.of(context);
 
     final success = await patientProvider.addPatient(patient);
 
@@ -75,7 +77,7 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
         patientId: patient.id.toString(),
       );
 
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         SnackBar(
           content: Row(children: [
             Icon(Icons.check_circle_rounded, color: Colors.white, size: 18),
@@ -87,9 +89,14 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusSm)),
         ),
       );
-      context.pop(true); // Return true to indicate success
+      
+      if (router.canPop()) {
+        router.pop(true);
+      } else {
+        router.go('/agent/patients');
+      }
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         SnackBar(
           content: Text(patientProvider.errorMessage ?? 'add_patient_failed'.tr()),
           backgroundColor: AppColors.error,

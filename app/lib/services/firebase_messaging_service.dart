@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'notification_service.dart';
+import '../firebase_options.dart';
 
 class FirebaseMessagingService {
   static final FirebaseMessagingService _instance =
@@ -21,7 +22,9 @@ class FirebaseMessagingService {
 
     try {
       // Initialize Firebase
-      await Firebase.initializeApp();
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
 
       // Initialize Firebase Messaging
       _messaging = FirebaseMessaging.instance;
@@ -58,6 +61,9 @@ class FirebaseMessagingService {
 
       // Handle background messages
       FirebaseMessaging.onMessageOpenedApp.listen(_handleMessageOpened);
+
+      // Register background handler (for when app is closed/terminated)
+      FirebaseMessaging.onBackgroundMessage(backgroundMessageHandler);
 
       // Handle background messages when app is terminated
       FirebaseMessaging.instance.getInitialMessage().then((message) {

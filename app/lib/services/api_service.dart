@@ -167,6 +167,14 @@ class ApiService {
       throw _handleError(e);
     }
   }
+  Future<Map<String, dynamic>> updateProfile(Map<String, dynamic> data) async {
+    try {
+      final response = await _dio.put('/users/profile', data: data);
+      return response.data;
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
 
   // --- Patient Endpoints ---
 

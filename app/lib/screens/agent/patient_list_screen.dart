@@ -234,7 +234,7 @@ class _PatientListScreenState extends State<PatientListScreen> {
             width: 180,
             child: CustomButton(
               text: 'add_patient'.tr(),
-              onPressed: () => context.go('/agent/add-patient'),
+              onPressed: () => context.push('/agent/add-patient'),
               variant: ButtonVariant.primary,
               size: ButtonSize.small,
               icon: const Icon(Icons.add),

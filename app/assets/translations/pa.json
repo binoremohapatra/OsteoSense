@@ -1,4 +1,4 @@
-﻿{
+{
   "app_name": "ਜੋਇੰਟਸਾਥੀ",
   "welcome": "ਜੀ ਆਇਆਂ ਨੂੰ",
   "login": "ਲੌਗ ਇਨ ਕਰੋ",
@@ -22,8 +22,8 @@
   "address": "ਪਤਾ",
   "village": "ਪਿੰਡ",
   "occupation": "ਕਿੱਤਾ",
-  "weight": "ਵਜ਼ਨ (ਕਿਲੋ)",
-  "height": "ਕੱਦ (ਸੈ.ਮੀ.)",
+  "weight": "ਵਜ਼ਨ",
+  "height": "ਕੱਦ",
   "add_patient": "ਮਰੀਜ਼ ਸ਼ਾਮਲ ਕਰੋ",
   "patients": "ਮਰੀਜ਼",
   "patient_details": "ਮਰੀਜ਼ ਦੀ ਜਾਣਕਾਰੀ",
@@ -609,8 +609,6 @@
   "more_than_60_minutes": "> 60 ਮਿੰਟ",
   "current_risk_level": "ਮੌਜੂਦਾ ਖਤਰੇ ਦਾ ਪੱਧਰ",
   "patient_metrics": "ਮਰੀਜ਼ ਦੇ ਮਾਪ",
-  "height": "ਕੱਦ",
-  "weight": "ਵਜ਼ਨ",
   "cm": "ਸੈ.ਮੀ.",
   "kg": "ਕਿਲੋ",
   "screening_timeline": "ਜਾਂਚ ਦੀ ਸਮਾਂ-ਰੇਖਾ",
@@ -772,10 +770,10 @@
   "pp_title_9": "9. ਨੀਤੀ ਵਿੱਚ ਬਦਲਾਅ",
   "pp_content_9": "ਗੋਪਨੀਯਤਾ ਨੀਤੀ ਸਮੇਂ-ਸਮੇਂ ਤੇ ਅੱਪਡੇਟ ਹੋ ਸਕਦੀ ਹੈ।",
   "pp_title_10": "10. ਸਾਡੇ ਨਾਲ ਸੰਪਰਕ ਕਰੋ",
-  "pp_content_10": "ਗੋਪਨੀਯਤਾ ਨੀਤੀ ਬਾਰੇ ਪ੍ਰਸ਼ਨਾਂ ਲਈ support@jointsaathi.com ਤੇ ਸੰਪਰਕ ਕਰੋ।"
-,
-
+  "pp_content_10": "ਗੋਪਨੀਯਤਾ ਨੀਤੀ ਬਾਰੇ ਪ੍ਰਸ਼ਨਾਂ ਲਈ support@jointsaathi.com ਤੇ ਸੰਪਰਕ ਕਰੋ।",
   "rec_high": "ਤੁਰੰਤ ਡਾਕਟਰੀ ਸਲਾਹ ਦੀ ਸਿਫਾਰਸ਼ ਕੀਤੀ ਜਾਂਦੀ ਹੈ।",
   "rec_medium": "ਨਿਯਮਤ ਨਿਗਰਾਨੀ ਦੀ ਸਲਾਹ ਦਿੱਤੀ ਜਾਂਦੀ ਹੈ।",
-  "rec_low": "ਨਿਯਮਤ ਸਿਹਤ ਨਿਗਰਾਨੀ ਜਾਰੀ ਰੱਖੋ।"
+  "rec_low": "ਨਿਯਮਤ ਸਿਹਤ ਨਿਗਰਾਨੀ ਜਾਰੀ ਰੱਖੋ।",
+  "weight_kg": "Weight (kg)",
+  "height_cm": "Height (cm)"
 }

@@ -69,46 +69,45 @@ class _HomeScreenState extends State<HomeScreen> {
       final tabParam = uri.queryParameters['tab'];
       debugPrint('HomeScreen: Route tab parameter: $tabParam, current index: $_currentIndex');
       
-      if (tabParam != null) {
-        switch (tabParam.toLowerCase()) {
-          case 'patients':
-            debugPrint('HomeScreen: Switching to patients tab (index 1)');
-            if (_currentIndex != 1) {
-              setState(() {
-                _currentIndex = 1;
-                debugPrint('HomeScreen: Changed index to 1');
-              });
-            }
-            break;
-          case 'analytics':
-          case 'reports':
-            debugPrint('HomeScreen: Switching to analytics tab (index 2)');
-            if (_currentIndex != 2) {
-              setState(() {
-                _currentIndex = 2;
-                debugPrint('HomeScreen: Changed index to 2');
-              });
-            }
-            break;
-          case 'settings':
-            debugPrint('HomeScreen: Switching to settings tab (index 3)');
-            if (_currentIndex != 3) {
-              setState(() {
-                _currentIndex = 3;
-                debugPrint('HomeScreen: Changed index to 3');
-              });
-            }
-            break;
-          default:
-            debugPrint('HomeScreen: Unknown tab, defaulting to home (index 0)');
-            // Default to home tab (index 0)
-            if (_currentIndex != 0) {
-              setState(() {
-                _currentIndex = 0;
-                debugPrint('HomeScreen: Changed index to 0');
-              });
-            }
-        }
+      final String effectiveTab = tabParam ?? 'home';
+      
+      switch (effectiveTab.toLowerCase()) {
+        case 'patients':
+          debugPrint('HomeScreen: Switching to patients tab (index 1)');
+          if (_currentIndex != 1) {
+            setState(() {
+              _currentIndex = 1;
+              debugPrint('HomeScreen: Changed index to 1');
+            });
+          }
+          break;
+        case 'analytics':
+        case 'reports':
+          debugPrint('HomeScreen: Switching to analytics tab (index 2)');
+          if (_currentIndex != 2) {
+            setState(() {
+              _currentIndex = 2;
+              debugPrint('HomeScreen: Changed index to 2');
+            });
+          }
+          break;
+        case 'settings':
+          debugPrint('HomeScreen: Switching to settings tab (index 3)');
+          if (_currentIndex != 3) {
+            setState(() {
+              _currentIndex = 3;
+              debugPrint('HomeScreen: Changed index to 3');
+            });
+          }
+          break;
+        default:
+          debugPrint('HomeScreen: Unknown tab or home, defaulting to index 0');
+          if (_currentIndex != 0) {
+            setState(() {
+              _currentIndex = 0;
+              debugPrint('HomeScreen: Changed index to 0');
+            });
+          }
       }
     });
   }
@@ -215,6 +214,11 @@ class _HomeDashboardState extends State<HomeDashboard> {
         setState(() {
           _currentLocation = location;
         });
+        
+        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+        if (authProvider.currentUser?.location == null || authProvider.currentUser!.location!.isEmpty) {
+          authProvider.updateProfile(authProvider.currentUser!.copyWith(location: location));
+        }
       }
     } catch (e) {
       if (mounted) {

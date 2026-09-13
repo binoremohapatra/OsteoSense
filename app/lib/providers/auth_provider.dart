@@ -264,56 +264,6 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  Future<bool> resetPassword(String phone, String newPassword) async {
-    _isLoading = true;
-    _errorMessage = null;
-    notifyListeners();
-
-    try {
-      bool serverSuccess = false;
-      try {
-        await ApiService().resetPassword(phone, newPassword);
-        serverSuccess = true;
-      } catch (apiError) {
-        // If 404 (route not deployed) or network error, fall back to local DB only
-        final isNotFound = apiError is ApiException && apiError.statusCode == 404;
-        final isNetwork = apiError is ApiException && apiError.message.contains('Network');
-        if (!isNotFound && !isNetwork) {
-          // Any other error (401, 422 etc.) means the server rejected it — show error
-          rethrow;
-        }
-        debugPrint('Server reset-password not available, resetting locally: $apiError');
-      }
-
-      // Update local db
-      final db = DatabaseHelper();
-      final existing = await db.query('users', where: 'phone_number = ?', whereArgs: [phone]);
-      if (existing.isNotEmpty) {
-        final Map<String, dynamic> updateData = Map<String, dynamic>.from(existing.first);
-        updateData['password'] = newPassword;
-        await db.update('users', updateData, where: 'phone_number = ?', whereArgs: [phone]);
-        _isLoading = false;
-        notifyListeners();
-        return true;
-      } else if (!serverSuccess) {
-        // Phone not found locally and server failed — user doesn't exist at all
-        _errorMessage = 'No account found with this phone number';
-        _isLoading = false;
-        notifyListeners();
-        return false;
-      }
-
-      _isLoading = false;
-      notifyListeners();
-      return true;
-    } catch (e) {
-      _errorMessage = e is ApiException ? e.message : e.toString();
-      _isLoading = false;
-      notifyListeners();
-      return false;
-    }
-  }
-
 
   Future<void> logout() async {
     debugPrint('Logging out user...');
@@ -375,5 +325,23 @@ class AuthProvider with ChangeNotifier {
         prefs.getString('user_role') ?? 'agent';
     _userRole = role; // Keep in-memory in sync
     await prefs.setString('user_role', role);
+  }
+
+  Future<bool> resetPassword(String phone, String newPassword) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await ApiService().resetPassword(phone, newPassword);
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = e is ApiException ? e.message : e.toString();
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
   }
 }

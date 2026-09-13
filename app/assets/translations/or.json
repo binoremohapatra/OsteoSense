@@ -1,4 +1,4 @@
-﻿{
+{
   "app_name": "ଜଏଣ୍ଟସାଥୀ",
   "welcome": "ସ୍ୱାଗତ",
   "login": "ଲଗ୍ ଇନ୍ କରନ୍ତୁ",
@@ -22,8 +22,8 @@
   "address": "ଠିକଣା",
   "village": "ଗାଁ",
   "occupation": "ବୃତ୍ତି",
-  "weight": "ଓଜନ (କିଗ୍ରା)",
-  "height": "ଉଚ୍ଚତା (ସେମି)",
+  "weight": "ଓଜନ",
+  "height": "ଉଚ୍ଚତା",
   "add_patient": "ରୋଗୀ ଯୋଡନ୍ତୁ",
   "patients": "ରୋଗୀମାନେ",
   "patient_details": "ରୋଗୀଙ୍କ ବିବରଣୀ",
@@ -609,8 +609,6 @@
   "more_than_60_minutes": "> 60 ମିନିଟ୍",
   "current_risk_level": "ବର୍ତ୍ତମାନର ବିପଦ ସ୍ତର",
   "patient_metrics": "ରୋଗୀଙ୍କ ମାପକାଠି",
-  "height": "ଉଚ୍ଚତା",
-  "weight": "ଓଜନ",
   "cm": "ସେମି",
   "kg": "କିଗ୍ରା",
   "screening_timeline": "ପରୀକ୍ଷା ସମୟସୀମା",
@@ -618,7 +616,6 @@
   "factors_colon": "କାରଣଗୁଡିକ:",
   "no_screenings_yet": "ଏପର୍ଯ୍ୟନ୍ତ କୌଣସି ପରୀକ୍ଷା ନାହିଁ",
   "loading_patient_profile": "ରୋଗୀଙ୍କ ପ୍ରୋଫାଇଲ୍ ଲୋଡ୍ ହେଉଛି...",
-  "patient_not_found": "ରୋଗୀ ମିଳିଲେ ନାହିଁ",
   "go_back": "ପଛକୁ ଯାଆନ୍ତୁ",
   "gait_assessment_test": "ଚାଲିବାର ମୂଲ୍ୟାଙ୍କନ ପରୀକ୍ଷା",
   "stand_naturally_device": "ଉପକରଣକୁ ପକେଟ୍‌ରେ ରଖି ସ୍ୱାଭାବିକ ଭାବେ ଠିଆ ହୁଅନ୍ତୁ",
@@ -773,10 +770,10 @@
   "pp_title_9": "9. ଏହି ନୀତିରେ ପରିବର୍ତ୍ତନ",
   "pp_content_9": "ଗୋପନୀୟ ନୀତି ସମୟ-ସମୟ ଅଦ୍ୟତନ ହୋଇ ପାରେ।",
   "pp_title_10": "10. ଆମ ସହ ଯୋଗାଯୋଗ",
-  "pp_content_10": "ଗୋପନୀୟ ନୀତି ସୁ-ପ୍ରଶ୍ନ ପାଇଁ support@jointsaathi.com ଯୋଗାଯୋଗ।"
-,
-
+  "pp_content_10": "ଗୋପନୀୟ ନୀତି ସୁ-ପ୍ରଶ୍ନ ପାଇଁ support@jointsaathi.com ଯୋଗାଯୋଗ।",
   "rec_high": "ତୁରନ୍ତ ଡାକ୍ତରୀ ପରାମର୍ଶ ନିଅନ୍ତୁ।",
   "rec_medium": "ନିୟମିତ ନିରୀକ୍ଷଣ ପରାମର୍ଶ ଦିଆଯାଉଛି।",
-  "rec_low": "ନିୟମିତ ସ୍ୱାସ୍ଥ୍ୟ ନିରୀକ୍ଷଣ ଜାରି ରଖନ୍ତୁ।"
+  "rec_low": "ନିୟମିତ ସ୍ୱାସ୍ଥ୍ୟ ନିରୀକ୍ଷଣ ଜାରି ରଖନ୍ତୁ।",
+  "weight_kg": "Weight (kg)",
+  "height_cm": "Height (cm)"
 }
