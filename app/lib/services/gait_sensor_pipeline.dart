@@ -6,6 +6,7 @@ import 'sensor_service.dart';
 import 'sensor_data_source.dart';
 import 'gait_analyzer.dart';
 import 'tflite_service.dart' as tflite;
+import 'api_service.dart';
 
 /// Unified sensor data pipeline for Gait Test
 /// Supports both simulated data and hardware (ESP32/Phone sensors)
@@ -547,22 +548,52 @@ class GaitSensorPipeline {
       
       final startTime = DateTime.now();
       
-      // Run prediction
+      // 1. Run local prediction (TFLite Fallback)
       final prediction = await tfliteService.predictRisk(
         painLevel: 5, // Default for testing
         stiffnessDuration: '30',
         swelling: false,
         pastInjury: null,
         gaitFeatures: featureVector,
+        piezoFeatures: _piezoData.isNotEmpty ? [_calculateRMS(_piezoData), _piezoData.reduce((a, b) => a > b ? a : b)] : null,
+        emgFeatures: _emgData.isNotEmpty ? [_calculateRMS(_emgData), _emgData.reduce((a, b) => a > b ? a : b)] : null,
       );
+      
+      // 2. Run deployed API prediction
+      MLPrediction? serverPrediction;
+      try {
+        final apiService = ApiService();
+        final response = await apiService.submitWearableDataToAI(
+          deviceId: 'mobile-app-01',
+          gyro: _gyroX,
+          piezo: _piezoData,
+          emg: _emgData,
+        );
+        // Convert server response to MLPrediction format
+        serverPrediction = MLPrediction(
+          riskLevel: response['risk_label'] ?? 'unknown',
+          confidence: (response['risk_score'] as num?)?.toDouble() ?? 0.0,
+          contributingFactors: List<String>.from(response['top_contributing_features'] ?? []),
+          reasoning: 'AI prediction from deployed server',
+          timestamp: DateTime.now(),
+          inputSourceType: _sourceType,
+          inferenceTimeMs: DateTime.now().difference(startTime).inMilliseconds,
+          modelVersion: response['model_used'] ?? 'remote_model_v1',
+        );
+      } catch (e) {
+        debugPrint('Failed to reach deployed AI server: $e');
+      }
       
       final inferenceTime = DateTime.now().difference(startTime).inMilliseconds;
       
-      final mlPrediction = MLPrediction.fromTFLite(
+      final localPrediction = MLPrediction.fromTFLite(
         prediction,
         _sourceType,
         inferenceTime,
       );
+      
+      // Use Server Prediction if available, else fallback to Local Prediction
+      final mlPrediction = serverPrediction ?? localPrediction;
       
       _currentPrediction = mlPrediction;
       _predictionHistory.add(mlPrediction);

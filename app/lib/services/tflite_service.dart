@@ -38,6 +38,8 @@ class TFLiteService {
     required bool swelling,
     required String? pastInjury,
     required List<double> gaitFeatures,
+    List<double>? piezoFeatures,
+    List<double>? emgFeatures,
   }) async {
     try {
       if (_isModelLoaded && _interpreter != null) {
@@ -47,6 +49,8 @@ class TFLiteService {
           swelling: swelling,
           pastInjury: pastInjury,
           gaitFeatures: gaitFeatures,
+          piezoFeatures: piezoFeatures,
+          emgFeatures: emgFeatures,
         );
       } else {
         // Fallback to rule-based prediction
@@ -56,6 +60,8 @@ class TFLiteService {
           swelling: swelling,
           pastInjury: pastInjury,
           gaitFeatures: gaitFeatures,
+          piezoFeatures: piezoFeatures,
+          emgFeatures: emgFeatures,
         );
       }
     } catch (e) {
@@ -76,6 +82,8 @@ class TFLiteService {
     required bool swelling,
     required String? pastInjury,
     required List<double> gaitFeatures,
+    List<double>? piezoFeatures,
+    List<double>? emgFeatures,
   }) async {
     // Prepare input features
     // Normalize features based on your model's expected input
@@ -85,6 +93,8 @@ class TFLiteService {
       swelling: swelling,
       pastInjury: pastInjury,
       gaitFeatures: gaitFeatures,
+      piezoFeatures: piezoFeatures,
+      emgFeatures: emgFeatures,
     );
 
     // Prepare output buffer
@@ -107,6 +117,8 @@ class TFLiteService {
       swelling: swelling,
       pastInjury: pastInjury,
       gaitFeatures: gaitFeatures,
+      piezoFeatures: piezoFeatures,
+      emgFeatures: emgFeatures,
     );
 
     return RiskPrediction(
@@ -123,6 +135,8 @@ class TFLiteService {
     required bool swelling,
     required String? pastInjury,
     required List<double> gaitFeatures,
+    List<double>? piezoFeatures,
+    List<double>? emgFeatures,
   }) {
     // Rule-based prediction as fallback
     double riskScore = 0;
@@ -163,6 +177,24 @@ class TFLiteService {
       if (gaitScore > 1.0) factors.add('Abnormal gait pattern detected');
     }
 
+    // Piezo / Joint Sound contribution
+    if (piezoFeatures != null && piezoFeatures.isNotEmpty) {
+      final piezoRMS = piezoFeatures[0]; 
+      if (piezoRMS > 0.5) {
+        riskScore += 1.5;
+        factors.add('Elevated joint crepitus (sound) detected');
+      }
+    }
+
+    // EMG / Muscle activity contribution
+    if (emgFeatures != null && emgFeatures.isNotEmpty) {
+      final emgRMS = emgFeatures[0];
+      if (emgRMS > 0.4) {
+        riskScore += 1.0;
+        factors.add('Abnormal muscle guarding (EMG) detected');
+      }
+    }
+
     // Determine risk level based on score
     String riskLevel;
     double confidence;
@@ -192,6 +224,8 @@ class TFLiteService {
     required bool swelling,
     required String? pastInjury,
     required List<double> gaitFeatures,
+    List<double>? piezoFeatures,
+    List<double>? emgFeatures,
   }) {
     // Normalize and prepare input features for the model
     // This is a placeholder - adjust based on your actual model's input requirements
@@ -211,6 +245,8 @@ class TFLiteService {
       swelling ? 1.0 : 0.0,
       hasPastInjury,
       ...gaitFeatures.take(10), // Take first 10 gait features
+      if (piezoFeatures != null) ...piezoFeatures.take(3),
+      if (emgFeatures != null) ...emgFeatures.take(3),
     ];
     
     // Pad or truncate to match model input size
@@ -254,6 +290,8 @@ class TFLiteService {
     required bool swelling,
     required String? pastInjury,
     required List<double> gaitFeatures,
+    List<double>? piezoFeatures,
+    List<double>? emgFeatures,
   }) {
     final factors = <String>[];
     
@@ -273,6 +311,14 @@ class TFLiteService {
     if (gaitFeatures.isNotEmpty) {
       final gaitScore = _analyzeGaitFeatures(gaitFeatures);
       if (gaitScore > 1.0) factors.add('Gait irregularities detected');
+    }
+    
+    if (piezoFeatures != null && piezoFeatures.isNotEmpty && piezoFeatures[0] > 0.5) {
+      factors.add('Joint crepitus detected');
+    }
+    
+    if (emgFeatures != null && emgFeatures.isNotEmpty && emgFeatures[0] > 0.4) {
+      factors.add('Muscle guarding detected');
     }
     
     return factors;

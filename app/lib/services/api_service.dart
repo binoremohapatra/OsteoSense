@@ -410,6 +410,32 @@ class ApiService {
     }
   }
 
+  Future<Map<String, dynamic>> submitWearableDataToAI({
+    required String deviceId,
+    required List<double> gyro,
+    required List<double> piezo,
+    required List<double> emg,
+  }) async {
+    try {
+      final aiDio = Dio(BaseOptions(
+        baseUrl: AppConstants.aiBaseUrl,
+        connectTimeout: const Duration(seconds: 30),
+      ));
+      final response = await aiDio.post('/sessions', data: {
+        'device_id': deviceId,
+        'gyro': gyro,
+        'piezo': piezo,
+        'emg': emg,
+      });
+      return response.data; 
+    } catch (e) {
+      if (e is DioException) {
+        throw _handleError(e);
+      }
+      throw ApiException('Failed to reach AI Backend: $e');
+    }
+  }
+
   Exception _handleError(DioException e) {
     if (e.type == DioExceptionType.connectionTimeout || 
         e.type == DioExceptionType.receiveTimeout ||
