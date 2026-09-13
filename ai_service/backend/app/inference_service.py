@@ -13,7 +13,7 @@ from pathlib import Path
 
 from .feature_extraction import extract_features
 
-MODEL_DIR = Path(__file__).parent.parent / "models"
+MODEL_DIR = Path(__file__).parent.parent.parent / "wearable_model" / "models"
 
 
 class InferenceService:
@@ -25,16 +25,18 @@ class InferenceService:
         with open(model_dir / "model_metadata.json") as f:
             self.metadata = json.load(f)
 
-    def score_window(self, gyro_flat, piezo_flat, fs_gyro, fs_piezo):
+    def score_window(self, gyro_flat, piezo_flat, emg_flat, fs_gyro, fs_piezo, fs_emg):
         """
         gyro_flat: flat list, length N*3
         piezo_flat: flat list, length M
+        emg_flat: flat list, length K
         Returns: (risk_score: float, risk_label: str, feats: dict, top_features: list[dict])
         """
         gyro = np.array(gyro_flat, dtype=np.float32).reshape(-1, 3)
         piezo = np.array(piezo_flat, dtype=np.float32)
+        emg = np.array(emg_flat, dtype=np.float32)
 
-        record = {"gyro": gyro, "piezo": piezo, "fs_gyro": fs_gyro, "fs_piezo": fs_piezo}
+        record = {"gyro": gyro, "piezo": piezo, "emg": emg, "fs_gyro": fs_gyro, "fs_piezo": fs_piezo, "fs_emg": fs_emg}
         feats = extract_features(record)
 
         x = np.array([[feats[c] for c in self.feature_cols]])

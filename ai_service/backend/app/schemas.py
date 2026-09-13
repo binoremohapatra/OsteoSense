@@ -30,8 +30,10 @@ class SensorWindowIn(BaseModel):
     device_id: str = Field(..., description="Unique id for the wearable/user, e.g. ESP32 MAC or paired user id")
     gyro: list[float] = Field(..., description="Flat list, length N*3: x,y,z,x,y,z,...")
     piezo: list[float] = Field(..., description="Flat list, length M: raw piezo disc waveform")
+    emg: list[float] = Field(..., description="Flat list, length K: raw EMG waveform")
     fs_gyro: int = Field(default=100, description="Gyro sample rate in Hz")
     fs_piezo: int = Field(default=4000, description="Piezo disc sample rate in Hz")
+    fs_emg: int = Field(default=1000, description="EMG sample rate in Hz")
 
     @field_validator("gyro")
     @classmethod

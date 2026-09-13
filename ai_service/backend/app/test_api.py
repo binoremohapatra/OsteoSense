@@ -33,8 +33,10 @@ def record_to_payload(record, device_id):
         "device_id": device_id,
         "gyro": record["gyro"].flatten().tolist(),
         "piezo": record["piezo"].tolist(),
+        "emg": record["emg"].tolist(),
         "fs_gyro": record["fs_gyro"],
         "fs_piezo": record["fs_piezo"],
+        "fs_emg": record.get("fs_emg", 1000),
     }
 
 

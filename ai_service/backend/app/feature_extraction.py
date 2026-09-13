@@ -25,6 +25,7 @@ from scipy.stats import entropy as shannon_entropy
 
 GYRO_FS_DEFAULT = 100
 PIEZO_FS_DEFAULT = 4000
+EMG_FS_DEFAULT = 1000
 
 
 # ---------------------------------------------------------------------------
@@ -158,6 +159,82 @@ def _simple_mel_bands(freqs, psd, n_bands=6, fmax=1000):
 
 
 # ---------------------------------------------------------------------------
+# EMG FEATURES (muscle activation around the joint)
+# ---------------------------------------------------------------------------
+
+def extract_emg_features(emg_signal, fs=EMG_FS_DEFAULT):
+    """
+    emg_signal: (K,) raw single-channel surface EMG waveform for one window.
+    Returns dict of scalar EMG features.
+
+    These map to standard EMG analysis metrics used in biomechanics/rehab
+    research (time-domain amplitude features + frequency-domain features),
+    plus activation-burst features that target the "compensatory guarding"
+    pattern (larger, longer, more variable muscle activation bursts) that's
+    an early-OA marker independent of gait timing or joint sound.
+    """
+    feats = {}
+
+    # --- Time-domain amplitude features ---
+    feats["emg_rms"] = np.sqrt(np.mean(emg_signal ** 2))
+    feats["emg_mav"] = np.mean(np.abs(emg_signal))  # Mean Absolute Value - standard EMG amplitude metric
+    feats["emg_std"] = np.std(emg_signal)
+
+    # Waveform length: cumulative sum of absolute differences between
+    # consecutive samples - a standard EMG feature capturing signal
+    # complexity/activity level over the window
+    feats["emg_waveform_length"] = np.sum(np.abs(np.diff(emg_signal)))
+
+    # Zero-crossing rate: how often the signal crosses zero - relates to
+    # the signal's dominant frequency content and activation level
+    zero_crossings = np.sum(np.diff(np.sign(emg_signal)) != 0)
+    feats["emg_zero_crossing_rate"] = zero_crossings / len(emg_signal)
+
+    # --- Frequency-domain features ---
+    freqs, psd = sp_signal.welch(emg_signal, fs=fs, nperseg=min(512, len(emg_signal)))
+    total_power = np.sum(psd) + 1e-8
+
+    # Median frequency: the frequency that splits total power in half.
+    # A standard EMG fatigue/quality indicator - shifts are associated
+    # with altered muscle fiber recruitment patterns.
+    cumulative_power = np.cumsum(psd)
+    median_freq_idx = np.searchsorted(cumulative_power, total_power / 2)
+    feats["emg_median_freq"] = freqs[min(median_freq_idx, len(freqs) - 1)]
+
+    # Mean frequency: power-weighted average frequency
+    feats["emg_mean_freq"] = np.sum(freqs * psd) / total_power
+
+    # Band energy ratio: EMG's typical useful bandwidth is ~20-450 Hz;
+    # a shift in energy distribution within this band can reflect altered
+    # motor unit recruitment
+    low_mask = (freqs >= 20) & (freqs < 100)
+    high_mask = (freqs >= 100) & (freqs < 450)
+    feats["emg_low_band_ratio"] = np.sum(psd[low_mask]) / total_power
+    feats["emg_high_band_ratio"] = np.sum(psd[high_mask]) / total_power
+
+    # --- Activation-burst features (gait-cycle-locked muscle guarding pattern) ---
+    # Envelope via Hilbert transform, same technique used for piezo burst detection
+    envelope = np.abs(sp_signal.hilbert(emg_signal))
+    threshold = np.mean(envelope) + 0.5 * np.std(envelope)
+    active_mask = envelope > threshold
+
+    # Duty cycle: fraction of the window spent in an "activated" state.
+    # Prolonged/inefficient activation (compensatory guarding) raises this.
+    feats["emg_duty_cycle"] = np.mean(active_mask)
+
+    # Activation variability: how much the envelope amplitude varies
+    # during active periods - less consistent activation is an OA marker
+    if np.any(active_mask):
+        feats["emg_activation_amplitude_cv"] = (
+            np.std(envelope[active_mask]) / (np.mean(envelope[active_mask]) + 1e-8)
+        )
+    else:
+        feats["emg_activation_amplitude_cv"] = 0.0
+
+    return feats
+
+
+# ---------------------------------------------------------------------------
 # COMBINE INTO ONE FEATURE VECTOR
 # ---------------------------------------------------------------------------
 
@@ -165,12 +242,13 @@ def extract_features(record):
     """
     record: dict as produced by simulate_data.simulate_subject()
             (or, later, real sensor recordings with the SAME keys/shapes:
-             'gyro' (N,3), 'piezo' (M,), 'fs_gyro', 'fs_piezo')
-    Returns: dict of all features (gait + piezo), flat, ready for a DataFrame row.
+             'gyro' (N,3), 'piezo' (M,), 'emg' (K,), 'fs_gyro', 'fs_piezo', 'fs_emg')
+    Returns: dict of all features (gait + piezo + emg), flat, ready for a DataFrame row.
     """
     gait_feats = extract_gait_features(record["gyro"], fs=record.get("fs_gyro", GYRO_FS_DEFAULT))
     piezo_feats = extract_piezo_features(record["piezo"], fs=record.get("fs_piezo", PIEZO_FS_DEFAULT))
-    all_feats = {**gait_feats, **piezo_feats}
+    emg_feats = extract_emg_features(record["emg"], fs=record.get("fs_emg", EMG_FS_DEFAULT))
+    all_feats = {**gait_feats, **piezo_feats, **emg_feats}
     return all_feats
 
 

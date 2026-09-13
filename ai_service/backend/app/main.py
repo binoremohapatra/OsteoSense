@@ -170,7 +170,8 @@ def submit_session(payload: SensorWindowIn, db: Session = Depends(get_db)):
 
     try:
         proba, label, feats, top_features = inference_service.score_window(
-            payload.gyro, payload.piezo, payload.fs_gyro, payload.fs_piezo
+            payload.gyro, payload.piezo, payload.emg,
+            payload.fs_gyro, payload.fs_piezo, payload.fs_emg
         )
     except Exception as e:
         # Common causes: window too short for reliable feature extraction,
