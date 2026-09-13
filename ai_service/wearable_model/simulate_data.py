@@ -179,12 +179,26 @@ def simulate_emg(duration_s, label, rng):
 def simulate_subject(duration_s=6.0, label=0, seed=None):
     """
     Simulate one recording session for one subject/window.
-    Returns dict: {gyro: (N,3), piezo: (M,), emg: (K,), label: int, fs_gyro, fs_piezo, fs_emg}
+    Returns dict: {gyro, piezo, emg, label, fs_gyro, fs_piezo, fs_emg, 
+                   pain_level, stiffness_duration, swelling, past_injury}
     """
     rng = np.random.default_rng(seed)
     gyro = simulate_gyro(duration_s, label, rng)
     piezo = simulate_piezo(duration_s, label, rng)
     emg = simulate_emg(duration_s, label, rng)
+    
+    # Simulate clinical features based on risk label
+    if label == 0:
+        pain_level = rng.integers(0, 3) # Low pain 0-2
+        stiffness = rng.choice([0, 15]) # 0 or 15 mins
+        swelling = False
+        past_injury = bool(rng.choice([True, False], p=[0.1, 0.9]))
+    else:
+        pain_level = rng.integers(4, 9) # Moderate/High pain 4-8
+        stiffness = rng.choice([30, 60, 90]) # 30+ mins
+        swelling = bool(rng.choice([True, False], p=[0.7, 0.3]))
+        past_injury = bool(rng.choice([True, False], p=[0.4, 0.6]))
+
     return {
         "gyro": gyro,
         "piezo": piezo,
@@ -193,6 +207,10 @@ def simulate_subject(duration_s=6.0, label=0, seed=None):
         "fs_gyro": GYRO_FS,
         "fs_piezo": PIEZO_FS,
         "fs_emg": EMG_FS,
+        "pain_level": float(pain_level),
+        "stiffness_duration": float(stiffness),
+        "swelling": 1.0 if swelling else 0.0,
+        "past_injury": 1.0 if past_injury else 0.0,
     }
 
 

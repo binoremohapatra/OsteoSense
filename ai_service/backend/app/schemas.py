@@ -35,6 +35,12 @@ class SensorWindowIn(BaseModel):
     fs_piezo: int = Field(default=4000, description="Piezo disc sample rate in Hz")
     fs_emg: int = Field(default=1000, description="EMG sample rate in Hz")
 
+    # New Clinical Inputs (Multimodal)
+    painLevel: Optional[int] = 0
+    stiffnessDuration: Optional[str] = "0"
+    swelling: Optional[bool] = False
+    pastInjury: Optional[bool] = False
+
     @field_validator("gyro")
     @classmethod
     def check_divisible_by_3(cls, v):

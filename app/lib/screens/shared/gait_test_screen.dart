@@ -117,11 +117,6 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
     // Stop sensor pipeline and extract features
     await _sensorPipeline.stopRecording();
     
-    // Run ML prediction if features are available
-    if (_sensorPipeline.currentFeatures != null) {
-      await _sensorPipeline.runPrediction();
-    }
-
     final screeningProvider = Provider.of<ScreeningProvider>(context, listen: false);
     final patientProvider = Provider.of<PatientProvider>(context, listen: false);
     
@@ -132,6 +127,16 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
     
     if (screeningProvider.draftPainLevel == 0) {
       screeningProvider.draftPainLevel = 5; // Default moderate pain
+    }
+
+    // Run ML prediction if features are available
+    if (_sensorPipeline.currentFeatures != null) {
+      await _sensorPipeline.runPrediction(
+        painLevel: screeningProvider.draftPainLevel,
+        stiffnessDuration: screeningProvider.draftStiffnessDuration,
+        swelling: screeningProvider.draftSwelling,
+        pastInjury: screeningProvider.draftPastInjury ? screeningProvider.draftPastInjuryDetail : '',
+      );
     }
     
     if (screeningProvider.draftStiffnessDuration == 'none') {

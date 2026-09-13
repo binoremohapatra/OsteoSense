@@ -459,7 +459,12 @@ class GaitSensorPipeline {
   }
   
   /// Run ML prediction
-  Future<void> runPrediction() async {
+  Future<void> runPrediction({
+    int painLevel = 0,
+    String stiffnessDuration = '0',
+    bool swelling = false,
+    String pastInjury = '',
+  }) async {
     if (_currentFeatures == null) {
       debugPrint('No features available for prediction');
       return;
@@ -477,12 +482,12 @@ class GaitSensorPipeline {
       final startTime = DateTime.now();
       
       // 1. Run local prediction (TFLite Fallback)
-      // TFLite Service will expect 44 features
+      // TFLite Service will expect 48 features (Multimodal)
       final prediction = await tfliteService.predictRisk(
-        painLevel: 5, // Default for testing
-        stiffnessDuration: '30',
-        swelling: false,
-        pastInjury: null,
+        painLevel: painLevel,
+        stiffnessDuration: stiffnessDuration,
+        swelling: swelling,
+        pastInjury: pastInjury,
         gaitFeatures: featureVector,
         piezoFeatures: null,
         emgFeatures: null,
@@ -497,6 +502,10 @@ class GaitSensorPipeline {
           gyro: _gyroX,
           piezo: _piezoData,
           emg: _emgData,
+          painLevel: painLevel,
+          stiffnessDuration: stiffnessDuration,
+          swelling: swelling,
+          pastInjury: pastInjury.isNotEmpty,
         );
         // Convert server response to MLPrediction format
         serverPrediction = MLPrediction(

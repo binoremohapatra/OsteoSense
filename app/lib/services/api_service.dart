@@ -415,6 +415,10 @@ class ApiService {
     required List<double> gyro,
     required List<double> piezo,
     required List<double> emg,
+    int painLevel = 0,
+    String stiffnessDuration = '0',
+    bool swelling = false,
+    bool pastInjury = false,
   }) async {
     try {
       final aiDio = Dio(BaseOptions(
@@ -426,6 +430,10 @@ class ApiService {
         'gyro': gyro,
         'piezo': piezo,
         'emg': emg,
+        'painLevel': painLevel,
+        'stiffnessDuration': stiffnessDuration,
+        'swelling': swelling,
+        'pastInjury': pastInjury,
       });
       return response.data; 
     } catch (e) {

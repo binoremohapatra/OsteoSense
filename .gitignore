@@ -72,3 +72,5 @@ ios/.symlinks/
 .env.local
 backend/.env*
 
+
+backend/src/config/serviceAccountKey.json

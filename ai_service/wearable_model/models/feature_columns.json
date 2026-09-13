@@ -42,5 +42,9 @@
   "emg_low_band_ratio",
   "emg_high_band_ratio",
   "emg_duty_cycle",
-  "emg_activation_amplitude_cv"
+  "emg_activation_amplitude_cv",
+  "pain_level",
+  "stiffness_duration",
+  "swelling",
+  "past_injury"
 ]

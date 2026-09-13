@@ -171,7 +171,9 @@ def submit_session(payload: SensorWindowIn, db: Session = Depends(get_db)):
     try:
         proba, label, feats, top_features = inference_service.score_window(
             payload.gyro, payload.piezo, payload.emg,
-            payload.fs_gyro, payload.fs_piezo, payload.fs_emg
+            payload.fs_gyro, payload.fs_piezo, payload.fs_emg,
+            payload.painLevel, payload.stiffnessDuration, 
+            payload.swelling, payload.pastInjury
         )
     except Exception as e:
         # Common causes: window too short for reliable feature extraction,
@@ -226,7 +228,7 @@ def get_sessions(device_id: str, limit: int = 50, db: Session = Depends(get_db))
             risk_score=s.risk_score,
             risk_label=s.risk_label,
             model_used=s.model_used,
-            top_contributing_features=[TopFeature(**f) for f in (s.top_features or [])],
+            top_contributing_features=[TopFeature(**f) for f in (s.top_features or [])],  # type: ignore
         )
         for s in sessions
     ]
@@ -275,7 +277,7 @@ def get_trend(device_id: str, window: int = 5, db: Session = Depends(get_db)):
             risk_score=s.risk_score,
             risk_label=s.risk_label,
             model_used=s.model_used,
-            top_contributing_features=[TopFeature(**f) for f in (s.top_features or [])],
+            top_contributing_features=[TopFeature(**f) for f in (s.top_features or [])],  # type: ignore
         )
         for s in sessions
     ]

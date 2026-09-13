@@ -25,7 +25,8 @@ class InferenceService:
         with open(model_dir / "model_metadata.json") as f:
             self.metadata = json.load(f)
 
-    def score_window(self, gyro_flat, piezo_flat, emg_flat, fs_gyro, fs_piezo, fs_emg):
+    def score_window(self, gyro_flat, piezo_flat, emg_flat, fs_gyro, fs_piezo, fs_emg,
+                     pain_level=0, stiffness_duration=0, swelling=0, past_injury=0):
         """
         gyro_flat: flat list, length N*3
         piezo_flat: flat list, length M
@@ -36,10 +37,21 @@ class InferenceService:
         piezo = np.array(piezo_flat, dtype=np.float32)
         emg = np.array(emg_flat, dtype=np.float32)
 
-        record = {"gyro": gyro, "piezo": piezo, "emg": emg, "fs_gyro": fs_gyro, "fs_piezo": fs_piezo, "fs_emg": fs_emg}
+        record = {
+            "gyro": gyro, 
+            "piezo": piezo, 
+            "emg": emg, 
+            "fs_gyro": fs_gyro, 
+            "fs_piezo": fs_piezo, 
+            "fs_emg": fs_emg,
+            "pain_level": pain_level,
+            "stiffness_duration": float(str(stiffness_duration).replace('>','').replace('<','').split('-')[0]) if type(stiffness_duration) == str else stiffness_duration,
+            "swelling": float(swelling),
+            "past_injury": float(past_injury)
+        }
         feats = extract_features(record)
 
-        x = np.array([[feats[c] for c in self.feature_cols]])
+        x = np.array([[feats.get(c, 0.0) for c in self.feature_cols]])
         x_scaled = self.scaler.transform(x)
         proba = float(self.model.predict_proba(x_scaled)[0, 1])
         label = "OA-risk" if proba >= 0.5 else "healthy"

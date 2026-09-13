@@ -227,17 +227,24 @@ class TFLiteService {
     List<double>? piezoFeatures,
     List<double>? emgFeatures,
   }) {
-    // Since we now extract the EXACT 44 features in Dart, gaitFeatures contains all of them.
-    // Ensure the size is exactly 44
-    const inputSize = 44;
+    // We extract 44 DSP features in Dart, gaitFeatures contains all of them.
+    // Ensure the size is exactly 44 before appending clinical features
     final features = List<double>.from(gaitFeatures);
     
-    while (features.length < inputSize) {
+    while (features.length < 44) {
       features.add(0.0);
     }
     
+    // Append 4 Clinical Features (Multimodal AI)
+    features.add(painLevel.toDouble());
+    features.add(_parseStiffnessDuration(stiffnessDuration).toDouble());
+    features.add(swelling ? 1.0 : 0.0);
+    features.add((pastInjury != null && pastInjury.isNotEmpty) ? 1.0 : 0.0);
+
+    const expectedInputSize = 48;
+    
     // Create 2D list for model input
-    return [features.take(inputSize).toList()];
+    return [features.take(expectedInputSize).toList()];
   }
 
   int _parseStiffnessDuration(String duration) {

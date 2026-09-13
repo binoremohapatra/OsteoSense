@@ -5,11 +5,11 @@ import tensorflow as tf
 import joblib
 
 try:
-    from simulate_data import simulate_subject
-    from feature_extraction import extract_features
+    from simulate_data import simulate_subject  # type: ignore
+    from feature_extraction import extract_features  # type: ignore
 except ImportError:
-    from ai_service.wearable_model.simulate_data import simulate_subject
-    from ai_service.wearable_model.feature_extraction import extract_features
+    from ai_service.wearable_model.simulate_data import simulate_subject  # type: ignore
+    from ai_service.wearable_model.feature_extraction import extract_features  # type: ignore
 
 def deep_test():
     print("=== DEEP TEST: HEAVY vs LITE MODEL ===")
