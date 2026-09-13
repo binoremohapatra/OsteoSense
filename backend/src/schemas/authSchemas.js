@@ -37,8 +37,8 @@ const registerSchema = z.preprocess(
       .string({ required_error: 'Password is required' })
       .min(6, 'Password must be at least 6 characters'),
     role: z.enum(['agent', 'user', 'admin']).optional().default('agent'),
-    healthCenterId: z.string().trim().optional(),
-    location: z.string().trim().optional(),
+    healthCenterId: z.string().trim().nullable().optional(),
+    location: z.string().trim().nullable().optional(),
   })
 );
 
