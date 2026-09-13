@@ -63,6 +63,8 @@ const patientSchema = new Schema(
         ret._id = idStr;
         ret.server_id = idStr;
         ret.serverId = idStr;
+        ret.height_cm = ret.height;
+        ret.weight_kg = ret.weight;
         delete ret.__v;
         return ret;
       },

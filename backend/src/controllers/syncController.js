@@ -20,6 +20,8 @@ async function processSyncItem(item, agentId, localIdMap = new Map()) {
         village: data.village || undefined,
         address: data.address || undefined,
         occupation: data.occupation || undefined,
+        height: data.height_cm || data.heightCm || data.height || undefined,
+        weight: data.weight_kg || data.weightKg || data.weight || undefined,
         agentId,
       });
 
@@ -140,6 +142,8 @@ async function syncAppBatch(patients = [], screenings = [], agentId) {
           village: p.village || undefined,
           address: p.address || undefined,
           occupation: p.occupation || undefined,
+          height: p.height_cm || p.heightCm || p.height || undefined,
+          weight: p.weight_kg || p.weightKg || p.weight || undefined,
           agentId,
         };
 
@@ -164,6 +168,8 @@ async function syncAppBatch(patients = [], screenings = [], agentId) {
           village: p.village,
           address: p.address,
           occupation: p.occupation,
+          height: p.height_cm ?? p.heightCm ?? p.height,
+          weight: p.weight_kg ?? p.weightKg ?? p.weight,
         };
         Object.keys(updateData).forEach((k) => updateData[k] === undefined && delete updateData[k]);
 
