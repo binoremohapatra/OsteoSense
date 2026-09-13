@@ -61,7 +61,7 @@ class InferenceService:
             importances = self.model.feature_importances_
             top_idx = np.argsort(importances)[::-1][:5]
             top_features = [
-                {"feature": self.feature_cols[i], "value": float(feats[self.feature_cols[i]])}
+                {"feature": self.feature_cols[i], "value": float(feats.get(self.feature_cols[i], 0.0))}
                 for i in top_idx
             ]
 

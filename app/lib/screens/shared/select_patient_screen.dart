@@ -37,13 +37,15 @@ class _SelectPatientScreenState extends State<SelectPatientScreen> {
   }
 
   Future<void> _loadPatients() async {
-    final patientProvider = Provider.of<PatientProvider>(context, listen: false);
-    await patientProvider.loadPatients();
-    if (mounted) {
-      setState(() {
-        _filteredPatients = patientProvider.patients;
-      });
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final patientProvider = Provider.of<PatientProvider>(context, listen: false);
+      await patientProvider.loadPatients();
+      if (mounted) {
+        setState(() {
+          _filteredPatients = patientProvider.patients;
+        });
+      }
+    });
   }
 
   void _filterPatients() {
