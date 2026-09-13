@@ -12,7 +12,7 @@ except ImportError:
 
 def train_and_export():
     print("Building dataset for FULL 44 features...")
-    records = build_dataset(n_per_class=200, duration_s=6.0, seed=42)
+    records = build_dataset(n_per_class=1000, duration_s=6.0, seed=42)
     
     X = []
     y = []
@@ -30,10 +30,14 @@ def train_and_export():
     if X.shape[1] != 44:
         print(f"WARNING: Expected 44 features, got {X.shape[1]}")
     
+    # Deep Neural Network Architecture to match XGBoost capacity
     model = tf.keras.Sequential([
         tf.keras.Input(shape=(44,)),
-        tf.keras.layers.Dense(16, activation='relu'),
-        tf.keras.layers.Dense(8, activation='relu'),
+        tf.keras.layers.Dense(128, activation='relu'),
+        tf.keras.layers.Dropout(0.3),
+        tf.keras.layers.Dense(64, activation='relu'),
+        tf.keras.layers.Dropout(0.2),
+        tf.keras.layers.Dense(32, activation='relu'),
         tf.keras.layers.Dense(3, activation='softmax')
     ])
     
