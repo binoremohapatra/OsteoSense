@@ -227,30 +227,11 @@ class TFLiteService {
     List<double>? piezoFeatures,
     List<double>? emgFeatures,
   }) {
-    // Normalize and prepare input features for the model
-    // This is a placeholder - adjust based on your actual model's input requirements
-    final stiffnessMinutes = _parseStiffnessDuration(stiffnessDuration);
-    final hasPastInjury = pastInjury != null && pastInjury.isNotEmpty ? 1.0 : 0.0;
+    // Since we now extract the EXACT 44 features in Dart, gaitFeatures contains all of them.
+    // Ensure the size is exactly 44
+    const inputSize = 44;
+    final features = List<double>.from(gaitFeatures);
     
-    // Normalize pain level to 0-1
-    final normalizedPain = painLevel / 10.0;
-    
-    // Normalize stiffness to 0-1 (assuming max 60 minutes)
-    final normalizedStiffness = (stiffnessMinutes / 60.0).clamp(0.0, 1.0);
-    
-    // Combine features
-    final features = [
-      normalizedPain,
-      normalizedStiffness,
-      swelling ? 1.0 : 0.0,
-      hasPastInjury,
-      ...gaitFeatures.take(10), // Take first 10 gait features
-      if (piezoFeatures != null) ...piezoFeatures.take(3),
-      if (emgFeatures != null) ...emgFeatures.take(3),
-    ];
-    
-    // Pad or truncate to match model input size
-    const inputSize = 20;
     while (features.length < inputSize) {
       features.add(0.0);
     }

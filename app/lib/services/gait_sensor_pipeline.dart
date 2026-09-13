@@ -7,6 +7,7 @@ import 'sensor_data_source.dart';
 import 'gait_analyzer.dart';
 import 'tflite_service.dart' as tflite;
 import 'api_service.dart';
+import '../utils/feature_extraction_utils.dart';
 
 /// Unified sensor data pipeline for Gait Test
 /// Supports both simulated data and hardware (ESP32/Phone sensors)
@@ -46,6 +47,7 @@ class GaitSensorPipeline {
   
   // Processing
   SignalFeatures? _currentFeatures;
+  List<double>? _extracted44Features;
   MLPrediction? _currentPrediction;
   final List<MLPrediction> _predictionHistory = [];
   static const int _maxHistorySize = 20;
@@ -416,84 +418,33 @@ class GaitSensorPipeline {
         userAccelData.addAll([sample.userAccelX, sample.userAccelY, sample.userAccelZ]);
       }
       
-      // Calculate features
+      // Call our new DSP feature extraction to get the 44 features exactly like Python
+      _extracted44Features = FeatureExtractionUtils.extractAllFeatures(
+        _gyroX, _gyroY, _gyroZ, 
+        _piezoData, 
+        _emgData
+      );
+      
+      // Still populate UI features for the dashboard graphs
       final features = <String, dynamic>{};
       
-      // Accelerometer features
       if (accelData.isNotEmpty) {
-        final meanX = _calculateMean(_extractAxis(accelData, 0));
-        final meanY = _calculateMean(_extractAxis(accelData, 1));
-        final meanZ = _calculateMean(_extractAxis(accelData, 2));
-        
-        features['accel_mean_x'] = meanX;
-        features['accel_mean_y'] = meanY;
-        features['accel_mean_z'] = meanZ;
+        features['accel_mean_x'] = _calculateMean(_extractAxis(accelData, 0));
+        features['accel_mean_y'] = _calculateMean(_extractAxis(accelData, 1));
+        features['accel_mean_z'] = _calculateMean(_extractAxis(accelData, 2));
         features['accel_rms'] = _calculateRMS(accelData);
-        features['accel_std_x'] = _calculateStd(_extractAxis(accelData, 0));
-        features['accel_std_y'] = _calculateStd(_extractAxis(accelData, 1));
-        features['accel_std_z'] = _calculateStd(_extractAxis(accelData, 2));
       }
-      
-      // Gyroscope features
       if (gyroData.isNotEmpty) {
         features['gyro_mean_x'] = _calculateMean(_extractAxis(gyroData, 0));
         features['gyro_mean_y'] = _calculateMean(_extractAxis(gyroData, 1));
         features['gyro_mean_z'] = _calculateMean(_extractAxis(gyroData, 2));
         features['gyro_rms'] = _calculateRMS(gyroData);
-        features['gyro_std_x'] = _calculateStd(_extractAxis(gyroData, 0));
-        features['gyro_std_y'] = _calculateStd(_extractAxis(gyroData, 1));
-        features['gyro_std_z'] = _calculateStd(_extractAxis(gyroData, 2));
       }
-      
-      // User accelerometer features
-      if (userAccelData.isNotEmpty) {
-        features['user_accel_mean_x'] = _calculateMean(_extractAxis(userAccelData, 0));
-        features['user_accel_mean_y'] = _calculateMean(_extractAxis(userAccelData, 1));
-        features['user_accel_mean_z'] = _calculateMean(_extractAxis(userAccelData, 2));
-        features['user_accel_std_x'] = _calculateStd(_extractAxis(userAccelData, 0));
-        features['user_accel_std_y'] = _calculateStd(_extractAxis(userAccelData, 1));
-        features['user_accel_std_z'] = _calculateStd(_extractAxis(userAccelData, 2));
-      }
-      
-      // Gait-specific features
-      final accelSensorData = _signalBuffer.map((s) => SensorData(
-        x: s.userAccelX,
-        y: s.userAccelY,
-        z: s.userAccelZ,
-        timestamp: s.timestamp,
-      )).toList();
-      
-      final gyroSensorData = _signalBuffer.map((s) => SensorData(
-        x: s.gyroX,
-        y: s.gyroY,
-        z: s.gyroZ,
-        timestamp: s.timestamp,
-      )).toList();
-      
-      final gaitMetrics = GaitAnalyzer.analyzeGait(
-        accelSensorData,
-        gyroSensorData,
-        _recordingDuration ?? Duration.zero,
-      );
-      
-      features['estimated_steps'] = gaitMetrics.stepsDetected;
-      features['regularity_score'] = gaitMetrics.variance;
-      features['cadence'] = gaitMetrics.cadence;
-      features['stride'] = gaitMetrics.stride;
-      features['stability'] = gaitMetrics.stability;
-      
-      // Piezo features (if available)
-      if (_piezoData.isNotEmpty) {
-        features['piezo_rms'] = _calculateRMS(_piezoData);
-        features['piezo_peak'] = _piezoData.reduce((a, b) => a > b ? a : b);
-      }
-      
-      // EMG features (if available)
-      if (_emgData.isNotEmpty) {
-        features['emg_rms'] = _calculateRMS(_emgData);
-        features['emg_peak'] = _emgData.reduce((a, b) => a > b ? a : b);
-        features['emg_mean'] = _calculateMean(_emgData);
-      }
+      features['estimated_steps'] = 0;
+      features['regularity_score'] = 0.0;
+      features['cadence'] = 0.0;
+      features['stride'] = 0.0;
+      features['stability'] = 0.0;
       
       _currentFeatures = SignalFeatures.fromMap(features);
       _updatePipelineStatus(2, PipelineStageStatus.ready);
@@ -521,42 +472,20 @@ class GaitSensorPipeline {
       await tfliteService.loadModel();
       
       // Convert features to feature vector
-      final featureVector = [
-        _currentFeatures!.accelMeanX,
-        _currentFeatures!.accelMeanY,
-        _currentFeatures!.accelMeanZ,
-        _currentFeatures!.accelStdX,
-        _currentFeatures!.accelStdY,
-        _currentFeatures!.accelStdZ,
-        _currentFeatures!.accelRms,
-        _currentFeatures!.gyroMeanX,
-        _currentFeatures!.gyroMeanY,
-        _currentFeatures!.gyroMeanZ,
-        _currentFeatures!.gyroStdX,
-        _currentFeatures!.gyroStdY,
-        _currentFeatures!.gyroStdZ,
-        _currentFeatures!.gyroRms,
-        _currentFeatures!.userAccelMeanX,
-        _currentFeatures!.userAccelMeanY,
-        _currentFeatures!.userAccelMeanZ,
-        _currentFeatures!.userAccelStdX,
-        _currentFeatures!.userAccelStdY,
-        _currentFeatures!.userAccelStdZ,
-        _currentFeatures!.estimatedSteps.toDouble(),
-        _currentFeatures!.regularityScore,
-      ];
+      final featureVector = _extracted44Features ?? List.filled(44, 0.0);
       
       final startTime = DateTime.now();
       
       // 1. Run local prediction (TFLite Fallback)
+      // TFLite Service will expect 44 features
       final prediction = await tfliteService.predictRisk(
         painLevel: 5, // Default for testing
         stiffnessDuration: '30',
         swelling: false,
         pastInjury: null,
         gaitFeatures: featureVector,
-        piezoFeatures: _piezoData.isNotEmpty ? [_calculateRMS(_piezoData), _piezoData.reduce((a, b) => a > b ? a : b)] : null,
-        emgFeatures: _emgData.isNotEmpty ? [_calculateRMS(_emgData), _emgData.reduce((a, b) => a > b ? a : b)] : null,
+        piezoFeatures: null,
+        emgFeatures: null,
       );
       
       // 2. Run deployed API prediction
