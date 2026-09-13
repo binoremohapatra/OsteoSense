@@ -1,4 +1,6 @@
 import os
+import sys
+sys.path.append(os.path.dirname(__file__))
 import json
 import numpy as np
 import tensorflow as tf
@@ -75,7 +77,8 @@ def train_and_export():
     print(f"Dataset shape: X={X.shape}, y={y.shape}")
     
     model = tf.keras.Sequential([
-        tf.keras.layers.Dense(8, activation='relu', input_shape=(20,)),
+        tf.keras.Input(shape=(20,)),
+        tf.keras.layers.Dense(8, activation='relu'),
         tf.keras.layers.Dense(3, activation='softmax')
     ])
     
