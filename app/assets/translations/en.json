@@ -1,4 +1,4 @@
-﻿{
+{
   "app_name": "JointSaathi",
   "welcome": "Welcome",
   "login": "Login",
@@ -943,7 +943,7 @@
   "feature_patient_mgmt": "✓ Patient management",
   "feature_analytics": "✓ Analytics and reporting",
   "copyright_text": "© 2026 JointSaathi. All rights reserved.",
-
+   "processing": "Processing",
   "tos_title_1": "1. Acceptance of Terms",
   "tos_content_1": "By using the JointSaathi application, you agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use the application.",
   "tos_title_2": "2. Medical Disclaimer",
@@ -985,9 +985,5 @@
   "pp_content_9": "We may update this privacy policy from time to time. We will notify you of any material changes by posting the new policy on this page.",
   "pp_title_10": "10. Contact Us",
   "pp_content_10": "If you have any questions about this privacy policy, please contact us at support@jointsaathi.com"
-,
-
-  "rec_high": "Immediate medical consultation recommended. Consider referral to orthopedic specialist. Avoid high-impact activities. Begin joint-friendly exercises under supervision.",
-  "rec_medium": "Regular monitoring advised. Start low-impact exercises like swimming or walking. Maintain healthy weight. Consider physiotherapy consultation. Use joint protection techniques.",
-  "rec_low": "Continue regular health monitoring. Maintain healthy lifestyle with balanced diet and regular exercise. Practice good posture. Stay hydrated and maintain joint flexibility."
 }
+

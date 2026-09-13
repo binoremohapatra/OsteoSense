@@ -86,7 +86,7 @@ class JointSaathiApp extends StatelessWidget {
         darkTheme: AppTheme.darkTheme.copyWith(
           textTheme: GoogleFonts.interTextTheme(AppTheme.darkTheme.textTheme),
         ),
-        themeMode: ThemeMode.system,
+        themeMode: ThemeMode.light,
         localizationsDelegates: context.localizationDelegates,
         supportedLocales: context.supportedLocales,
         locale: context.locale,

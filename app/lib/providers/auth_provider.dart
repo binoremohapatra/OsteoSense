@@ -116,7 +116,7 @@ class AuthProvider with ChangeNotifier {
       final token = response['token'];
       final refreshToken = response['refreshToken'];
       final userData = response['user'];
-      _currentUser = User.fromMap(userData);
+      _currentUser = User.fromMap(userData).copyWith(password: password);
       final role = _currentUser!.healthCenterId != null ? 'agent' : 'user';
       _userRole = role;
       final prefs = await SharedPreferences.getInstance();
@@ -133,6 +133,19 @@ class AuthProvider with ChangeNotifier {
       await prefs.setBool('is_logged_in', true);
       debugPrint('User ID: ${_currentUser!.id}, Role: $role saved to preferences');
       debugPrint('Login flag set to true');
+
+      // Save locally as well for offline fallback
+      try {
+        final db = DatabaseHelper();
+        final existing = await db.query('users', where: 'phone_number = ?', whereArgs: [phoneNumber]);
+        if (existing.isEmpty) {
+          await db.insert('users', _currentUser!.toMap());
+        } else {
+          await db.update('users', _currentUser!.toMap(), where: 'phone_number = ?', whereArgs: [phoneNumber]);
+        }
+      } catch (dbErr) {
+        debugPrint('Failed to save user to local db: $dbErr');
+      }
 
       // Verify saved data
       final savedToken = prefs.getString('auth_token');
@@ -195,7 +208,7 @@ class AuthProvider with ChangeNotifier {
       final refreshToken = response['refreshToken'];
       final userData = response['user'];
 
-      _currentUser = User.fromMap(userData);
+      _currentUser = User.fromMap(userData).copyWith(password: user.password);
       
       final prefs = await SharedPreferences.getInstance();
       if (token != null) await prefs.setString('auth_token', token);
@@ -248,6 +261,56 @@ class AuthProvider with ChangeNotifier {
         notifyListeners();
         return false;
       }
+    }
+  }
+
+  Future<bool> resetPassword(String phone, String newPassword) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      bool serverSuccess = false;
+      try {
+        await ApiService().resetPassword(phone, newPassword);
+        serverSuccess = true;
+      } catch (apiError) {
+        // If 404 (route not deployed) or network error, fall back to local DB only
+        final isNotFound = apiError is ApiException && apiError.statusCode == 404;
+        final isNetwork = apiError is ApiException && apiError.message.contains('Network');
+        if (!isNotFound && !isNetwork) {
+          // Any other error (401, 422 etc.) means the server rejected it — show error
+          rethrow;
+        }
+        debugPrint('Server reset-password not available, resetting locally: $apiError');
+      }
+
+      // Update local db
+      final db = DatabaseHelper();
+      final existing = await db.query('users', where: 'phone_number = ?', whereArgs: [phone]);
+      if (existing.isNotEmpty) {
+        final Map<String, dynamic> updateData = Map<String, dynamic>.from(existing.first);
+        updateData['password'] = newPassword;
+        await db.update('users', updateData, where: 'phone_number = ?', whereArgs: [phone]);
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      } else if (!serverSuccess) {
+        // Phone not found locally and server failed — user doesn't exist at all
+        _errorMessage = 'No account found with this phone number';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = e is ApiException ? e.message : e.toString();
+      _isLoading = false;
+      notifyListeners();
+      return false;
     }
   }
 

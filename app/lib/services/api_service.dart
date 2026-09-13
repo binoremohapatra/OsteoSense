@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -99,6 +100,9 @@ class ApiService {
 
       if (response.statusCode == 200 && response.data['token'] != null) {
         await prefs.setString('auth_token', response.data['token']);
+        if (response.data['refreshToken'] != null) {
+          await prefs.setString('refresh_token', response.data['refreshToken']);
+        }
         return true;
       }
       return false;
@@ -111,9 +115,9 @@ class ApiService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('auth_token');
     await prefs.remove('refresh_token');
-    await prefs.remove(AppConstants.keyUserId);
-    // Ideally, we'd also dispatch an event to log the user out of the UI,
-    // but the AuthProvider will handle fetching the current user and reacting to missing tokens.
+    // We intentionally do NOT remove the user ID here.
+    // This allows the app to seamlessly fall back to offline mode using the
+    // local database, rather than forcefully logging the user out.
   }
 
   // --- Auth Endpoints ---
@@ -133,6 +137,18 @@ class ApiService {
   Future<Map<String, dynamic>> register(Map<String, dynamic> data) async {
     try {
       final response = await _dio.post('/auth/register', data: data);
+      return response.data;
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  Future<Map<String, dynamic>> resetPassword(String phone, String newPassword) async {
+    try {
+      final response = await _dio.post('/auth/reset-password', data: {
+        'phoneNumber': phone,
+        'newPassword': newPassword,
+      });
       return response.data;
     } on DioException catch (e) {
       throw _handleError(e);
@@ -384,12 +400,30 @@ class ApiService {
         e.type == DioExceptionType.connectionError) {
       return ApiException('Network connection failed. Please check your internet.', statusCode: e.response?.statusCode);
     }
-    
     if (e.response != null) {
-      final data = e.response?.data;
-      String message = 'An error occurred';
-      if (data is Map<String, dynamic> && data.containsKey('error')) {
-        message = data['error'];
+      var data = e.response?.data;
+      String message = 'API Error: ${e.response?.statusCode}';
+      
+      // If data is a string, try parsing it as JSON
+      if (data is String) {
+        try {
+          data = jsonDecode(data);
+        } catch (_) {}
+      }
+
+      if (data is Map) {
+        if (data.containsKey('errors') && data['errors'] is List && data['errors'].isNotEmpty) {
+          final firstError = data['errors'][0];
+          if (firstError is Map && firstError.containsKey('message')) {
+            message = firstError['message'].toString();
+          } else {
+            message = data['message']?.toString() ?? message;
+          }
+        } else if (data.containsKey('error')) {
+          message = data['error'].toString();
+        } else if (data.containsKey('message')) {
+          message = data['message'].toString();
+        }
       }
       return ApiException(message, statusCode: e.response?.statusCode, data: data);
     }

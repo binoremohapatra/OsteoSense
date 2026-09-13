@@ -128,7 +128,7 @@ class _JointSelectionScreenState extends State<JointSelectionScreen> {
                         crossAxisCount: 2,
                         crossAxisSpacing: AppSpacing.md,
                         mainAxisSpacing: AppSpacing.md,
-                        childAspectRatio: 1.0,
+                        childAspectRatio: 0.9,
                       ),
                       itemCount: _joints.length,
                       itemBuilder: (context, index) {
@@ -269,16 +269,17 @@ class _JointSelectionScreenState extends State<JointSelectionScreen> {
               const SizedBox(height: AppSpacing.xs),
               
               // Description
-              Text(
-                joint.description,
-                style: AppTypography.bodySmall.copyWith(
-                  color: AppColors.textSecondary,
-                  fontSize: 11,
+              if (!isRecommended)
+                Text(
+                  joint.description,
+                  style: AppTypography.bodySmall.copyWith(
+                    color: AppColors.textSecondary,
+                    fontSize: 11,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
               
               // Recommended badge
               if (isRecommended) ...[

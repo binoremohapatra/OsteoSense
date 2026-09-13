@@ -543,14 +543,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
           CustomButton(
             text: 'logout_button'.tr(),
             onPressed: () async {
+              final nav = Navigator.of(context);
               final authProvider = Provider.of<AuthProvider>(context, listen: false);
+              nav.pop(); // close dialog first
               await authProvider.logout();
-              Navigator.pop(context);
-              Future.microtask(() {
-                if (context.mounted) {
-                  context.go('/role');
-                }
-              });
+              if (context.mounted) {
+                context.go('/role');
+              }
             },
             variant: ButtonVariant.danger,
             size: ButtonSize.small,

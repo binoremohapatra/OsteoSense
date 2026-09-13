@@ -188,7 +188,7 @@ class _EditPatientScreenState extends State<EditPatientScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Gender', style: AppTypography.caption.copyWith(color: AppColors.textSecondary, fontWeight: FontWeight.w500)),
+                      Text('gender'.tr(), style: AppTypography.caption.copyWith(color: AppColors.textSecondary, fontWeight: FontWeight.w500)),
                       const SizedBox(height: AppSpacing.xs),
                       ComboBox<String>(
                         items: const ['male', 'female', 'other'],

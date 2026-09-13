@@ -277,15 +277,17 @@ class _LoginScreenState extends State<LoginScreen> {
                         const SizedBox(height: 8),
                         Align(
                           alignment: Alignment.centerRight,
-                          child: GestureDetector(
-                            onTap: () {},
-                            child: Text(
-                              'forgot_password'.tr(),
-                              style: GoogleFonts.dmSans(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: ff.primary,
-                                height: 1.3,
+                          child: Padding(
+                            padding: const EdgeInsets.only(top: 8, bottom: 24),
+                            child: GestureDetector(
+                              onTap: () => context.push('/forgot-password'),
+                              child: Text(
+                                'forgot_password'.tr(),
+                                style: GoogleFonts.dmSans(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                  color: ff.secondaryText,
+                                ),
                               ),
                             ),
                           ),

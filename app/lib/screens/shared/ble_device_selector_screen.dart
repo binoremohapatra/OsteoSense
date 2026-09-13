@@ -41,8 +41,7 @@ class _BLEDeviceSelectorScreenState extends State<BLEDeviceSelectorScreen> {
     });
 
     try {
-      await FlutterBluePlus.startScan(timeout: const Duration(seconds: 10));
-
+      // Listen BEFORE starting the scan
       FlutterBluePlus.scanResults.listen((results) {
         if (mounted) {
           setState(() {
@@ -51,15 +50,36 @@ class _BLEDeviceSelectorScreenState extends State<BLEDeviceSelectorScreen> {
           });
         }
       });
+
+      // Also listen to the isScanning stream so UI updates when timeout hits
+      FlutterBluePlus.isScanning.listen((isScanning) {
+        if (mounted) {
+          setState(() => _isScanning = isScanning);
+        }
+      });
+
+      await FlutterBluePlus.startScan(timeout: const Duration(seconds: 10));
     } catch (e) {
       print('Error starting scan: $e');
-      setState(() => _isScanning = false);
+      if (mounted) {
+        setState(() => _isScanning = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to start scan: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
     }
   }
 
   Future<void> _stopScan() async {
-    setState(() => _isScanning = false);
-    await FlutterBluePlus.stopScan();
+    if (mounted) setState(() => _isScanning = false);
+    try {
+      await FlutterBluePlus.stopScan();
+    } catch (e) {
+      print('Error stopping scan: $e');
+    }
   }
 
   Future<void> _connectToDevice(BluetoothDevice device) async {

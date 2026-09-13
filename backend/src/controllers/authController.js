@@ -178,4 +178,26 @@ const me = asyncHandler(async (req, res) => {
   });
 });
 
-module.exports = { register, login, refresh, logout, me, formatUserForApp };
+/**
+ * POST /api/v1/auth/reset-password
+ */
+const resetPassword = asyncHandler(async (req, res) => {
+  const { phoneNumber, newPassword } = req.body;
+
+  const user = await User.findOne({ phoneNumber });
+  if (!user || !user.isActive) {
+    throw ApiError.notFound('Account with this phone number not found');
+  }
+
+  user.passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
+  // Optional: clear refresh tokens so user is logged out everywhere
+  user.refreshTokens = [];
+  await user.save();
+
+  res.status(200).json({
+    success: true,
+    message: 'Password reset successfully',
+  });
+});
+
+module.exports = { register, login, refresh, logout, me, resetPassword, formatUserForApp };

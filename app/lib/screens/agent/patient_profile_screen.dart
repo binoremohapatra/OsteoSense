@@ -441,7 +441,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
                     screening.contributingFactors!.isNotEmpty) ...[
                   const SizedBox(height: AppSpacing.sm),
                   Text(
-                    '${'factors_colon'.tr()} ${screening.contributingFactors}',
+                    '${'factors_colon'.tr()} ${screening.contributingFactors!.replaceAll(',', ', ')}',
                     style: AppTypography.bodySmall.copyWith(
                       color: AppColors.textSecondary,
                     ),

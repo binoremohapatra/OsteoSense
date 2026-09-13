@@ -334,22 +334,24 @@ class _ReportsScreenState extends State<ReportsScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('risk_distribution'.tr(),
-                    style: AppTypography.titleSmall.copyWith(
-                      color: AppColors.textPrimary,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 17,
-                    )),
-                  const SizedBox(height: 3),
-                  Text('current_screening_cohort'.tr(),
-                    style: AppTypography.bodySmall.copyWith(
-                      color: AppColors.textSecondary,
-                      fontSize: 12,
-                    )),
-                ],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('risk_distribution'.tr(),
+                      style: AppTypography.titleSmall.copyWith(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 17,
+                      )),
+                    const SizedBox(height: 3),
+                    Text('current_screening_cohort'.tr(),
+                      style: AppTypography.bodySmall.copyWith(
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                      )),
+                  ],
+                ),
               ),
               Icon(Icons.donut_large_rounded, color: AppColors.textMuted, size: 20),
             ],
@@ -456,21 +458,23 @@ class _ReportsScreenState extends State<ReportsScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('screening_trends'.tr(),
-                    style: AppTypography.titleSmall.copyWith(
-                      color: AppColors.textPrimary,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 17,
-                    )),
-                  const SizedBox(height: 3),
-                  Text('weekly_assessments_performed'.tr(),
-                    style: AppTypography.bodySmall.copyWith(
-                      color: AppColors.textSecondary, fontSize: 12,
-                    )),
-                ],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('screening_trends'.tr(),
+                      style: AppTypography.titleSmall.copyWith(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 17,
+                      )),
+                    const SizedBox(height: 3),
+                    Text('weekly_assessments_performed'.tr(),
+                      style: AppTypography.bodySmall.copyWith(
+                        color: AppColors.textSecondary, fontSize: 12,
+                      )),
+                  ],
+                ),
               ),
               // Week / Month segmented control
               Container(

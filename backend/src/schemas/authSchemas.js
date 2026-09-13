@@ -58,4 +58,12 @@ const logoutSchema = z.object({
   refreshToken: z.string({ required_error: 'refreshToken is required' }).min(1),
 });
 
-module.exports = { registerSchema, loginSchema, refreshSchema, logoutSchema };
+const resetPasswordSchema = z.preprocess(
+  preprocessAuth,
+  z.object({
+    phoneNumber: phoneNumberSchema,
+    newPassword: z.string({ required_error: 'New password is required' }).min(6, 'Password must be at least 6 characters'),
+  })
+);
+
+module.exports = { registerSchema, loginSchema, refreshSchema, logoutSchema, resetPasswordSchema };

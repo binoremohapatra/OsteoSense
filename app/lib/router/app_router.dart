@@ -9,6 +9,7 @@ import '../screens/shared/language_selection_screen.dart';
 import '../screens/shared/role_selection_screen.dart';
 import '../screens/shared/login_screen.dart';
 import '../screens/shared/signup_screen.dart';
+import '../screens/shared/forgot_password_screen.dart';
 import '../screens/agent/home_screen.dart';
 import '../screens/agent/patient_list_screen.dart';
 import '../screens/agent/patient_profile_screen.dart';
@@ -251,11 +252,18 @@ final appRouter = GoRouter(
       path: '/login',
       pageBuilder: (context, state) {
         final role = state.uri.queryParameters['role'] ?? 'agent';
-        return SharedAxisTransition(
+        return CalmFadeTransitionPage(
           key: state.pageKey,
           child: LoginScreen(role: role),
         );
       },
+    ),
+    GoRoute(
+      path: '/forgot-password',
+      pageBuilder: (context, state) => CalmFadeTransitionPage(
+        key: state.pageKey,
+        child: const ForgotPasswordScreen(),
+      ),
     ),
     GoRoute(
       path: '/signup',
