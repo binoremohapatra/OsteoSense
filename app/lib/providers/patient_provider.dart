@@ -163,6 +163,7 @@ class PatientProvider with ChangeNotifier {
         // Try API sync immediately
         final apiData = {
           'localId': id,
+          'name': newPatient.name,
           'fullName': newPatient.name,
           'age': newPatient.age,
           'gender': newPatient.gender,
@@ -170,6 +171,8 @@ class PatientProvider with ChangeNotifier {
           'village': newPatient.village,
           'address': newPatient.address,
           'occupation': newPatient.occupation,
+          'height_cm': newPatient.heightCm,
+          'weight_kg': newPatient.weightKg,
         };
         
         final response = await ApiService().createPatient(apiData);
@@ -225,6 +228,7 @@ class PatientProvider with ChangeNotifier {
         // Try API sync immediately if we have a serverId
         if (patient.serverId != null) {
           final apiData = {
+            'name': patient.name,
             'fullName': patient.name,
             'age': patient.age,
             'gender': patient.gender,
@@ -232,6 +236,8 @@ class PatientProvider with ChangeNotifier {
             'village': patient.village,
             'address': patient.address,
             'occupation': patient.occupation,
+            'height_cm': patient.heightCm,
+            'weight_kg': patient.weightKg,
           };
           
           // Call updatePatient API using the mongo _id
