@@ -4,11 +4,11 @@ sys.path.append(os.path.dirname(__file__))
 import numpy as np
 import tensorflow as tf
 try:
-    from simulate_data import build_dataset
-    from feature_extraction import extract_features
+    from simulate_data import build_dataset # type: ignore
+    from feature_extraction import extract_features # type: ignore
 except ImportError:
-    from ai_service.wearable_model.simulate_data import build_dataset
-    from ai_service.wearable_model.feature_extraction import extract_features
+    from ai_service.wearable_model.simulate_data import build_dataset # type: ignore
+    from ai_service.wearable_model.feature_extraction import extract_features # type: ignore
 
 def train_and_export():
     print("Building dataset for FULL 44 features...")
