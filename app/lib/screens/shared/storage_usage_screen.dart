@@ -181,7 +181,7 @@ class _StorageUsageScreenState extends State<StorageUsageScreen> {
                           shape: BoxShape.circle,
                         ),
                         child: Text(
-                          '${(_totalStorage / 100 * 100).toStringAsFixed(0)}%',
+                          '${(_totalStorage / 1024 * 100).clamp(0, 100).toStringAsFixed(0)}%',
                           style: AppTypography.titleSmall.copyWith(
                             color: AppColors.primary,
                             fontWeight: FontWeight.bold,
@@ -195,7 +195,7 @@ class _StorageUsageScreenState extends State<StorageUsageScreen> {
                   ClipRRect(
                     borderRadius: BorderRadius.circular(8),
                     child: LinearProgressIndicator(
-                      value: _totalStorage / 100,
+                      value: (_totalStorage / 1024).clamp(0.0, 1.0),
                       backgroundColor: AppColors.softBorder,
                       valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
                       minHeight: 8,

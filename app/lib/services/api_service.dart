@@ -46,15 +46,23 @@ class ApiService {
         return handler.next(response);
       },
       onError: (DioException e, handler) async {
-        if (e.response?.statusCode == 401) {
+        if (e.response?.statusCode == 401 && !e.requestOptions.path.contains('/auth/')) {
           // Token expired or invalid. Attempt refresh.
           final refreshed = await _refreshToken();
           if (refreshed) {
             // Retry the original request
             try {
+              final prefs = await SharedPreferences.getInstance();
+              final newToken = prefs.getString('auth_token');
+              
+              final headers = Map<String, dynamic>.from(e.requestOptions.headers);
+              if (newToken != null) {
+                headers['Authorization'] = 'Bearer $newToken';
+              }
+
               final opts = Options(
                 method: e.requestOptions.method,
-                headers: e.requestOptions.headers,
+                headers: headers,
               );
               final response = await _dio.request(
                 e.requestOptions.path,

@@ -1,323 +1,175 @@
-/*
- * JointSaathi ESP32 Wearable Firmware
- * For OA (Osteoarthritis) Screening Device
- * Connects to Flutter App via Bluetooth Low Energy
- * 
- * This firmware collects data from 4 sensors:
- * - MPU6050 (Accelerometer + Gyroscope)
- * - Piezo (Joint Vibration)
- * - EMG (Muscle Activity)
- * 
- * Data is sent to Flutter app via BLE at 50Hz
- */
-
-#include <Arduino.h>
+#include <Wire.h>
+#include <MPU6050.h>
 #include <BLEDevice.h>
 #include <BLEServer.h>
 #include <BLEUtils.h>
 #include <BLE2902.h>
-#include <Wire.h>
-#include <MPU6050.h>
-
-// ==================== CONFIGURATION ====================
-
-// Device Name
-#define DEVICE_NAME "JointSaathi_Wearable"
-
-// BLE UUIDs (MUST MATCH EXACTLY)
-#define SERVICE_UUID        "4fafc201-1fb5-459e-8fcc-c5c9c331914b"
-#define ACCEL_CHAR_UUID    "beb5483e-36e1-4688-b7f5-ea07361b26a8"
-#define GYRO_CHAR_UUID     "beb5483f-36e1-4688-b7f5-ea07361b26a9"
-#define PIEZO_CHAR_UUID    "beb54840-36e1-4688-b7f5-ea07361b26aa"
-#define EMG_CHAR_UUID      "beb54841-36e1-4688-b7f5-ea07361b26ab"
-
-// Sensor Pins
-#define PIEZO_PIN 34
-#define EMG_PIN 35
-
-// LED Pins
-#define POWER_LED 2
-#define CONNECTION_LED 4
-#define RECORDING_LED 5
-
-// Sampling Configuration
-#define SAMPLE_RATE 50  // Hz (50 samples per second)
-#define SAMPLE_INTERVAL_MS (1000 / SAMPLE_RATE)
-
-// MPU6050 Configuration
-#define ACCEL_RANGE 2     // ±2g
-#define GYRO_RANGE 250    // ±250°/s
-
-// ==================== GLOBAL VARIABLES ====================
 
 MPU6050 mpu;
-bool isRecording = false;
-bool isConnected = false;
-unsigned long lastSampleTime = 0;
 
-// BLE Server and Characteristics
+// Sensor Pins Setup
+#define PIEZO_PIN   34
+#define EMG_PIN     35    // EMG Pin
+#define MIDPOINT    2048
+#define DAC_OUT_PIN 25
+
+// BLE setup
 BLEServer* pServer = NULL;
-BLECharacteristic* pAccelCharacteristic = NULL;
-BLECharacteristic* pGyroCharacteristic = NULL;
-BLECharacteristic* pPiezoCharacteristic = NULL;
-BLECharacteristic* pEMGCharacteristic = NULL;
+bool deviceConnected = false;
 
-// ==================== SETUP ====================
+// Service + characteristic UUIDs 
+#define SERVICE_UUID "4fafc201-1fb5-459e-8fcc-c5c9c331914b"
+#define ACCEL_UUID   "beb5483e-36e1-4688-b7f5-ea07361b26a8"
+#define GYRO_UUID    "beb5483f-36e1-4688-b7f5-ea07361b26a9"
+#define PIEZO_UUID   "beb54840-36e1-4688-b7f5-ea07361b26aa"
+#define EMG_UUID     "beb54841-36e1-4688-b7f5-ea07361b26ab" 
+
+BLECharacteristic *pAccelChar;
+BLECharacteristic *pGyroChar;
+BLECharacteristic *pPiezoChar;
+BLECharacteristic *pEMGChar; // EMG Characteristic
+
+// Piezo & EMG Average padhne ka function
+int readSensorAverage(int pin, int samples) {
+  long sum = 0;
+  for (int i = 0; i < samples; i++) {
+    sum += analogRead(pin);
+  }
+  return sum / samples;
+}
+
+class MyServerCallbacks: public BLEServerCallbacks {
+  void onConnect(BLEServer* pServer) { deviceConnected = true; }
+  void onDisconnect(BLEServer* pServer) { 
+    deviceConnected = false; 
+    BLEDevice::startAdvertising(); // Disconnect hone pe wapas advertise karega
+  }
+};
 
 void setup() {
   Serial.begin(115200);
-  Serial.println("Starting JointSaathi Wearable...");
+  Wire.begin();
   
-  // Initialize Pins
-  pinMode(POWER_LED, OUTPUT);
-  pinMode(CONNECTION_LED, OUTPUT);
-  pinMode(RECORDING_LED, OUTPUT);
   pinMode(PIEZO_PIN, INPUT);
   pinMode(EMG_PIN, INPUT);
-  
-  // Power LED on
-  digitalWrite(POWER_LED, HIGH);
-  
-  // Initialize MPU6050
-  Serial.println("Initializing MPU6050...");
-  Wire.begin();
-  mpu.initialize();
-  
-  // Configure MPU6050
-  mpu.setFullScaleAccelRange(MPU6050_ACCEL_FS_2);
-  mpu.setFullScaleGyroRange(MPU6050_GYRO_FS_250);
-  
-  // Test MPU6050 connection
-  if (mpu.testConnection()) {
-    Serial.println("MPU6050 connected successfully");
-  } else {
-    Serial.println("MPU6050 connection failed!");
-  }
-  
-  // Initialize BLE
-  Serial.println("Initializing BLE...");
-  initBLE();
-  
-  Serial.println("JointSaathi Wearable Ready!");
-  Serial.println("Waiting for connection from Flutter app...");
-}
 
-// ==================== MAIN LOOP ====================
+  // MPU init
+  mpu.initialize();
+  if (mpu.testConnection()) {
+    Serial.println("MPU6050 connected");
+  } else {
+    Serial.println("MPU6050 failed");
+  }
+
+  // BLE init
+  BLEDevice::init("JointSaathi_Wearable");
+  Serial.print("BLE Address: ");
+  Serial.println(BLEDevice::getAddress().toString().c_str());
+
+  pServer = BLEDevice::createServer();
+  pServer->setCallbacks(new MyServerCallbacks());
+
+  BLEService *pService = pServer->createService(SERVICE_UUID);
+
+  // Create characteristics
+  pAccelChar = pService->createCharacteristic(
+    ACCEL_UUID,
+    BLECharacteristic::PROPERTY_NOTIFY | BLECharacteristic::PROPERTY_READ
+  );
+  pAccelChar->addDescriptor(new BLE2902());
+
+  pGyroChar = pService->createCharacteristic(
+    GYRO_UUID,
+    BLECharacteristic::PROPERTY_NOTIFY | BLECharacteristic::PROPERTY_READ
+  );
+  pGyroChar->addDescriptor(new BLE2902());
+
+  pPiezoChar = pService->createCharacteristic(
+    PIEZO_UUID,
+    BLECharacteristic::PROPERTY_NOTIFY | BLECharacteristic::PROPERTY_READ
+  );
+  pPiezoChar->addDescriptor(new BLE2902());
+  
+  // EMG Characteristic
+  pEMGChar = pService->createCharacteristic(
+    EMG_UUID,
+    BLECharacteristic::PROPERTY_NOTIFY | BLECharacteristic::PROPERTY_READ
+  );
+  pEMGChar->addDescriptor(new BLE2902());
+
+  pService->start();
+  pServer->getAdvertising()->start();
+  Serial.println("BLE advertising started");
+}
 
 void loop() {
-  // Check if recording and connected
-  if (isRecording && isConnected) {
-    unsigned long currentTime = millis();
-    
-    // Sample at specified rate
-    if (currentTime - lastSampleTime >= SAMPLE_INTERVAL_MS) {
-      lastSampleTime = currentTime;
-      readAndSendSensors();
-    }
-  }
-  
-  // Small delay to prevent watchdog
-  delay(1);
-}
-
-// ==================== BLE INITIALIZATION ====================
-
-void initBLE() {
-  // Initialize BLE device
-  BLEDevice::init(DEVICE_NAME);
-  BLEDevice::setPower(ESP_PWR_LVL_P7); // Maximum power
-  
-  // Create BLE server
-  pServer = BLEDevice::createServer();
-  
-  // Create service
-  BLEService* pService = pServer->createService(SERVICE_UUID);
-  
-  // Create characteristics
-  pAccelCharacteristic = pService->createCharacteristic(
-    ACCEL_CHAR_UUID,
-    BLECharacteristic::PROPERTY_READ |
-    BLECharacteristic::PROPERTY_NOTIFY
-  );
-  
-  pGyroCharacteristic = pService->createCharacteristic(
-    GYRO_CHAR_UUID,
-    BLECharacteristic::PROPERTY_READ |
-    BLECharacteristic::PROPERTY_NOTIFY
-  );
-  
-  pPiezoCharacteristic = pService->createCharacteristic(
-    PIEZO_CHAR_UUID,
-    BLECharacteristic::PROPERTY_READ |
-    BLECharacteristic::PROPERTY_NOTIFY
-  );
-  
-  pEMGCharacteristic = pService->createCharacteristic(
-    EMG_CHAR_UUID,
-    BLECharacteristic::PROPERTY_READ |
-    BLECharacteristic::PROPERTY_NOTIFY
-  );
-  
-  // Add notification descriptors (REQUIRED for data streaming)
-  pAccelCharacteristic->addDescriptor(new BLE2902());
-  pGyroCharacteristic->addDescriptor(new BLE2902());
-  pPiezoCharacteristic->addDescriptor(new BLE2902());
-  pEMGCharacteristic->addDescriptor(new BLE2902());
-  
-  // Start service
-  pService->start();
-  
-  // Start advertising
-  BLEAdvertising* pAdvertising = BLEDevice::getAdvertising();
-  pAdvertising->addServiceUUID(SERVICE_UUID);
-  pAdvertising->setScanResponse(true);
-  pAdvertising->setMinPreferred(0x06);
-  pAdvertising->setMinPreferred(0x12);
-  BLEDevice::startAdvertising();
-  
-  Serial.println("BLE advertising started");
-  Serial.print("Device Name: ");
-  Serial.println(DEVICE_NAME);
-}
-
-// ==================== SENSOR READING ====================
-
-void readAndSendSensors() {
-  // Read MPU6050
-  int16_t ax, ay, az, gx, gy, gz;
+  // --- 1. Read MPU ---
+  int16_t ax, ay, az;
+  int16_t gx, gy, gz;
   mpu.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
   
-  // Convert to g-force and deg/s
-  float accelX = ax / 16384.0;  // ±2g range
+  // Convert into real units (G-force and degree/s)
+  float accelX = ax / 16384.0;
   float accelY = ay / 16384.0;
   float accelZ = az / 16384.0;
-  float gyroX = gx / 131.0;    // ±250°/s range
+  float gyroX = gx / 131.0;
   float gyroY = gy / 131.0;
   float gyroZ = gz / 131.0;
-  
-  // Read Piezo (joint vibration)
-  int piezoRaw = analogRead(PIEZO_PIN);
-  float piezoValue = (piezoRaw / 4095.0) * 2.0 - 1.0; // Normalize to -1 to 1
-  
-  // Read EMG (muscle activity)
-  int emgRaw = analogRead(EMG_PIN);
-  float emgValue = emgRaw / 4095.0; // Normalize to 0 to 1
-  
-  // Send via BLE
-  sendAccelerometerData(accelX, accelY, accelZ);
-  sendGyroscopeData(gyroX, gyroY, gyroZ);
-  sendPiezoData(piezoValue);
-  sendEMGData(emgValue);
-  
-  // Blink recording LED
-  digitalWrite(RECORDING_LED, !digitalRead(RECORDING_LED));
-}
 
-// ==================== BLE DATA SENDING ====================
+  // --- 2. Read Piezo ---
+  int rawPiezo = readSensorAverage(PIEZO_PIN, 10);
+  int amplitude = abs(rawPiezo - MIDPOINT);
+  float piezoValue = (rawPiezo / 4095.0) * 2.0 - 1.0; // Graph ke liye -1 se +1
 
-void sendAccelerometerData(float x, float y, float z) {
-  // Convert to 16-bit integers (scale by 1000)
-  int16_t xInt = (int16_t)(x * 1000);
-  int16_t yInt = (int16_t)(y * 1000);
-  int16_t zInt = (int16_t)(z * 1000);
+  // --- DAC output ---
+  int dacValue = map(rawPiezo, 0, 4095, 0, 255);
+  dacWrite(DAC_OUT_PIN, dacValue);
   
-  uint8_t data[6];
-  data[0] = xInt & 0xFF;
-  data[1] = (xInt >> 8) & 0xFF;
-  data[2] = yInt & 0xFF;
-  data[3] = (yInt >> 8) & 0xFF;
-  data[4] = zInt & 0xFF;
-  data[5] = (zInt >> 8) & 0xFF;
-  
-  pAccelCharacteristic->setValue(data, 6);
-  pAccelCharacteristic->notify();
-}
+  // --- 3. Read EMG ---
+  int rawEMG = readSensorAverage(EMG_PIN, 10);
+  float emgValue = rawEMG / 4095.0; // Graph ke liye 0 se +1
 
-void sendGyroscopeData(float x, float y, float z) {
-  int16_t xInt = (int16_t)(x * 1000);
-  int16_t yInt = (int16_t)(y * 1000);
-  int16_t zInt = (int16_t)(z * 1000);
-  
-  uint8_t data[6];
-  data[0] = xInt & 0xFF;
-  data[1] = (xInt >> 8) & 0xFF;
-  data[2] = yInt & 0xFF;
-  data[3] = (yInt >> 8) & 0xFF;
-  data[4] = zInt & 0xFF;
-  data[5] = (zInt >> 8) & 0xFF;
-  
-  pGyroCharacteristic->setValue(data, 6);
-  pGyroCharacteristic->notify();
-}
-
-void sendPiezoData(float value) {
-  int16_t valueInt = (int16_t)(value * 1000);
-  
-  uint8_t data[2];
-  data[0] = valueInt & 0xFF;
-  data[1] = (valueInt >> 8) & 0xFF;
-  
-  pPiezoCharacteristic->setValue(data, 2);
-  pPiezoCharacteristic->notify();
-}
-
-void sendEMGData(float value) {
-  int16_t valueInt = (int16_t)(value * 1000);
-  
-  uint8_t data[2];
-  data[0] = valueInt & 0xFF;
-  data[1] = (valueInt >> 8) & 0xFF;
-  
-  pEMGCharacteristic->setValue(data, 2);
-  pEMGCharacteristic->notify();
-}
-
-// ==================== CONNECTION CALLBACKS ====================
-
-class MyServerCallbacks: public BLEServerCallbacks {
-  void onConnect(BLEServer* pServer) {
-    isConnected = true;
-    digitalWrite(CONNECTION_LED, HIGH);
-    Serial.println("Device Connected to Flutter App");
-  };
-  
-  void onDisconnect(BLEServer* pServer) {
-    isConnected = false;
-    isRecording = false;
-    digitalWrite(CONNECTION_LED, LOW);
-    digitalWrite(RECORDING_LED, LOW);
-    Serial.println("Device Disconnected");
+  // --- 4. Send via BLE (APP EXPECTS BINARY DATA, NOT STRINGS) ---
+  if (deviceConnected) {
     
-    // Restart advertising
-    BLEDevice::startAdvertising();
-  }
-};
+    // Accelerometer
+    int16_t axInt = (int16_t)(accelX * 1000);
+    int16_t ayInt = (int16_t)(accelY * 1000);
+    int16_t azInt = (int16_t)(accelZ * 1000);
+    uint8_t aData[6] = { (uint8_t)(axInt & 0xFF), (uint8_t)((axInt >> 8) & 0xFF),
+                         (uint8_t)(ayInt & 0xFF), (uint8_t)((ayInt >> 8) & 0xFF),
+                         (uint8_t)(azInt & 0xFF), (uint8_t)((azInt >> 8) & 0xFF) };
+    pAccelChar->setValue(aData, 6);
+    pAccelChar->notify();
 
-class MyCharacteristicCallbacks: public BLECharacteristicCallbacks {
-  void onWrite(BLECharacteristic* pCharacteristic) {
-    std::string value = pCharacteristic->getValue();
+    // Gyroscope
+    int16_t gxInt = (int16_t)(gyroX * 1000);
+    int16_t gyInt = (int16_t)(gyroY * 1000);
+    int16_t gzInt = (int16_t)(gyroZ * 1000);
+    uint8_t gData[6] = { (uint8_t)(gxInt & 0xFF), (uint8_t)((gxInt >> 8) & 0xFF),
+                         (uint8_t)(gyInt & 0xFF), (uint8_t)((gyInt >> 8) & 0xFF),
+                         (uint8_t)(gzInt & 0xFF), (uint8_t)((gzInt >> 8) & 0xFF) };
+    pGyroChar->setValue(gData, 6);
+    pGyroChar->notify();
+
+    // Piezo
+    int16_t pInt = (int16_t)(piezoValue * 1000);
+    uint8_t pData[2] = { (uint8_t)(pInt & 0xFF), (uint8_t)((pInt >> 8) & 0xFF) };
+    pPiezoChar->setValue(pData, 2);
+    pPiezoChar->notify();
     
-    // Parse commands from Flutter app
-    if (value == "START_RECORDING") {
-      isRecording = true;
-      Serial.println("Recording Started");
-    } else if (value == "STOP_RECORDING") {
-      isRecording = false;
-      Serial.println("Recording Stopped");
-    }
+    // EMG
+    int16_t eInt = (int16_t)(emgValue * 1000);
+    uint8_t eData[2] = { (uint8_t)(eInt & 0xFF), (uint8_t)((eInt >> 8) & 0xFF) };
+    pEMGChar->setValue(eData, 2);
+    pEMGChar->notify();
   }
-};
 
-// Add callbacks in setup (uncomment and add to setup function):
-/*
-void setup() {
-  // ... existing setup code ...
-  
-  // Add callbacks
-  pServer->setCallbacks(new MyServerCallbacks());
-  pAccelCharacteristic->setCallbacks(new MyCharacteristicCallbacks());
-  pGyroCharacteristic->setCallbacks(new MyCharacteristicCallbacks());
-  pPiezoCharacteristic->setCallbacks(new MyCharacteristicCallbacks());
-  pEMGCharacteristic->setCallbacks(new MyCharacteristicCallbacks());
+  // --- Debug print ---
+  Serial.print("Accel: "); Serial.print(ax); Serial.print(", "); Serial.print(ay); Serial.print(", "); Serial.println(az);
+  Serial.print("Gyro: ");  Serial.print(gx); Serial.print(", "); Serial.print(gy); Serial.print(", "); Serial.println(gz);
+  Serial.print("Piezo: "); Serial.print(rawPiezo); Serial.print(" Amp: "); Serial.println(amplitude);
+  Serial.print("EMG: ");   Serial.println(rawEMG);
+
+  delay(20); // 50Hz pe sampling (App model expects 50Hz)
 }
-*/
