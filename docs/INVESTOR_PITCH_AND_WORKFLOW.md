@@ -8,7 +8,7 @@ Osteoarthritis is a chronic condition causing severe pain and mobility issues. I
 
 ## 3. The Solution
 OsteoSense solves this by turning a standard smartphone into an intelligent screening device:
-- **No Expensive Hardware Needed:** Utilizes the smartphone's built-in sensors (accelerometer & gyroscope) to analyze patient gait (walking pattern).
+- **Custom Low-Cost BLE Wearable:** Utilizes a custom-built, low-cost BLE (Bluetooth Low Energy) wearable sensor (ESP32-based) to capture highly precise joint movement and gait patterns, avoiding the need for expensive diagnostic machinery.
 - **Works Without Internet:** Fully functional offline (Offline-First Architecture).
 - **Multilingual:** Speaks the local language (Assamese, Bengali, and 10 other Indian languages).
 - **AI-Backed Assessment:** Provides immediate, preliminary risk analysis using embedded machine learning.
@@ -27,9 +27,9 @@ Here is a step-by-step breakdown of how the solution operates in the field. This
 1. **Patient Registration:** The worker creates a new digital profile for the patient (Name, Age, Occupation, Medical History).
 2. **Symptom Questionnaire:** The app guides the worker through a digitized, visual questionnaire to record the patient's pain levels, stiffness, and daily mobility challenges.
 3. **Gait Assessment (The Core Innovation):** 
-   - The worker attaches the smartphone to the patient's waist or leg using a simple strap (or uses an optional BLE wearable device).
-   - The app asks the patient to walk a few steps.
-   - The app's **Sensor Service** captures raw IMU (Inertial Measurement Unit) data in real-time, looking for limping, asymmetry, or restricted range of motion.
+   - The worker straps the custom **BLE Wearable Device (OsteoSense Sensor)** to the patient's knee or leg.
+   - The patient is asked to walk a few steps.
+   - The app instantly connects via Bluetooth and captures raw IMU (Inertial Measurement Unit) data from the wearable in real-time, precisely analyzing limping, asymmetry, or restricted range of motion.
 
 ### Phase 3: AI Analysis & Results
 1. **On-Device AI Inference:** 
@@ -55,7 +55,7 @@ To achieve this workflow, the project uses a modern, scalable tech stack:
 - **Backend API:** `Node.js` with `Express.js`. Manages user authentication (JWT) and data synchronization.
 - **Cloud Database:** `MongoDB`. Securely stores Electronic Health Records (EHR) centrally.
 - **Advanced AI Service:** `Python` with `FastAPI`. For future complex ML models and analytics.
-- **Hardware Integration (Optional):** `C++` (ESP32 Firmware) for external low-cost BLE sensors.
+- **Hardware Integration (Core Innovation):** `C++` (ESP32 Firmware) powering the primary low-cost BLE wearable sensor for precise gait data collection.
 
 ## 6. Competitive Advantage
 - **Cost-Effective:** Traditional screening requires X-Rays/MRIs and specialists. OsteoSense requires only a smartphone.

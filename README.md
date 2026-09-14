@@ -16,13 +16,13 @@ network connection is available.
 
 - Offline-first patient and screening workflows
 - On-device TFLite OA risk assessment
-- Phone-sensor gait analysis using the accelerometer and gyroscope
+- Precise gait analysis using a custom ESP32-based BLE wearable sensor
 - Multilingual support for 12 Indian languages (English, Hindi, Assamese, Bengali, Gujarati, Kannada, Malayalam, Marathi, Odia, Punjabi, Tamil, Telugu)
 - Risk results with confidence, contributing factors, and recommendations
 - PDF report generation and sharing
 - Local SQLite storage with online synchronization
 - Healthcare worker authentication
-- Optional BLE wearable integration groundwork
+- Seamless BLE wearable integration for real-time sensor data collection
 
 ## Repository layout
 
@@ -212,9 +212,9 @@ the API URL, CORS origins, authentication secrets, and network connectivity.
 OsteoSense (JointSaathi) is purpose-built to address the challenges of Osteoarthritis screening in the North Eastern Region (NER) of India. The system fulfills the expected solution requirements as follows:
 
 ### a. Early Detection of OA-related Risk Markers
-- **Joint movement analysis & Gait assessment:** Utilizes smartphone IMU sensors (accelerometer and gyroscope) for automated gait analysis and supports external BLE wearables (via ESP32) for precise joint movement tracking.
+- **Joint movement analysis & Gait assessment:** Utilizes a custom, low-cost BLE wearable sensor (ESP32-based) connected to the mobile app for automated and highly precise gait and joint movement tracking.
 - **Pain and mobility screening:** Features a comprehensive, digitized symptom questionnaire allowing healthcare workers to capture patient-reported pain levels and mobility issues.
-- **Sensor-based assessment:** Incorporates dual-layer assessment—mobile sensors and on-device machine learning (TFLite)—to evaluate risk without the immediate need for expensive medical imaging.
+- **Sensor-based assessment:** Incorporates dual-layer assessment—BLE wearable sensors and on-device machine learning (TFLite)—to evaluate risk without the immediate need for expensive medical imaging.
 
 ### b. AI/ML Techniques for Patient Data Analysis
 - Integrates an on-device TensorFlow Lite model for immediate offline risk prediction.
