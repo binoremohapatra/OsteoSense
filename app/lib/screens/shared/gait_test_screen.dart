@@ -36,8 +36,8 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
   final GaitSensorPipeline _sensorPipeline = GaitSensorPipeline();
   bool _isRecording = false;
   Timer? _timer;
-  int _remainingSeconds = 30;
-  final int _totalSeconds = 30;
+  int _remainingSeconds = 60;
+  final int _totalSeconds = 60;
   
   // Analytics state
   bool _showAnalytics = false;
@@ -98,7 +98,7 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
     _sensorPipeline.setSourceType(_sourceType);
     _sensorPipeline.setSimulationParameters(_simParams);
     _sensorPipeline.startRecording(
-      duration: const Duration(seconds: 30),
+      duration: const Duration(seconds: 60),
     );
 
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -125,9 +125,6 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
       screeningProvider.draftPatientId = patientProvider.selectedPatient!.id!;
     }
     
-    if (screeningProvider.draftPainLevel == 0) {
-      screeningProvider.draftPainLevel = 5; // Default moderate pain
-    }
 
     // Run ML prediction if features are available
     if (_sensorPipeline.currentFeatures != null) {
@@ -139,19 +136,12 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
       );
     }
     
-    if (screeningProvider.draftStiffnessDuration == 'none') {
-      screeningProvider.draftStiffnessDuration = '30 minutes';
-    }
-    
-    if (!screeningProvider.draftSwelling) {
-      screeningProvider.draftSwelling = true;
-    }
 
     // Get gait features from pipeline
-    final features = _sensorPipeline.currentFeatures;
+    final features = _sensorPipeline.extracted44Features;
     if (features != null) {
       // Convert features to valid JSON string for storage
-      screeningProvider.setDraftGaitData(jsonEncode(features.toJson()));
+      screeningProvider.setDraftGaitData(jsonEncode(features));
     } else {
       // Fallback to sensor service
       final gaitFeatures = _sensorService.getFeatureVector();
@@ -332,7 +322,7 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
                     ),
                     const SizedBox(height: AppSpacing.sm),
                     _buildInstructionItem(
-                      '3. ${'test_duration_30_seconds'.tr()}',
+                      '3. ${'test_duration_60_seconds'.tr()}',
                     ),
                     const SizedBox(height: AppSpacing.sm),
                     _buildInstructionItem(

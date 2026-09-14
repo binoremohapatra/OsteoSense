@@ -271,7 +271,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
       physics: const NeverScrollableScrollPhysics(),
       crossAxisSpacing: AppSpacing.md,
       mainAxisSpacing: AppSpacing.md,
-      childAspectRatio: 1.8,
+      childAspectRatio: 1.5, // Increased height to prevent bottom overflow
       children: [
         MetricCard(
           title: 'age'.tr(),

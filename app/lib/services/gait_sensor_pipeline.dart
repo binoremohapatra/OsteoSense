@@ -68,9 +68,11 @@ class GaitSensorPipeline {
   
   // Getters
   SignalSourceType get sourceType => _sourceType;
+  SensorDataSource? get hardwareSource => _hardwareSource;
   bool get isRecording => _isRecording;
   List<SignalSample> get signalBuffer => List.from(_signalBuffer);
   SignalFeatures? get currentFeatures => _currentFeatures;
+  List<double>? get extracted44Features => _extracted44Features;
   MLPrediction? get currentPrediction => _currentPrediction;
   List<MLPrediction> get predictionHistory => List.from(_predictionHistory);
   
@@ -497,9 +499,17 @@ class GaitSensorPipeline {
       MLPrediction? serverPrediction;
       try {
         final apiService = ApiService();
+        final List<double> interleavedGyro = [];
+        final int gyroLen = _gyroX.length;
+        for (int i = 0; i < gyroLen; i++) {
+          interleavedGyro.add(_gyroX[i]);
+          interleavedGyro.add(i < _gyroY.length ? _gyroY[i] : 0.0);
+          interleavedGyro.add(i < _gyroZ.length ? _gyroZ[i] : 0.0);
+        }
+        
         final response = await apiService.submitWearableDataToAI(
           deviceId: 'mobile-app-01',
-          gyro: _gyroX,
+          gyro: interleavedGyro,
           piezo: _piezoData,
           emg: _emgData,
           painLevel: painLevel,
@@ -511,7 +521,9 @@ class GaitSensorPipeline {
         serverPrediction = MLPrediction(
           riskLevel: response['risk_label'] ?? 'unknown',
           confidence: (response['risk_score'] as num?)?.toDouble() ?? 0.0,
-          contributingFactors: List<String>.from(response['top_contributing_features'] ?? []),
+          contributingFactors: (response['top_contributing_features'] as List?)
+              ?.map((f) => '${f['feature']}: ${f['value']}')
+              .toList() ?? [],
           reasoning: 'AI prediction from deployed server',
           timestamp: DateTime.now(),
           inputSourceType: _sourceType,

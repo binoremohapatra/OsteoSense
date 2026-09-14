@@ -620,7 +620,6 @@
   "gait_assessment_test": "ਚਾਲ ਦਾ ਮੁਲਾਂਕਣ ਟੈਸਟ",
   "stand_naturally_device": "ਯੰਤਰ ਨੂੰ ਜੇਬ ਵਿੱਚ ਰੱਖ ਕੇ ਕੁਦਰਤੀ ਤਰੀਕੇ ਨਾਲ ਖੜ੍ਹੇ ਹੋਵੋ",
   "walk_normal_comfortable": "ਆਮ ਅਤੇ ਆਰਾਮਦਾਇਕ ਰਫ਼ਤਾਰ ਨਾਲ ਚੱਲੋ",
-  "test_duration_30_seconds": "ਜਾਂਚ ਦੀ ਮਿਆਦ: 30 ਸਕਿੰਟ",
   "walk_straight_line": "ਜੇ ਸੰਭਵ ਹੋਵੇ ਤਾਂ ਸਿੱਧੀ ਲਾਈਨ ਵਿੱਚ ਚੱਲੋ",
   "language_title": "ਭਾਸ਼ਾ",
   "notifications_title": "ਸੂਚਨਾਵਾਂ",
@@ -775,5 +774,6 @@
   "rec_medium": "ਨਿਯਮਤ ਨਿਗਰਾਨੀ ਦੀ ਸਲਾਹ ਦਿੱਤੀ ਜਾਂਦੀ ਹੈ।",
   "rec_low": "ਨਿਯਮਤ ਸਿਹਤ ਨਿਗਰਾਨੀ ਜਾਰੀ ਰੱਖੋ।",
   "weight_kg": "Weight (kg)",
-  "height_cm": "Height (cm)"
+  "height_cm": "Height (cm)",
+  "test_duration_60_seconds": "ਜਾਂਚ ਦੀ ਮਿਆਦ: 60 ਸਕਿੰਟ"
 }

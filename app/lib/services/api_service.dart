@@ -101,7 +101,13 @@ class ApiService {
       if (refreshToken == null) return false;
 
       // Note: Do not use the main _dio instance here to avoid infinite loops if this fails with 401
-      final refreshDio = Dio(BaseOptions(baseUrl: AppConstants.baseUrl));
+      final refreshDio = Dio(BaseOptions(
+        baseUrl: AppConstants.baseUrl,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      ));
       final response = await refreshDio.post('/auth/refresh', data: {
         'refreshToken': refreshToken,
       });

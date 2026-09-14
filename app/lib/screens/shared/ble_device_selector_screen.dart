@@ -18,9 +18,12 @@ class BLEDeviceSelectorScreen extends StatefulWidget {
 }
 
 class _BLEDeviceSelectorScreenState extends State<BLEDeviceSelectorScreen> {
-  final List<BluetoothDevice> _devices = [];
+  final List<ScanResult> _scanResults = [];
+  BluetoothDevice? _connectedDevice;
   bool _isScanning = false;
   bool _isConnecting = false;
+  static const String _targetServiceUuid = '4fafc201-1fb5-459e-8fcc-c5c9c331914b';
+  static const String _targetDeviceName = 'JointSaathi';
 
   @override
   void initState() {
@@ -37,7 +40,7 @@ class _BLEDeviceSelectorScreenState extends State<BLEDeviceSelectorScreen> {
   Future<void> _startScan() async {
     setState(() {
       _isScanning = true;
-      _devices.clear();
+      _scanResults.clear();
     });
 
     try {
@@ -45,8 +48,16 @@ class _BLEDeviceSelectorScreenState extends State<BLEDeviceSelectorScreen> {
       FlutterBluePlus.scanResults.listen((results) {
         if (mounted) {
           setState(() {
-            _devices.clear();
-            _devices.addAll(results.map((r) => r.device));
+            _scanResults.clear();
+            // Filter: show only JointSaathi devices OR devices with our Service UUID
+            _scanResults.addAll(results.where((r) {
+              final name = r.device.platformName.toLowerCase();
+              final hasTargetName = name.contains(_targetDeviceName.toLowerCase());
+              final hasTargetUuid = r.advertisementData.serviceUuids
+                  .any((uuid) => uuid.toString().toLowerCase().contains('4fafc201'));
+              // Show if name matches OR UUID matches
+              return hasTargetName || hasTargetUuid;
+            }));
           });
         }
       });
@@ -58,7 +69,10 @@ class _BLEDeviceSelectorScreenState extends State<BLEDeviceSelectorScreen> {
         }
       });
 
-      await FlutterBluePlus.startScan(timeout: const Duration(seconds: 10));
+      // Scan without hardware filter for maximum compatibility (we filter in software above)
+      await FlutterBluePlus.startScan(
+        timeout: const Duration(seconds: 15),
+      );
     } catch (e) {
       print('Error starting scan: $e');
       if (mounted) {
@@ -93,12 +107,22 @@ class _BLEDeviceSelectorScreenState extends State<BLEDeviceSelectorScreen> {
       await bleSource.initialize();
 
       if (mounted) {
+        setState(() => _connectedDevice = device);
+        
         // Update the gait sensor pipeline to use this hardware source
         final pipeline = GaitSensorPipeline();
         pipeline.setHardwareSource(bleSource);
         pipeline.setSourceType(SignalSourceType.hardware);
 
-        // Return success
+        // Show success and go back
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('✅ Connected to ${device.platformName.isNotEmpty ? device.platformName : "JointSaathi"}!'),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+        await Future.delayed(const Duration(seconds: 1));
         Navigator.pop(context, true);
       }
     } catch (e) {
@@ -156,7 +180,7 @@ class _BLEDeviceSelectorScreenState extends State<BLEDeviceSelectorScreen> {
             ),
         ],
       ),
-      body: _devices.isEmpty
+      body: _scanResults.isEmpty
           ? _buildEmptyState()
           : _buildDeviceList(),
     );
@@ -208,20 +232,35 @@ class _BLEDeviceSelectorScreenState extends State<BLEDeviceSelectorScreen> {
   Widget _buildDeviceList() {
     return ListView.builder(
       padding: const EdgeInsets.all(AppSpacing.screenPaddingLg),
-      itemCount: _devices.length,
+      itemCount: _scanResults.length,
       itemBuilder: (context, index) {
-        final device = _devices[index];
-        return _buildDeviceCard(device, index);
+        final result = _scanResults[index];
+        return _buildDeviceCard(result, index);
       },
     );
   }
 
-  Widget _buildDeviceCard(BluetoothDevice device, int index) {
+  Widget _buildDeviceCard(ScanResult result, int index) {
+    final device = result.device;
+    final isConnected = _connectedDevice?.remoteId == device.remoteId;
+    final displayName = device.platformName.isNotEmpty
+        ? device.platformName
+        : (result.advertisementData.advName.isNotEmpty
+            ? result.advertisementData.advName
+            : 'JointSaathi Device');
+    final rssi = result.rssi;
+    final signalStrength = rssi > -60 ? '🟢 Strong' : (rssi > -80 ? '🟡 Good' : '🔴 Weak');
+
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: isConnected
+            ? Colors.green.withValues(alpha: 0.08)
+            : AppColors.surface,
         borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+        border: isConnected
+            ? Border.all(color: Colors.green, width: 1.5)
+            : null,
         boxShadow: [
           BoxShadow(
             color: AppColors.textSecondary.withValues(alpha: 0.05),
@@ -231,7 +270,7 @@ class _BLEDeviceSelectorScreenState extends State<BLEDeviceSelectorScreen> {
         ],
       ),
       child: InkWell(
-        onTap: () => _connectToDevice(device),
+        onTap: isConnected ? null : () => _connectToDevice(device),
         borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.md),
@@ -242,12 +281,14 @@ class _BLEDeviceSelectorScreenState extends State<BLEDeviceSelectorScreen> {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
+                  color: isConnected
+                      ? Colors.green.withValues(alpha: 0.15)
+                      : AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
                 ),
-                child: const Icon(
-                  Icons.bluetooth,
-                  color: AppColors.primary,
+                child: Icon(
+                  isConnected ? Icons.bluetooth_connected : Icons.bluetooth,
+                  color: isConnected ? Colors.green : AppColors.primary,
                   size: 24,
                 ),
               ),
@@ -257,18 +298,35 @@ class _BLEDeviceSelectorScreenState extends State<BLEDeviceSelectorScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      device.platformName.isNotEmpty
-                          ? device.platformName
-                          : 'Unknown Device',
-                      style: AppTypography.bodyLarge.copyWith(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    Row(
+                      children: [
+                        Text(
+                          displayName,
+                          style: AppTypography.bodyLarge.copyWith(
+                            color: AppColors.textPrimary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        if (isConnected) ...
+                          [
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.green,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Text(
+                                'Connected',
+                                style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ],
+                      ],
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      device.remoteId.toString(),
+                      '${device.remoteId}  $signalStrength ($rssi dBm)',
                       style: AppTypography.bodySmall.copyWith(
                         color: AppColors.textSecondary,
                       ),
@@ -277,20 +335,22 @@ class _BLEDeviceSelectorScreenState extends State<BLEDeviceSelectorScreen> {
                 ),
               ),
               // Connection status
-              _isConnecting
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
-                      ),
-                    )
-                  : Icon(
-                      Icons.arrow_forward_ios,
-                      size: 16,
-                      color: AppColors.textSecondary.withValues(alpha: 0.5),
-                    ),
+              if (isConnected)
+                const Icon(Icons.check_circle, color: Colors.green, size: 24)
+              else if (_isConnecting)
+                const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                    ))
+              else
+                Icon(
+                  Icons.arrow_forward_ios,
+                  size: 16,
+                  color: AppColors.textSecondary.withValues(alpha: 0.5),
+                ),
             ],
           ),
         ),

@@ -620,7 +620,6 @@
   "gait_assessment_test": "चालण्याचे मूल्यांकन परीक्षण",
   "stand_naturally_device": "उपकरण खिशात ठेवून नैसर्गिकपणे उभे राहा",
   "walk_normal_comfortable": "सामान्य आणि आरामदायी वेगाने चाला",
-  "test_duration_30_seconds": "तपासणीचा कालावधी: 30 सेकंद",
   "walk_straight_line": "शक्य असल्यास सरळ रेषेत चाला",
   "language_title": "भाषा",
   "notifications_title": "सूचना",
@@ -775,5 +774,6 @@
   "rec_medium": "नियमित निरीक्षणाचा सल्ला दिला जातो.",
   "rec_low": "नियमित आरोग्य निरीक्षण सुरू ठेवा.",
   "weight_kg": "Weight (kg)",
-  "height_cm": "Height (cm)"
+  "height_cm": "Height (cm)",
+  "test_duration_60_seconds": "तपासणीचा कालावधी: 60 सेकंद"
 }

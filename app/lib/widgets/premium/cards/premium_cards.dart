@@ -243,11 +243,14 @@ class MetricCard extends StatelessWidget {
                 Icon(icon, size: 16, color: AppColors.textTertiary),
             ],
           ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            value,
-            style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.bold),
-          ).animate().fadeIn(duration: AppMotion.fast), // Using fadeIn instead of count due to limitations
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              value,
+              style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.bold),
+            ).animate().fadeIn(duration: AppMotion.fast),
+          ),
           if (trend != null) ...[
             const SizedBox(height: AppSpacing.xs),
             Row(

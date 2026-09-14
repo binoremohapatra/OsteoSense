@@ -620,7 +620,6 @@
   "gait_assessment_test": "ನಡಿಗೆ ಮೌಲ್ಯಮಾಪನ ಪರೀಕ್ಷೆ",
   "stand_naturally_device": "ಸಾಧನವನ್ನು ಜೇಬಿನಲ್ಲಿ ಇಟ್ಟು ಸಹಜವಾಗಿ ನಿಂತುಕೊಳ್ಳಿ",
   "walk_normal_comfortable": "ಸಾಮಾನ್ಯ, ಆರಾಮದಾಯಕ ವೇಗದಲ್ಲಿ ನಡೆಯಿರಿ",
-  "test_duration_30_seconds": "ಪರೀಕ್ಷೆಯ ಅವಧಿ: 30 ಸೆಕೆಂಡುಗಳು",
   "walk_straight_line": "ಸಾಧ್ಯವಾದರೆ ನೇರ ರೇಖೆಯಲ್ಲಿ ನಡೆಯಿರಿ",
   "language_title": "ಭಾಷೆ",
   "notifications_title": "ಅಧಿಸೂಚನೆಗಳು",
@@ -775,5 +774,6 @@
   "rec_medium": "ನಿಯಮಿತ ಮೇಲ್ವಿಚಾರಣೆಗೆ ಸಲಹೆ ನೀಡಲಾಗಿದೆ.",
   "rec_low": "ನಿಯಮಿತ ಆರೋಗ್ಯ ಮೇಲ್ವಿಚಾರಣೆ ಮುಂದುವರಿಸಿ.",
   "weight_kg": "Weight (kg)",
-  "height_cm": "Height (cm)"
+  "height_cm": "Height (cm)",
+  "test_duration_60_seconds": "ಪರೀಕ್ಷೆಯ ಅವಧಿ: 60 ಸೆಕೆಂಡುಗಳು"
 }

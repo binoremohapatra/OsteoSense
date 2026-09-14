@@ -620,7 +620,6 @@
   "gait_assessment_test": "ଚାଲିବାର ମୂଲ୍ୟାଙ୍କନ ପରୀକ୍ଷା",
   "stand_naturally_device": "ଉପକରଣକୁ ପକେଟ୍‌ରେ ରଖି ସ୍ୱାଭାବିକ ଭାବେ ଠିଆ ହୁଅନ୍ତୁ",
   "walk_normal_comfortable": "ସାଧାରଣ ଏବଂ ଆରାମଦାୟକ ଗତିରେ ଚାଲନ୍ତୁ",
-  "test_duration_30_seconds": "ପରୀକ୍ଷାର ଅବଧି: 30 ସେକେଣ୍ଡ",
   "walk_straight_line": "ସମ୍ଭବ ହେଲେ ସିଧା ରେଖାରେ ଚାଲନ୍ତୁ",
   "language_title": "ଭାଷା",
   "notifications_title": "ବିଜ୍ଞପ୍ତି",
@@ -775,5 +774,6 @@
   "rec_medium": "ନିୟମିତ ନିରୀକ୍ଷଣ ପରାମର୍ଶ ଦିଆଯାଉଛି।",
   "rec_low": "ନିୟମିତ ସ୍ୱାସ୍ଥ୍ୟ ନିରୀକ୍ଷଣ ଜାରି ରଖନ୍ତୁ।",
   "weight_kg": "Weight (kg)",
-  "height_cm": "Height (cm)"
+  "height_cm": "Height (cm)",
+  "test_duration_60_seconds": "ପରୀକ୍ଷାର ଅବଧି: 60 ସେକେଣ୍ଡ"
 }
