@@ -98,8 +98,11 @@ class _BLEDeviceSelectorScreenState extends State<BLEDeviceSelectorScreen> {
         pipeline.setHardwareSource(bleSource);
         pipeline.setSourceType(SignalSourceType.hardware);
 
-        // Return success
-        Navigator.pop(context, true);
+        // Return device name so caller can show "Connected: <name>"
+        final deviceName = device.platformName.isNotEmpty
+            ? device.platformName
+            : device.remoteId.str;
+        Navigator.pop(context, deviceName);
       }
     } catch (e) {
       print('Error connecting to device: $e');

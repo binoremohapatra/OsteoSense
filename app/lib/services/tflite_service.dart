@@ -105,7 +105,7 @@ class TFLiteService {
 
     // Process output
     final probabilities = output[0];
-    final maxIndex = probabilities.indexOf(probabilities.reduce((a, b) => a > b ? a : b));
+    final maxIndex = probabilities.indexOf(probabilities.reduce((double a, double b) => a > b ? a : b));
     
     final riskLevels = ['low', 'medium', 'high'];
     final predictedRisk = riskLevels[maxIndex];
@@ -263,8 +263,8 @@ class TFLiteService {
     if (gaitFeatures.isEmpty) return 0.0;
     
     // Calculate variance in accelerometer data
-    final mean = gaitFeatures.reduce((a, b) => a + b) / gaitFeatures.length;
-    final variance = gaitFeatures.map((x) => (x - mean) * (x - mean)).reduce((a, b) => a + b) / gaitFeatures.length;
+    final mean = gaitFeatures.reduce((double a, double b) => a + b) / gaitFeatures.length;
+    final variance = gaitFeatures.map((x) => (x - mean) * (x - mean)).reduce((double a, double b) => a + b) / gaitFeatures.length;
     
     // High variance might indicate irregular gait
     if (variance > 0.5) return 1.5;

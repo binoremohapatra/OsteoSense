@@ -275,8 +275,10 @@ class GaitSensorPipeline {
       });
     } else {
       // Use BLE wearable source
+      // NOTE: initialize() was already called in BLEDeviceSelectorScreen when
+      // the user selected the device. Calling it again would try to device.connect()
+      // on an already-connected device which fails. So we only call startRecording().
       try {
-        await _hardwareSource!.initialize();
         await _hardwareSource!.startRecording();
         _updatePipelineStatus(1, PipelineStageStatus.receiving);
 
@@ -325,30 +327,31 @@ class GaitSensorPipeline {
     }
   }
 
-  /// Try to create a wearable sample when all sensor data is available
+  /// Try to create a wearable sample when sensor data arrives.
+  /// Fires on every sensor packet — does not block on all sensors being present.
   void _tryCreateWearableSample(
     SensorData? accel,
     SensorData? gyro,
     SensorData? piezo,
     SensorData? emg,
   ) {
-    // Wait for accelerometer data as primary trigger
-    if (accel == null) return;
+    // Need at least accel OR gyro to create a meaningful sample
+    if (accel == null && gyro == null) return;
 
     final piezoValue = piezo?.x ?? 0.0;
     final emgValue = emg?.x ?? 0.0;
 
     final sample = SignalSample(
-      timestamp: accel.timestamp,
-      accelX: accel.x,
-      accelY: accel.y,
-      accelZ: accel.z,
+      timestamp: accel?.timestamp ?? gyro!.timestamp,
+      accelX: accel?.x ?? 0.0,
+      accelY: accel?.y ?? 0.0,
+      accelZ: accel?.z ?? 0.0,
       gyroX: gyro?.x ?? 0.0,
       gyroY: gyro?.y ?? 0.0,
       gyroZ: gyro?.z ?? 0.0,
-      userAccelX: accel.x * 0.7, // Approximate user acceleration
-      userAccelY: accel.y * 0.7,
-      userAccelZ: accel.z * 0.7,
+      userAccelX: (accel?.x ?? 0.0) * 0.7,
+      userAccelY: (accel?.y ?? 0.0) * 0.7,
+      userAccelZ: (accel?.z ?? 0.0) * 0.7,
     );
 
     _addSampleToBuffer(sample, piezoValue, emgValue);
@@ -497,21 +500,39 @@ class GaitSensorPipeline {
       MLPrediction? serverPrediction;
       try {
         final apiService = ApiService();
+
+        // Interleave gyroX, gyroY, gyroZ into flat [x0,y0,z0, x1,y1,z1,...] list
+        // as required by the AI server's SensorWindowIn schema (must be divisible by 3).
+        final int gyroLen = [_gyroX.length, _gyroY.length, _gyroZ.length].reduce((a, b) => a < b ? a : b);
+        final List<double> interleavedGyro = [];
+        for (int i = 0; i < gyroLen; i++) {
+          interleavedGyro.add(_gyroX[i]);
+          interleavedGyro.add(_gyroY[i]);
+          interleavedGyro.add(_gyroZ[i]);
+        }
+
         final response = await apiService.submitWearableDataToAI(
           deviceId: 'mobile-app-01',
-          gyro: _gyroX,
-          piezo: _piezoData,
-          emg: _emgData,
+          gyro: interleavedGyro,
+          piezo: List.from(_piezoData),
+          emg: List.from(_emgData),
           painLevel: painLevel,
           stiffnessDuration: stiffnessDuration,
           swelling: swelling,
           pastInjury: pastInjury.isNotEmpty,
         );
         // Convert server response to MLPrediction format
+        // top_contributing_features is a list of {feature: str, value: float} objects
+        final rawFeatures = response['top_contributing_features'] as List? ?? [];
+        final contributingFactors = rawFeatures.map((f) {
+          if (f is Map) return (f['feature'] as String?) ?? f.toString();
+          return f.toString();
+        }).toList();
+
         serverPrediction = MLPrediction(
           riskLevel: response['risk_label'] ?? 'unknown',
           confidence: (response['risk_score'] as num?)?.toDouble() ?? 0.0,
-          contributingFactors: List<String>.from(response['top_contributing_features'] ?? []),
+          contributingFactors: contributingFactors,
           reasoning: 'AI prediction from deployed server',
           timestamp: DateTime.now(),
           inputSourceType: _sourceType,
