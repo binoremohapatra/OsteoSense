@@ -371,6 +371,51 @@ class DatabaseHelper {
     return await db.delete(table, where: where, whereArgs: whereArgs);
   }
 
+  Future<List<Map<String, dynamic>>> bulkUpsertPatients(List<Map<String, dynamic>> patients) async {
+    final db = await database;
+    List<Map<String, dynamic>> finalPatients = [];
+
+    final validColumns = {
+      'id', 'server_id', 'name', 'age', 'gender', 'contact', 'village', 'address',
+      'occupation', 'weight_kg', 'height_cm', 'created_at', 'updated_at', 'synced', 'deleted'
+    };
+
+    await db.transaction((txn) async {
+      for (var pData in patients) {
+        final serverId = pData['server_id'];
+        final existing = await txn.query('patients', where: 'server_id = ?', whereArgs: [serverId]);
+
+        // Filter valid columns to prevent SQLite errors
+        var mapForDb = Map<String, dynamic>.from(pData);
+        mapForDb.removeWhere((key, value) => !validColumns.contains(key));
+
+        if (existing.isNotEmpty) {
+          final id = existing.first['id'];
+          pData['id'] = id;
+          mapForDb['id'] = id;
+          mapForDb['updated_at'] = DateTime.now().toIso8601String();
+          await txn.update('patients', mapForDb, where: 'id = ?', whereArgs: [id]);
+          finalPatients.add(pData);
+        } else {
+          pData['id'] = 0; 
+          mapForDb.remove('id');
+          if (!mapForDb.containsKey('created_at')) {
+            mapForDb['created_at'] = DateTime.now().toIso8601String();
+          }
+          if (!mapForDb.containsKey('updated_at')) {
+            mapForDb['updated_at'] = DateTime.now().toIso8601String();
+          }
+          final newId = await txn.insert('patients', mapForDb);
+          pData['id'] = newId;
+          finalPatients.add(pData);
+        }
+      }
+    });
+
+    return finalPatients;
+  }
+
+
   // Specific operations for sync status
   Future<int> getUnsyncedCount(String table) async {
     final results = await query(

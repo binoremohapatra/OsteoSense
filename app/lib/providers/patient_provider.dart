@@ -29,6 +29,8 @@ class PatientProvider with ChangeNotifier {
         final db = DatabaseHelper();
         _patients = [];
         
+        List<Map<String, dynamic>> mappedPatients = [];
+        
         for (var data in patientsData) {
           final pData = Map<String, dynamic>.from(data as Map);
           pData['server_id'] = pData['id'] ?? pData['_id'];
@@ -39,24 +41,12 @@ class PatientProvider with ChangeNotifier {
             pData['updated_at'] = pData['updatedAt'].toString();
           }
           pData['synced'] = 1;
-          
-          final serverId = pData['server_id'];
-          final existing = await db.query('patients', where: 'server_id = ?', whereArgs: [serverId]);
-          
-          if (existing.isNotEmpty) {
-            pData['id'] = existing.first['id'];
-            final patient = Patient.fromMap(pData);
-            await db.update('patients', patient.toMap(), where: 'id = ?', whereArgs: [patient.id]);
-            _patients.add(patient);
-          } else {
-            pData['id'] = 0; 
-            var patient = Patient.fromMap(pData);
-            var mapForDb = patient.toMap();
-            mapForDb.remove('id');
-            final newId = await db.insert('patients', mapForDb);
-            _patients.add(patient.copyWith(id: newId));
-          }
+          mappedPatients.add(pData);
         }
+
+        final insertedPatientsData = await db.bulkUpsertPatients(mappedPatients);
+        _patients = insertedPatientsData.map((data) => Patient.fromMap(data)).toList();
+
 
       } catch (apiError) {
         // Fallback to local DB on any API error (including 401 auth errors)

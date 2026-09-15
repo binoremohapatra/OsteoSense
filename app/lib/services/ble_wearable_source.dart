@@ -36,6 +36,15 @@ class BLEWearableSensorSource implements SensorDataSource {
   bool _isConnected = false;
   bool _isRecording = false;
 
+  // DC removal (rolling mean) for Piezo and EMG
+  // These sensors have a large DC offset (~-0.188 and ~0.713) so we subtract
+  // a slow-moving baseline to reveal the actual AC vibration signal.
+  double _piezoBaseline = 0.0;
+  double _emgBaseline = 0.0;
+  bool _piezoBaselineInit = false;
+  bool _emgBaselineInit = false;
+  static const double _dcAlpha = 0.995; // Pole close to 1 = very slow baseline
+
   BLEWearableSensorSource({required this.device});
 
   @override
@@ -275,16 +284,29 @@ class BLEWearableSensorSource implements SensorDataSource {
   }
 
   /// Parse piezo (joint vibration) data from BLE packet
-  /// ESP32 wearable format: 2 bytes (little-endian)
+  /// ESP32 wearable format: 2 bytes (little-endian, value * 1000)
+  /// DC removal: subtract a slow rolling mean so only AC vibration is visible.
   void _parsePiezoData(List<int> data) {
     try {
       if (data.length < 2) return;
 
-      final vibration = _bytesToInt16(data, 0) / 1000.0; // Normalized vibration value
+      final raw = _bytesToInt16(data, 0) / 1000.0;
+
+      // Initialise baseline on first sample
+      if (!_piezoBaselineInit) {
+        _piezoBaseline = raw;
+        _piezoBaselineInit = true;
+      }
+
+      // Update slow baseline (DC component)
+      _piezoBaseline = _dcAlpha * _piezoBaseline + (1.0 - _dcAlpha) * raw;
+
+      // AC signal = raw - DC baseline (amplified x10 for graph visibility)
+      final acSignal = (raw - _piezoBaseline) * 10.0;
 
       _piezoController.add(
         SensorData(
-          x: vibration, // Use single value as x-axis
+          x: acSignal,
           y: 0,
           z: 0,
           timestamp: DateTime.now(),
@@ -296,16 +318,29 @@ class BLEWearableSensorSource implements SensorDataSource {
   }
 
   /// Parse EMG (muscle activity) data from BLE packet
-  /// ESP32 wearable format: 2 bytes (little-endian)
+  /// ESP32 wearable format: 2 bytes (little-endian, value * 1000)
+  /// DC removal: subtract slow rolling mean so only AC muscle bursts are visible.
   void _parseEMGData(List<int> data) {
     try {
       if (data.length < 2) return;
 
-      final muscleActivity = _bytesToInt16(data, 0) / 1000.0; // Normalized EMG value
+      final raw = _bytesToInt16(data, 0) / 1000.0;
+
+      // Initialise baseline on first sample
+      if (!_emgBaselineInit) {
+        _emgBaseline = raw;
+        _emgBaselineInit = true;
+      }
+
+      // Update slow baseline (DC component)
+      _emgBaseline = _dcAlpha * _emgBaseline + (1.0 - _dcAlpha) * raw;
+
+      // AC signal = raw - DC baseline (amplified x10 for graph visibility)
+      final acSignal = (raw - _emgBaseline) * 10.0;
 
       _emgController.add(
         SensorData(
-          x: muscleActivity, // Use single value as x-axis
+          x: acSignal,
           y: 0,
           z: 0,
           timestamp: DateTime.now(),

@@ -44,6 +44,9 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
   SignalSourceType _sourceType = SignalSourceType.simulated;
   SimulationParameters _simParams = SimulationParameters();
 
+  // BLE connection state
+  String? _connectedDeviceName;
+
   @override
   void initState() {
     super.initState();
@@ -67,6 +70,15 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
   }
   
   void _initializeSensorPipeline() {
+    // Check if pipeline already has a hardware source set (from previous BLE connection)
+    if (_sensorPipeline.sourceType == SignalSourceType.hardware && _connectedDeviceName == null) {
+      // If pipeline is in hardware mode but we don't have device name, reset to simulated
+      _sourceType = SignalSourceType.simulated;
+    } else if (_sensorPipeline.sourceType == SignalSourceType.hardware && _connectedDeviceName != null) {
+      // If pipeline is in hardware mode and we have device name, sync UI state
+      _sourceType = SignalSourceType.hardware;
+    }
+    
     _sensorPipeline.setSourceType(_sourceType);
     _sensorPipeline.setCallbacks(
       onDataUpdate: () {
@@ -153,6 +165,29 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
     });
 
     context.push('/screening/processing');
+  }
+
+  /// Opens the BLE device selector. On success, stores the device name
+  /// so the UI switches from "Connect Device" button to a green "Connected" chip.
+  Future<void> _openBLESelector() async {
+    final result = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(builder: (_) => const BLEDeviceSelectorScreen()),
+    );
+    if (result != null && mounted) {
+      setState(() {
+        _connectedDeviceName = result;
+        // Auto-switch to Hardware mode when device connects
+        _sourceType = SignalSourceType.hardware;
+        _sensorPipeline.setSourceType(SignalSourceType.hardware);
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Connected to $result'),
+          backgroundColor: AppColors.success,
+        ),
+      );
+    }
   }
 
   @override
@@ -517,28 +552,63 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
           ),
           if (_sourceType == SignalSourceType.hardware) ...[
             const SizedBox(height: AppSpacing.sm),
-            ElevatedButton.icon(
-              onPressed: () async {
-                final result = await Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const BLEDeviceSelectorScreen()),
-                );
-                if (result == true && mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Device connected successfully'),
-                      backgroundColor: AppColors.riskLow,
+            if (_connectedDeviceName != null)
+              // ── Already connected ── show green chip + optional re-connect
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: AppColors.success.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                  border: Border.all(color: AppColors.success.withOpacity(0.4)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.bluetooth_connected, color: AppColors.success, size: 18),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Connected',
+                            style: AppTypography.caption.copyWith(
+                              color: AppColors.success,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            _connectedDeviceName!,
+                            style: AppTypography.bodySmall.copyWith(
+                              color: AppColors.success,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
                     ),
-                  );
-                }
-              },
-              icon: const Icon(Icons.bluetooth, size: 18),
-              label: Text('connect_device'.tr()),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
+                    TextButton(
+                      onPressed: _openBLESelector,
+                      child: Text(
+                        'Change',
+                        style: AppTypography.caption.copyWith(
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            else
+              // ── Not connected yet ── show Connect button
+              ElevatedButton.icon(
+                onPressed: _openBLESelector,
+                icon: const Icon(Icons.bluetooth, size: 18),
+                label: Text('connect_device'.tr()),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                ),
               ),
-            ),
           ],
           if (_sourceType == SignalSourceType.simulated) ...[
             const SizedBox(height: AppSpacing.sm),
@@ -605,6 +675,7 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
   Widget _buildDeviceStatusCard() {
     final isSimulated = _sourceType == SignalSourceType.simulated;
     final isConnected = isSimulated || _sensorPipeline.hasAccelerometer;
+    final actuallySimulated = isSimulated && _isRecording;
     
     return GlassCard(
       child: Column(
@@ -626,7 +697,7 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
                 style: AppTypography.titleSmall,
               ),
               const Spacer(),
-              if (isSimulated)
+              if (actuallySimulated)
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: AppSpacing.sm,
@@ -647,7 +718,7 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
             ],
           ),
           const SizedBox(height: AppSpacing.sm),
-          _buildStatusRow('Device', isSimulated ? 'Simulation' : 'ESP32/Phone'),
+          _buildStatusRow('Device', isSimulated ? 'Simulation' : (_connectedDeviceName ?? 'ESP32/Phone')),
           _buildStatusRow('connection'.tr(), isConnected ? 'connected'.tr() : 'disconnected'.tr()),
           _buildStatusRow('data_source'.tr(), isSimulated ? 'simulated'.tr() : 'hardware'.tr()),
           _buildStatusRow('sampling'.tr(), _isRecording ? 'active'.tr() : 'stopped'.tr()),
@@ -678,6 +749,7 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
   
   Widget _buildSensorSummaryCard() {
     final isSimulated = _sourceType == SignalSourceType.simulated;
+    final actuallySimulated = isSimulated && _isRecording;
 
     return GlassCard(
       child: Column(
@@ -687,8 +759,8 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
           const SizedBox(height: AppSpacing.sm),
           _buildSensorStatus('Accelerometer', _sensorPipeline.hasAccelerometer),
           _buildSensorStatus('Gyroscope', _sensorPipeline.hasGyroscope),
-          _buildSensorStatus('Piezo (Joint Vibration)', isSimulated || _sensorPipeline.hasPiezo),
-          _buildSensorStatus('EMG (Muscle Activity)', isSimulated || _sensorPipeline.hasEMG),
+          _buildSensorStatus('Piezo (Joint Vibration)', actuallySimulated || _sensorPipeline.hasPiezo),
+          _buildSensorStatus('EMG (Muscle Activity)', actuallySimulated || _sensorPipeline.hasEMG),
           _buildSensorStatus('BLE', _sourceType == SignalSourceType.hardware),
         ],
       ),
@@ -697,7 +769,8 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
   
   Widget _buildSensorStatus(String name, bool isActive, {bool available = true}) {
     final isSimulated = _sourceType == SignalSourceType.simulated;
-    final effectiveActive = isActive || isSimulated;
+    final actuallySimulated = isSimulated && _isRecording;
+    final effectiveActive = isActive || actuallySimulated;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
@@ -724,7 +797,7 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
               ),
             ),
           ],
-          if (isSimulated && !isActive) ...[
+          if (actuallySimulated && !isActive) ...[
             const SizedBox(width: AppSpacing.sm),
             Text(
               '(Simulated)',
@@ -786,7 +859,7 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(title, style: AppTypography.titleSmall),
-              if (_sourceType == SignalSourceType.simulated)
+              if (_sourceType == SignalSourceType.simulated && _isRecording)
                 Text(
                   'SIMULATED',
                   style: AppTypography.caption.copyWith(
@@ -869,7 +942,8 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
   
   Widget _buildJointVibrationSection() {
     final isSimulated = _sourceType == SignalSourceType.simulated;
-    final hasData = isSimulated || _sensorPipeline.hasPiezo;
+    final actuallySimulated = isSimulated && _isRecording;
+    final hasData = actuallySimulated || _sensorPipeline.hasPiezo;
 
     return GlassCard(
       child: Column(
@@ -881,7 +955,7 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
             const SizedBox(width: AppSpacing.sm),
             Text('Joint Vibration / Piezo', style: AppTypography.titleSmall),
             const Spacer(),
-            if (isSimulated)
+            if (actuallySimulated)
               Text(
                 'SIMULATED',
                 style: AppTypography.caption.copyWith(
@@ -908,7 +982,7 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
               ? _buildPiezoGraph()
               : Center(
                   child: Text(
-                    isSimulated ? 'Starting simulation...' : 'Piezo sensor not connected',
+                    actuallySimulated ? 'Starting simulation...' : 'Piezo sensor not connected',
                     style: AppTypography.bodySmall.copyWith(
                       color: AppColors.textMuted,
                     ),
@@ -953,7 +1027,8 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
   
   Widget _buildEMGSection() {
     final isSimulated = _sourceType == SignalSourceType.simulated;
-    final hasData = isSimulated || _sensorPipeline.hasEMG;
+    final actuallySimulated = isSimulated && _isRecording;
+    final hasData = actuallySimulated || _sensorPipeline.hasEMG;
 
     return GlassCard(
       child: Column(
@@ -965,7 +1040,7 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
               const SizedBox(width: AppSpacing.sm),
               Text('Muscle Activity / EMG', style: AppTypography.titleSmall),
               const Spacer(),
-              if (isSimulated)
+              if (actuallySimulated)
                 Text(
                   'SIMULATED',
                   style: AppTypography.caption.copyWith(
@@ -992,7 +1067,7 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
                 ? _buildEMGGraph()
                 : Center(
                     child: Text(
-                      isSimulated ? 'Starting simulation...' : 'EMG sensor not connected',
+                      actuallySimulated ? 'Starting simulation...' : 'EMG sensor not connected',
                       style: AppTypography.bodySmall.copyWith(
                         color: AppColors.textMuted,
                       ),
