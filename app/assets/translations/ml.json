@@ -620,7 +620,6 @@
   "gait_assessment_test": "നടത്ത വിലയിരുത്തൽ പരിശോധന",
   "stand_naturally_device": "ഉപകരണം പോക്കറ്റിൽ വെച്ച് സ്വാഭാവികമായി നിൽക്കുക",
   "walk_normal_comfortable": "സാധാരണയും സുഖകരവുമായ വേഗത്തിൽ നടക്കുക",
-  "test_duration_30_seconds": "പരിശോധനയുടെ ദൈർഘ്യം: 30 സെക്കൻഡ്",
   "walk_straight_line": "സാധ്യമെങ്കിൽ നേരായ വരിയിൽ നടക്കുക",
   "language_title": "ഭാഷ",
   "notifications_title": "അറിയിപ്പുകൾ",
@@ -775,5 +774,6 @@
   "rec_medium": "പതിവായി നിരീക്ഷിക്കാൻ നിർദ്ദേശിക്കുന്നു.",
   "rec_low": "ആരോഗ്യ നിരീക്ഷണം തുടരുക.",
   "weight_kg": "Weight (kg)",
-  "height_cm": "Height (cm)"
+  "height_cm": "Height (cm)",
+  "test_duration_60_seconds": "പരിശോധനയുടെ ദൈർഘ്യം: 60 സെക്കൻഡ്"
 }

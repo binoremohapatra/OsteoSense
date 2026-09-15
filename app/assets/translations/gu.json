@@ -620,7 +620,6 @@
   "gait_assessment_test": "ચાલનું મૂલ્યાંકન પરીક્ષણ",
   "stand_naturally_device": "ઉપકરણ ખિસ્સામાં રાખીને સહજ રીતે ઊભા રહો",
   "walk_normal_comfortable": "સામાન્ય અને આરામદાયક ગતિએ ચાલો",
-  "test_duration_30_seconds": "તપાસનો સમયગાળો: 30 સેકન્ડ",
   "walk_straight_line": "શક્ય હોય તો સીધી રેખામાં ચાલો",
   "language_title": "ભાષા",
   "notifications_title": "સૂચનાઓ",
@@ -775,5 +774,6 @@
   "rec_medium": "નિયમિત દેખરેખ જરૂરી છે.",
   "rec_low": "નિયમિત સ્વાસ્થ્ય તપાસ ચાલુ રાખો.",
   "weight_kg": "Weight (kg)",
-  "height_cm": "Height (cm)"
+  "height_cm": "Height (cm)",
+  "test_duration_60_seconds": "તપાસનો સમયગાળો: 60 સેકન્ડ"
 }

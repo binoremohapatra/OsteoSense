@@ -620,7 +620,6 @@
   "gait_assessment_test": "চলন মূল্যায়ন পরীক্ষা",
   "stand_naturally_device": "ডিভাইসটি পকেটে রেখে স্বাভাবিকভাবে দাঁড়ান",
   "walk_normal_comfortable": "স্বাভাবিক ও আরামদায়ক গতিতে হাঁটুন",
-  "test_duration_30_seconds": "পরীক্ষার সময়কাল: ৩০ সেকেন্ড",
   "walk_straight_line": "সম্ভব হলে সোজা লাইনে হাঁটুন",
   "language_title": "ভাষা",
   "notifications_title": "বিজ্ঞপ্তি",
@@ -775,5 +774,6 @@
   "rec_medium": "নিয়মিত পর্যবেক্ষণের পরামর্শ দেওয়া হচ্ছে।",
   "rec_low": "নিয়মিত স্বাস্থ্য পর্যবেক্ষণ চালিয়ে যান।",
   "weight_kg": "Weight (kg)",
-  "height_cm": "Height (cm)"
+  "height_cm": "Height (cm)",
+  "test_duration_60_seconds": "পরীক্ষার সময়কাল: ৩০ সেকেন্ড"
 }

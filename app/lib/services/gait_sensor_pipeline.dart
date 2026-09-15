@@ -68,9 +68,11 @@ class GaitSensorPipeline {
   
   // Getters
   SignalSourceType get sourceType => _sourceType;
+  SensorDataSource? get hardwareSource => _hardwareSource;
   bool get isRecording => _isRecording;
   List<SignalSample> get signalBuffer => List.from(_signalBuffer);
   SignalFeatures? get currentFeatures => _currentFeatures;
+  List<double>? get extracted44Features => _extracted44Features;
   MLPrediction? get currentPrediction => _currentPrediction;
   List<MLPrediction> get predictionHistory => List.from(_predictionHistory);
   
@@ -500,22 +502,19 @@ class GaitSensorPipeline {
       MLPrediction? serverPrediction;
       try {
         final apiService = ApiService();
-
-        // Interleave gyroX, gyroY, gyroZ into flat [x0,y0,z0, x1,y1,z1,...] list
-        // as required by the AI server's SensorWindowIn schema (must be divisible by 3).
-        final int gyroLen = [_gyroX.length, _gyroY.length, _gyroZ.length].reduce((a, b) => a < b ? a : b);
         final List<double> interleavedGyro = [];
+        final int gyroLen = _gyroX.length;
         for (int i = 0; i < gyroLen; i++) {
           interleavedGyro.add(_gyroX[i]);
-          interleavedGyro.add(_gyroY[i]);
-          interleavedGyro.add(_gyroZ[i]);
+          interleavedGyro.add(i < _gyroY.length ? _gyroY[i] : 0.0);
+          interleavedGyro.add(i < _gyroZ.length ? _gyroZ[i] : 0.0);
         }
-
+        
         final response = await apiService.submitWearableDataToAI(
           deviceId: 'mobile-app-01',
           gyro: interleavedGyro,
-          piezo: List.from(_piezoData),
-          emg: List.from(_emgData),
+          piezo: _piezoData,
+          emg: _emgData,
           painLevel: painLevel,
           stiffnessDuration: stiffnessDuration,
           swelling: swelling,
@@ -532,7 +531,9 @@ class GaitSensorPipeline {
         serverPrediction = MLPrediction(
           riskLevel: response['risk_label'] ?? 'unknown',
           confidence: (response['risk_score'] as num?)?.toDouble() ?? 0.0,
-          contributingFactors: contributingFactors,
+          contributingFactors: (response['top_contributing_features'] as List?)
+              ?.map((f) => '${f['feature']}: ${f['value']}')
+              .toList() ?? [],
           reasoning: 'AI prediction from deployed server',
           timestamp: DateTime.now(),
           inputSourceType: _sourceType,

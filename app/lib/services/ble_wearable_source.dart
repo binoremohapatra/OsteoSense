@@ -68,9 +68,19 @@ class BLEWearableSensorSource implements SensorDataSource {
   @override
   Future<void> initialize() async {
     try {
-      // Connect to BLE device
-      await device.connect();
+      // Clean up any stale connection first
+      try {
+        await device.disconnect();
+      } catch (_) {}
+
+      // Connect to BLE device with specific parameters for ESP32
+      await device.connect(autoConnect: false, timeout: const Duration(seconds: 10));
       _isConnected = true;
+      
+      // Request MTU for ESP32 (default is 23, but 512 is better for multiple notifies)
+      try {
+        await device.requestMtu(512);
+      } catch (_) {}
 
       // Discover services and characteristics
       final services = await device.discoverServices();

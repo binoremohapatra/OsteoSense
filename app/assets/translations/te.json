@@ -620,7 +620,6 @@
   "gait_assessment_test": "నడక అంచనా పరీక్ష",
   "stand_naturally_device": "పరికరాన్ని జేబులో పెట్టుకుని సహజంగా నిలబడండి",
   "walk_normal_comfortable": "సాధారణమైన, సౌకర్యవంతమైన వేగంతో నడవండి",
-  "test_duration_30_seconds": "పరీక్ష వ్యవధి: 30 సెకన్లు",
   "walk_straight_line": "సాధ్యమైతే సరళ రేఖలో నడవండి",
   "language_title": "భాష",
   "notifications_title": "నోటిఫికేషన్‌లు",
@@ -775,5 +774,6 @@
   "rec_medium": "క్రమం తప్పకుండా పర్యవేక్షణ అవసరం.",
   "rec_low": "ఆరోగ్య పర్యవేక్షణను కొనసాగించండి.",
   "weight_kg": "Weight (kg)",
-  "height_cm": "Height (cm)"
+  "height_cm": "Height (cm)",
+  "test_duration_60_seconds": "పరీక్ష వ్యవధి: 60 సెకన్లు"
 }

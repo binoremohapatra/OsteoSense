@@ -16,13 +16,13 @@ network connection is available.
 
 - Offline-first patient and screening workflows
 - On-device TFLite OA risk assessment
-- Phone-sensor gait analysis using the accelerometer and gyroscope
+- Precise gait analysis using a custom ESP32-based BLE wearable sensor
 - Multilingual support for 12 Indian languages (English, Hindi, Assamese, Bengali, Gujarati, Kannada, Malayalam, Marathi, Odia, Punjabi, Tamil, Telugu)
 - Risk results with confidence, contributing factors, and recommendations
 - PDF report generation and sharing
 - Local SQLite storage with online synchronization
 - Healthcare worker authentication
-- Optional BLE wearable integration groundwork
+- Seamless BLE wearable integration for real-time sensor data collection
 
 ## Repository layout
 
@@ -206,6 +206,38 @@ the API URL, CORS origins, authentication secrets, and network connectivity.
 2. Make focused changes.
 3. Run the relevant tests and analyzer.
 4. Open a pull request with a clear description.
+
+## Alignment with Problem Statement
+
+OsteoSense (JointSaathi) is purpose-built to address the challenges of Osteoarthritis screening in the North Eastern Region (NER) of India. The system fulfills the expected solution requirements as follows:
+
+### a. Early Detection of OA-related Risk Markers
+- **Joint movement analysis & Gait assessment:** Utilizes a custom, low-cost BLE wearable sensor (ESP32-based) connected to the mobile app for automated and highly precise gait and joint movement tracking.
+- **Pain and mobility screening:** Features a comprehensive, digitized symptom questionnaire allowing healthcare workers to capture patient-reported pain levels and mobility issues.
+- **Sensor-based assessment:** Incorporates dual-layer assessment—BLE wearable sensors and on-device machine learning (TFLite)—to evaluate risk without the immediate need for expensive medical imaging.
+
+### b. AI/ML Techniques for Patient Data Analysis
+- Integrates an on-device TensorFlow Lite model for immediate offline risk prediction.
+- Employs a scalable Python FastAPI AI microservice for advanced predictive modeling and high-risk case identification when network connectivity is available.
+
+### c. Support Screening in Primary Healthcare Centres
+- Designed as a mobile-first, portable application that healthcare workers can easily carry to rural health camps, PHCs, and community outreach programs without requiring bulky equipment.
+
+### d. Preliminary OA Risk Assessment and Severity Indication
+- Generates a preliminary risk score along with confidence metrics and contributing factors immediately after the screening workflow.
+
+### e. Digital Patient Records & Report Generation
+- **Digital Records:** Implements a robust local SQLite database for offline patient data storage and a secure Node.js + MongoDB backend for centralized electronic health records (EHR).
+- **Report Generation:** Automatically compiles screening data into shareable PDF reports that can be shared with specialists or handed to the patient.
+
+### f. Multilingual and Easy-to-use Interfaces for NER
+- Offers localized UI support for **12 Indian languages**, specifically including **Assamese** and **Bengali**, which are crucial for grassroots deployment in the North Eastern Region. The interface is simplified to require minimal digital literacy from rural healthcare workers.
+
+### g. Low-connectivity Environments & Offline Sync
+- Built with an **Offline-First** architecture. Healthcare workers can complete the entire screening and assessment workflow entirely offline in remote areas. The app seamlessly synchronizes data with the cloud once internet connectivity is restored.
+
+### h. Awareness and Preventive Guidance
+- Automatically provides personalized, AI-driven recommendations based on the screening results, focusing on joint care, physical activity, nutrition, and lifestyle management to encourage preventive healthcare.
 
 ## License
 

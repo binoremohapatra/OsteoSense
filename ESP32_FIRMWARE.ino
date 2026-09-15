@@ -4,6 +4,7 @@
 #include <BLEServer.h>
 #include <BLEUtils.h>
 #include <BLE2902.h>
+#include <BLEAdvertisedDevice.h>
 
 MPU6050 mpu;
 
@@ -62,7 +63,7 @@ void setup() {
   }
 
   // BLE init
-  BLEDevice::init("JointSaathi_Wearable");
+  BLEDevice::init("JointSaathi");
   Serial.print("BLE Address: ");
   Serial.println(BLEDevice::getAddress().toString().c_str());
 
@@ -98,8 +99,23 @@ void setup() {
   pEMGChar->addDescriptor(new BLE2902());
 
   pService->start();
-  pServer->getAdvertising()->start();
-  Serial.println("BLE advertising started");
+  
+  // Robust BLE Advertising setup
+  // Main adv packet: Service UUID (so phones can filter/find us)
+  // Scan response packet: Device name (so Android shows "JointSaathi" not "Unknown Device")
+  BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
+  pAdvertising->addServiceUUID(SERVICE_UUID);
+  
+  // Explicitly put device name in scan response so Android shows it correctly
+  BLEAdvertisementData scanResponse;
+  scanResponse.setName("JointSaathi");   // This is what phone will display
+  pAdvertising->setScanResponseData(scanResponse);
+  pAdvertising->setScanResponse(true);
+  pAdvertising->setMinPreferred(0x06);
+  pAdvertising->setMaxPreferred(0x12);
+  BLEDevice::startAdvertising();
+  
+  Serial.println("BLE advertising started - Device name: JointSaathi");
 }
 
 void loop() {
@@ -112,9 +128,14 @@ void loop() {
   float accelX = ax / 16384.0;
   float accelY = ay / 16384.0;
   float accelZ = az / 16384.0;
-  float gyroX = gx / 131.0;
-  float gyroY = gy / 131.0;
-  float gyroZ = gz / 131.0;
+  float gyroX_deg = gx / 131.0;
+  float gyroY_deg = gy / 131.0;
+  float gyroZ_deg = gz / 131.0;
+
+  // Convert gyro to rad/s to avoid int16 overflow when multiplying by 1000
+  float gyroX = gyroX_deg * 0.01745329;
+  float gyroY = gyroY_deg * 0.01745329;
+  float gyroZ = gyroZ_deg * 0.01745329;
 
   // --- 2. Read Piezo ---
   int rawPiezo = readSensorAverage(PIEZO_PIN, 10);

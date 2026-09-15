@@ -620,7 +620,6 @@
   "gait_assessment_test": "চালন মূল্যায়ন পৰীক্ষা",
   "stand_naturally_device": "ডিভাইচটো পকেটত ৰাখি স্বাভাৱিকভাৱে থিয় হওক",
   "walk_normal_comfortable": "স্বাভাৱিক আৰু আৰামদায়ক গতিত খোজ কাঢ়ক",
-  "test_duration_30_seconds": "পৰীক্ষাৰ সময়: ৩০ ছেকেণ্ড",
   "walk_straight_line": "সম্ভৱ হ'লে পোন ৰেখাত খোজ কাঢ়ক",
   "language_title": "ভাষা",
   "notifications_title": "অধিসূচনা",
@@ -775,5 +774,6 @@
   "rec_medium": "নিয়মীয়াকৈ নিৰীক্ষণ কৰিবলৈ পৰামৰ্শ দিয়া হৈছে।",
   "rec_low": "নিয়মীয়া স্বাস্থ্য নিৰীক্ষণ অব্যাহত ৰাখক।",
   "weight_kg": "Weight (kg)",
-  "height_cm": "Height (cm)"
+  "height_cm": "Height (cm)",
+  "test_duration_60_seconds": "পৰীক্ষাৰ সময়: ৩০ ছেকেণ্ড"
 }
