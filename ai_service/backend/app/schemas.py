@@ -87,6 +87,20 @@ class ClinicalPredictionRequest(BaseModel):
     stiffness_duration: str = Field(..., description="Stiffness duration category: <30, 30-60, >60, none")
     swelling: bool = Field(..., description="Joint swelling present")
     past_injury: bool = Field(..., description="History of joint injury")
+    mri_kl_grade: int = Field(default=0, description="KL Grade from MRI/X-ray (0-4)")
+    
+    # 9 Multimodal Features
+    sym_locking: bool = Field(default=False)
+    sym_clicking: bool = Field(default=False)
+    sym_grinding: bool = Field(default=False)
+    sym_aching: bool = Field(default=False)
+    sym_instability: bool = Field(default=False)
+    
+    func_standing: float = Field(default=0.0)
+    func_walking: float = Field(default=0.0)
+    func_stairs: float = Field(default=0.0)
+    func_chores: float = Field(default=0.0)
+
     gait_data: str = Field(..., description="JSON string with gait features like variance")
 
 

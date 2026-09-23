@@ -36,9 +36,9 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
   final GaitSensorPipeline _sensorPipeline = GaitSensorPipeline();
   bool _isRecording = false;
   Timer? _timer;
-  int _remainingSeconds = 60;
-  final int _totalSeconds = 60;
-  
+  int _remainingSeconds = 120;
+  final int _totalSeconds = 120;
+
   // Analytics state
   bool _showAnalytics = false;
   SignalSourceType _sourceType = SignalSourceType.simulated;
@@ -46,6 +46,22 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
 
   // BLE connection state
   String? _connectedDeviceName;
+  int? _batteryPercentage;
+  StreamSubscription<int>? _batterySubscription;
+
+  void _subscribeToBattery() {
+    final hardwareSource = _sensorPipeline.hardwareSource;
+    if (hardwareSource != null && hardwareSource.batteryStream != null) {
+      _batterySubscription?.cancel();
+      _batterySubscription = hardwareSource.batteryStream!.listen((percentage) {
+        if (mounted) {
+          setState(() {
+            _batteryPercentage = percentage;
+          });
+        }
+      });
+    }
+  }
 
   @override
   void initState() {
@@ -66,6 +82,7 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
     _timer?.cancel();
     _sensorService.dispose();
     _sensorPipeline.dispose();
+    _batterySubscription?.cancel();
     super.dispose();
   }
   
@@ -77,8 +94,9 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
     } else if (_sensorPipeline.sourceType == SignalSourceType.hardware && _connectedDeviceName != null) {
       // If pipeline is in hardware mode and we have device name, sync UI state
       _sourceType = SignalSourceType.hardware;
+      _subscribeToBattery();
     }
-    
+
     _sensorPipeline.setSourceType(_sourceType);
     _sensorPipeline.setCallbacks(
       onDataUpdate: () {
@@ -110,7 +128,7 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
     _sensorPipeline.setSourceType(_sourceType);
     _sensorPipeline.setSimulationParameters(_simParams);
     _sensorPipeline.startRecording(
-      duration: const Duration(seconds: 60),
+      duration: const Duration(seconds: 120),
     );
 
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -181,6 +199,7 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
         _sourceType = SignalSourceType.hardware;
         _sensorPipeline.setSourceType(SignalSourceType.hardware);
       });
+      _subscribeToBattery();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Connected to $result'),
@@ -550,6 +569,10 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
             },
             segmentAsString: (v) => v,
           ),
+          if (_sourceType == SignalSourceType.simulated) ...[
+            const SizedBox(height: AppSpacing.sm),
+            _buildSimulationControls(),
+          ],
           if (_sourceType == SignalSourceType.hardware) ...[
             const SizedBox(height: AppSpacing.sm),
             if (_connectedDeviceName != null)
@@ -610,15 +633,12 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
                 ),
               ),
           ],
-          if (_sourceType == SignalSourceType.simulated) ...[
-            const SizedBox(height: AppSpacing.sm),
-            _buildSimulationControls(),
-          ],
+
         ],
       ),
     );
   }
-  
+
   Widget _buildSimulationControls() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -671,12 +691,12 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
       ],
     );
   }
-  
+
   Widget _buildDeviceStatusCard() {
     final isSimulated = _sourceType == SignalSourceType.simulated;
     final isConnected = isSimulated || _sensorPipeline.hasAccelerometer;
     final actuallySimulated = isSimulated && _isRecording;
-    
+
     return GlassCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -710,7 +730,7 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
                   child: Text(
                     'SIMULATED',
                     style: AppTypography.labelSmall.copyWith(
-                      color: AppColors.surface,
+                      color: AppColors.warning,
                       fontWeight: AppTypography.bold,
                     ),
                   ),
@@ -722,6 +742,8 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
           _buildStatusRow('connection'.tr(), isConnected ? 'connected'.tr() : 'disconnected'.tr()),
           _buildStatusRow('data_source'.tr(), isSimulated ? 'simulated'.tr() : 'hardware'.tr()),
           _buildStatusRow('sampling'.tr(), _isRecording ? 'active'.tr() : 'stopped'.tr()),
+          if (!isSimulated && _batteryPercentage != null)
+            _buildStatusRow('Battery', '$_batteryPercentage%'),
         ],
       ),
     );
@@ -1109,7 +1131,7 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
       ),
     );
   }
-  
+
   Widget _buildExtractedFeaturesSection() {
     final features = _sensorPipeline.currentFeatures;
     

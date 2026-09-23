@@ -44,6 +44,21 @@ class _SymptomQuestionnaireScreenState
   bool _pastInjury = false;
   final TextEditingController _injuryDetailController = TextEditingController();
 
+  // ── Q5: MRI Report (KL Grade)
+  int _mriKlGrade = 0;
+
+  // ── Q6: Expanded Symptoms
+  final Map<String, bool> _painChars = {
+    'Sharp': false, 'Dull': false, 'Burning': false, 'Aching': false, 'Stabbing': false, 'Throbbing': false
+  };
+  final Map<String, bool> _stiffnessTriggers = {
+    'Morning': false, 'After sitting': false, 'After inactivity': false, 'After exercise': false
+  };
+  final Map<String, bool> _otherSymptoms = {
+    'Warmth': false, 'Redness': false, 'Tenderness': false, 'Clicking': false, 
+    'Grinding': false, 'Locking': false, 'Giving way': false, 'Instability': false, 'Reduced mobility': false
+  };
+
   bool _isNavigating = false;
 
   @override
@@ -55,7 +70,7 @@ class _SymptomQuestionnaireScreenState
 
   void _nextPage() {
     if (_isNavigating) return;
-    if (_currentPage < 3) {
+    if (_currentPage < 4) {
       HapticFeedback.selectionClick();
       _pageController.nextPage(
         duration: AppMotion.standard,
@@ -103,11 +118,18 @@ class _SymptomQuestionnaireScreenState
     screeningProvider.setDraftAnswers(
       patientId: patientId,
       jointId: widget.jointId,
+      side: screeningProvider.draftSide, // Assuming it's already set in Provider by JointSelectionScreen
       painLevel: _painLevel,
       stiffnessDuration: _stiffnessDuration,
       swelling: _swelling,
       pastInjury: _pastInjury,
       pastInjuryDetail: _injuryDetailController.text.trim(),
+      mriKlGrade: _mriKlGrade,
+      symptomsMap: {
+        'pain_characteristics': _painChars,
+        'stiffness_triggers': _stiffnessTriggers,
+        'other_symptoms': _otherSymptoms,
+      },
     );
 
     // Ensure the patient is set as selected so GaitTestScreen can read it
@@ -122,7 +144,8 @@ class _SymptomQuestionnaireScreenState
 
     if (!mounted) return;
 
-    context.push('/screening/gait');
+    // Navigate to functional assessment instead of gait directly
+    context.push('/screening/functional_assessment');
 
     setState(() => _isNavigating = false);
   }
@@ -148,7 +171,7 @@ class _SymptomQuestionnaireScreenState
               borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
             ),
             child: Text(
-              '${_currentPage + 1} of 4',
+              '${_currentPage + 1} of 5',
               style: AppTypography.labelMedium.copyWith(
                 color: AppColors.textSecondary,
                 fontWeight: AppTypography.semiBold,
@@ -187,7 +210,8 @@ class _SymptomQuestionnaireScreenState
                 _buildQ1PainSlider(),
                 _buildQ2StiffnessChips(),
                 _buildQ3SwellingToggle(),
-                _buildQ4PastInjury(),
+                _buildQ5MriReport(),
+                _buildQ6OtherSymptoms(),
               ],
             ),
           ),
@@ -208,14 +232,14 @@ class _SymptomQuestionnaireScreenState
         vertical: AppSpacing.sm,
       ),
       child: Row(
-        children: List.generate(4, (i) {
+        children: List.generate(5, (i) {
           final isActive = i <= _currentPage;
           return Expanded(
             child: AnimatedContainer(
               duration: AppMotion.fast,
               curve: AppMotion.curve,
               height: 4,
-              margin: EdgeInsets.only(right: i < 3 ? AppSpacing.xs : 0),
+              margin: EdgeInsets.only(right: i < 4 ? AppSpacing.xs : 0),
               decoration: BoxDecoration(
                 color: isActive ? AppColors.primary : AppColors.border,
                 borderRadius: BorderRadius.circular(2),
@@ -779,7 +803,7 @@ class _SymptomQuestionnaireScreenState
   }
 
   Widget _buildNavButtons() {
-    final isLastPage = _currentPage == 3;
+    final isLastPage = _currentPage == 4;
     return Container(
       padding: EdgeInsets.fromLTRB(
         AppSpacing.screenPaddingLg,
@@ -807,7 +831,7 @@ class _SymptomQuestionnaireScreenState
           Expanded(
             flex: 3,
             child: MagneticButton(
-              text: isLastPage ? 'start_gait_test'.tr() : 'next'.tr(),
+              text: 'next'.tr(),
               onPressed: _isNavigating ? () {} : _nextPage,
               isLoading: _isNavigating,
             ),
@@ -854,6 +878,169 @@ class _SymptomQuestionnaireScreenState
     if (level <= 6) return 'significant_pain_interferes'.tr();
     if (level <= 8) return 'severe_pain_concentrate'.tr();
     return 'worst_possible_pain'.tr();
+  }
+  // ─────────────────────────────────────────────────────
+  // Q5: MRI Report (KL Grade)
+  // ─────────────────────────────────────────────────────
+  Widget _buildQ5MriReport() {
+    final options = [
+      (value: 0, label: 'Normal / None', desc: 'No MRI or healthy joints', icon: Icons.health_and_safety_outlined, color: AppColors.riskLow),
+      (value: 1, label: 'Grade 1: Doubtful', desc: 'Doubtful joint space narrowing', icon: Icons.warning_amber_rounded, color: AppColors.riskLow),
+      (value: 2, label: 'Grade 2: Mild', desc: 'Definite osteophytes, possible narrowing', icon: Icons.error_outline, color: AppColors.riskMedium),
+      (value: 3, label: 'Grade 3: Moderate', desc: 'Multiple osteophytes, definite narrowing', icon: Icons.warning_rounded, color: AppColors.riskMedium),
+      (value: 4, label: 'Grade 4: Severe', desc: 'Large osteophytes, severe narrowing', icon: Icons.report_problem_rounded, color: AppColors.riskHigh),
+    ];
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(AppSpacing.screenPaddingLg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: AppSpacing.lg),
+          _buildQuestionHeader(
+            questionNumber: 'Question 4',
+            question: 'MRI Scan / Medical Report',
+            hint: 'If the patient has an MRI report, select the Kellgren-Lawrence (KL) Grade or severity level. This data will be used by our ML model.',
+          ),
+          const SizedBox(height: AppSpacing.xl),
+          ...options.asMap().entries.map((entry) {
+            final opt = entry.value;
+            final isSelected = _mriKlGrade == opt.value;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.md),
+              child: GestureDetector(
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  setState(() => _mriKlGrade = opt.value);
+                },
+                child: AnimatedContainer(
+                  duration: AppMotion.fast,
+                  curve: AppMotion.curve,
+                  padding: const EdgeInsets.all(AppSpacing.cardPaddingMd),
+                  decoration: BoxDecoration(
+                    color: isSelected ? opt.color.withValues(alpha: 0.1) : AppColors.surface,
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                    border: Border.all(
+                      color: isSelected ? opt.color : AppColors.border,
+                      width: isSelected ? 2 : 1,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      AnimatedContainer(
+                        duration: AppMotion.fast,
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: isSelected ? opt.color.withValues(alpha: 0.15) : AppColors.surfaceVariant,
+                          borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                        ),
+                        child: Icon(opt.icon, color: isSelected ? opt.color : AppColors.textSecondary, size: 24),
+                      ),
+                      const SizedBox(width: AppSpacing.md),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              opt.label,
+                              style: AppTypography.bodyMedium.copyWith(
+                                color: isSelected ? opt.color : AppColors.textPrimary,
+                                fontWeight: isSelected ? AppTypography.bold : AppTypography.semiBold,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              opt.desc,
+                              style: AppTypography.bodySmall.copyWith(
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (isSelected)
+                        Icon(Icons.check_circle_rounded, color: opt.color, size: 24),
+                    ],
+                  ),
+                ).animate(delay: (entry.key * 80).ms).fadeIn(duration: AppMotion.standard).slideX(begin: 0.1, end: 0, duration: AppMotion.standard, curve: AppMotion.curve),
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  // ─────────────────────────────────────────────────────
+  // Q6: Other Symptoms (Expanded Checklist)
+  // ─────────────────────────────────────────────────────
+  Widget _buildQ6OtherSymptoms() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(AppSpacing.screenPaddingLg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: AppSpacing.lg),
+          _buildQuestionHeader(
+            questionNumber: 'Question 5',
+            question: 'Expanded Symptoms',
+            hint: 'Select any additional symptoms you are experiencing.',
+          ),
+          const SizedBox(height: AppSpacing.xl),
+          
+          Text('Pain Characteristics', style: AppTypography.titleMedium),
+          const SizedBox(height: AppSpacing.sm),
+          Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
+            children: _painChars.keys.map((key) {
+              final isSelected = _painChars[key] ?? false;
+              return FilterChip(
+                label: Text(key),
+                selected: isSelected,
+                onSelected: (val) => setState(() => _painChars[key] = val),
+                selectedColor: AppColors.primary.withOpacity(0.2),
+              );
+            }).toList(),
+          ),
+          
+          const SizedBox(height: AppSpacing.lg),
+          Text('Stiffness Triggers', style: AppTypography.titleMedium),
+          const SizedBox(height: AppSpacing.sm),
+          Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
+            children: _stiffnessTriggers.keys.map((key) {
+              final isSelected = _stiffnessTriggers[key] ?? false;
+              return FilterChip(
+                label: Text(key),
+                selected: isSelected,
+                onSelected: (val) => setState(() => _stiffnessTriggers[key] = val),
+                selectedColor: AppColors.primary.withOpacity(0.2),
+              );
+            }).toList(),
+          ),
+          
+          const SizedBox(height: AppSpacing.lg),
+          Text('Other Observations', style: AppTypography.titleMedium),
+          const SizedBox(height: AppSpacing.sm),
+          Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
+            children: _otherSymptoms.keys.map((key) {
+              final isSelected = _otherSymptoms[key] ?? false;
+              return FilterChip(
+                label: Text(key),
+                selected: isSelected,
+                onSelected: (val) => setState(() => _otherSymptoms[key] = val),
+                selectedColor: AppColors.primary.withOpacity(0.2),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: AppSpacing.xxl),
+        ],
+      ),
+    );
   }
 }
 

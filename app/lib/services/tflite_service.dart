@@ -37,7 +37,13 @@ class TFLiteService {
     required String stiffnessDuration,
     required bool swelling,
     required String? pastInjury,
+    required int mriKlGrade,
+    required int age,
+    required double weightKg,
+    required double heightCm,
     required List<double> gaitFeatures,
+    Map<String, dynamic>? symptomsMap,
+    Map<String, dynamic>? functionalMap,
     List<double>? piezoFeatures,
     List<double>? emgFeatures,
   }) async {
@@ -48,7 +54,13 @@ class TFLiteService {
           stiffnessDuration: stiffnessDuration,
           swelling: swelling,
           pastInjury: pastInjury,
+          mriKlGrade: mriKlGrade,
+          age: age,
+          weightKg: weightKg,
+          heightCm: heightCm,
           gaitFeatures: gaitFeatures,
+          symptomsMap: symptomsMap,
+          functionalMap: functionalMap,
           piezoFeatures: piezoFeatures,
           emgFeatures: emgFeatures,
         );
@@ -59,7 +71,13 @@ class TFLiteService {
           stiffnessDuration: stiffnessDuration,
           swelling: swelling,
           pastInjury: pastInjury,
+          mriKlGrade: mriKlGrade,
+          age: age,
+          weightKg: weightKg,
+          heightCm: heightCm,
           gaitFeatures: gaitFeatures,
+          symptomsMap: symptomsMap,
+          functionalMap: functionalMap,
           piezoFeatures: piezoFeatures,
           emgFeatures: emgFeatures,
         );
@@ -81,7 +99,13 @@ class TFLiteService {
     required String stiffnessDuration,
     required bool swelling,
     required String? pastInjury,
+    required int mriKlGrade,
+    required int age,
+    required double weightKg,
+    required double heightCm,
     required List<double> gaitFeatures,
+    Map<String, dynamic>? symptomsMap,
+    Map<String, dynamic>? functionalMap,
     List<double>? piezoFeatures,
     List<double>? emgFeatures,
   }) async {
@@ -92,7 +116,13 @@ class TFLiteService {
       stiffnessDuration: stiffnessDuration,
       swelling: swelling,
       pastInjury: pastInjury,
+      mriKlGrade: mriKlGrade,
+      age: age,
+      weightKg: weightKg,
+      heightCm: heightCm,
       gaitFeatures: gaitFeatures,
+      symptomsMap: symptomsMap,
+      functionalMap: functionalMap,
       piezoFeatures: piezoFeatures,
       emgFeatures: emgFeatures,
     );
@@ -124,7 +154,10 @@ class TFLiteService {
       stiffnessDuration: stiffnessDuration,
       swelling: swelling,
       pastInjury: pastInjury,
+      mriKlGrade: mriKlGrade,
       gaitFeatures: gaitFeatures,
+      symptomsMap: symptomsMap,
+      functionalMap: functionalMap,
       piezoFeatures: piezoFeatures,
       emgFeatures: emgFeatures,
     );
@@ -142,7 +175,13 @@ class TFLiteService {
     required String stiffnessDuration,
     required bool swelling,
     required String? pastInjury,
+    required int mriKlGrade,
+    required int age,
+    required double weightKg,
+    required double heightCm,
     required List<double> gaitFeatures,
+    Map<String, dynamic>? symptomsMap,
+    Map<String, dynamic>? functionalMap,
     List<double>? piezoFeatures,
     List<double>? emgFeatures,
   }) {
@@ -178,6 +217,11 @@ class TFLiteService {
       factors.add('History of joint injury');
     }
 
+    if (mriKlGrade >= 2) {
+      riskScore += 1.5;
+      factors.add('MRI indicates structural joint damage (KL Grade $mriKlGrade)');
+    }
+
     // Gait analysis contribution (if available)
     if (gaitFeatures.isNotEmpty) {
       final gaitScore = _analyzeGaitFeatures(gaitFeatures);
@@ -200,6 +244,28 @@ class TFLiteService {
       if (emgRMS > 0.4) {
         riskScore += 1.0;
         factors.add('Abnormal muscle guarding (EMG) detected');
+      }
+    }
+
+    // Integrate multimodal features
+    if (symptomsMap != null) {
+      final painChars = symptomsMap['pain_characteristics'] as Map<String, dynamic>? ?? {};
+      int sharpPain = 0;
+      painChars.forEach((k, v) { if (v == true) sharpPain++; });
+      if (sharpPain > 2) {
+        riskScore += 1.0;
+        factors.add('Multiple complex pain characteristics reported');
+      }
+    }
+    
+    if (functionalMap != null) {
+      int severeLimits = 0;
+      functionalMap.forEach((k, v) {
+        if (v is num && v >= 2) severeLimits++;
+      });
+      if (severeLimits > 1) {
+        riskScore += 1.5;
+        factors.add('Significant functional limitations in daily activities');
       }
     }
 
@@ -231,7 +297,13 @@ class TFLiteService {
     required String stiffnessDuration,
     required bool swelling,
     required String? pastInjury,
+    required int mriKlGrade,
+    required int age,
+    required double weightKg,
+    required double heightCm,
     required List<double> gaitFeatures,
+    Map<String, dynamic>? symptomsMap,
+    Map<String, dynamic>? functionalMap,
     List<double>? piezoFeatures,
     List<double>? emgFeatures,
   }) {
@@ -248,8 +320,35 @@ class TFLiteService {
     features.add(_parseStiffnessDuration(stiffnessDuration).toDouble());
     features.add(swelling ? 1.0 : 0.0);
     features.add((pastInjury != null && pastInjury.isNotEmpty) ? 1.0 : 0.0);
+    features.add(mriKlGrade.toDouble());
 
-    const expectedInputSize = 48;
+    // Append 4 Demographic Features
+    features.add(age.toDouble());
+    features.add(weightKg);
+    features.add(heightCm);
+    
+    double bmi = 24.0;
+    if (heightCm > 0) {
+      bmi = weightKg / ((heightCm / 100.0) * (heightCm / 100.0));
+    }
+    features.add(bmi);
+    
+    // Append 9 Multimodal Features (Symptoms & Functional)
+    final otherSymptoms = symptomsMap?['other_symptoms'] as Map<String, dynamic>? ?? {};
+    features.add((otherSymptoms['Locking'] == true) ? 1.0 : 0.0);
+    features.add((otherSymptoms['Clicking'] == true) ? 1.0 : 0.0);
+    features.add((otherSymptoms['Grinding'] == true) ? 1.0 : 0.0);
+    features.add((otherSymptoms['Instability'] == true) ? 1.0 : 0.0);
+    
+    final painChars = symptomsMap?['pain_characteristics'] as Map<String, dynamic>? ?? {};
+    features.add((painChars['Aching'] == true) ? 1.0 : 0.0);
+    
+    features.add((functionalMap?['Standing'] as num?)?.toDouble() ?? 0.0);
+    features.add((functionalMap?['Walking'] as num?)?.toDouble() ?? 0.0);
+    features.add((functionalMap?['Stairs'] as num?)?.toDouble() ?? 0.0);
+    features.add((functionalMap?['Chores'] as num?)?.toDouble() ?? 0.0);
+
+    const expectedInputSize = 62;
     
     // Create 2D list for model input
     return [features.take(expectedInputSize).toList()];
@@ -286,7 +385,10 @@ class TFLiteService {
     required String stiffnessDuration,
     required bool swelling,
     required String? pastInjury,
+    required int mriKlGrade,
     required List<double> gaitFeatures,
+    Map<String, dynamic>? symptomsMap,
+    Map<String, dynamic>? functionalMap,
     List<double>? piezoFeatures,
     List<double>? emgFeatures,
   }) {
@@ -305,6 +407,10 @@ class TFLiteService {
       factors.add('Previous joint injury history');
     }
     
+    if (mriKlGrade >= 2) {
+      factors.add('MRI structural damage present (KL Grade $mriKlGrade)');
+    }
+    
     if (gaitFeatures.isNotEmpty) {
       final gaitScore = _analyzeGaitFeatures(gaitFeatures);
       if (gaitScore > 1.0) factors.add('Gait irregularities detected');
@@ -316,6 +422,22 @@ class TFLiteService {
     
     if (emgFeatures != null && emgFeatures.isNotEmpty && emgFeatures[0] > 0.4) {
       factors.add('Muscle guarding detected');
+    }
+    
+    if (symptomsMap != null) {
+      final other = symptomsMap['other_symptoms'] as Map<String, dynamic>? ?? {};
+      if (other['Locking'] == true) factors.add('Joint locking reported');
+      if (other['Instability'] == true) factors.add('Joint instability reported');
+    }
+
+    if (functionalMap != null) {
+      int severeLimits = 0;
+      functionalMap.forEach((k, v) {
+        if (v is num && v >= 2) severeLimits++;
+      });
+      if (severeLimits > 1) {
+        factors.add('Functional limitations impact daily activities');
+      }
     }
     
     return factors;

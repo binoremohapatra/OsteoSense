@@ -117,6 +117,25 @@ def predict_clinical_risk(payload: ClinicalPredictionRequest):
         score += 0.15
         contributing_factors.append("History of joint injury")
 
+    # MRI KL Grade component (Huge weight, trumps others if severe)
+    if payload.mri_kl_grade == 4:
+        score += 0.50
+        contributing_factors.append("Severe joint degeneration (MRI Grade 4)")
+    elif payload.mri_kl_grade == 3:
+        score += 0.35
+        contributing_factors.append("Moderate joint degeneration (MRI Grade 3)")
+    elif payload.mri_kl_grade == 2:
+        score += 0.20
+        contributing_factors.append("Mild joint degeneration (MRI Grade 2)")
+
+    # Multimodal Symptoms
+    if payload.sym_locking or payload.sym_clicking or payload.sym_grinding:
+        score += 0.15
+        contributing_factors.append("Mechanical joint symptoms reported (locking/clicking)")
+    if payload.sym_instability:
+        score += 0.10
+        contributing_factors.append("Joint instability reported")
+
     # Gait variance component (15% weight)
     gait_component = min(variance / 4.0, 1) * 0.15
     score += gait_component

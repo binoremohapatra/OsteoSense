@@ -11,7 +11,7 @@ except ImportError:
     from ai_service.wearable_model.feature_extraction import extract_features # type: ignore
 
 def train_and_export():
-    print("Building dataset for FULL 48 features...")
+    print("Building dataset for FULL 62 features...")
     records = build_dataset(n_per_class=1000, duration_s=6.0, seed=42)
     
     X = []
@@ -27,12 +27,12 @@ def train_and_export():
     y = np.array(y, dtype=np.int32)
     
     print(f"Dataset shape: X={X.shape}, y={y.shape}")
-    if X.shape[1] != 48:
-        print(f"WARNING: Expected 48 features, got {X.shape[1]}")
+    if X.shape[1] != 62:
+        print(f"WARNING: Expected 62 features, got {X.shape[1]}")
     
     # Deep Neural Network Architecture to match XGBoost capacity
     model = tf.keras.Sequential([
-        tf.keras.Input(shape=(48,)),
+        tf.keras.Input(shape=(62,)),
         tf.keras.layers.Dense(128, activation='relu'),
         tf.keras.layers.Dropout(0.3),
         tf.keras.layers.Dense(64, activation='relu'),

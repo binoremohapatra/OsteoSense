@@ -24,7 +24,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 7,
+      version: 9,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -75,11 +75,15 @@ class DatabaseHelper {
         user_id INTEGER NOT NULL,
         screening_date TEXT DEFAULT CURRENT_TIMESTAMP,
         joint_id TEXT,
+        side TEXT,
         pain_level INTEGER,
         stiffness_duration TEXT,
         swelling INTEGER,
         past_injury TEXT,
+        mri_kl_grade INTEGER,
         gait_data TEXT,
+        symptoms_map TEXT,
+        functional_map TEXT,
         risk_level TEXT,
         confidence REAL,
         contributing_factors TEXT,
@@ -91,6 +95,66 @@ class DatabaseHelper {
         updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      )
+    ''');
+
+    // Medical History table
+    await db.execute('''
+      CREATE TABLE medical_history (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        patient_id INTEGER NOT NULL,
+        joint TEXT NOT NULL,
+        side TEXT NOT NULL,
+        previous_diagnosis INTEGER DEFAULT 0,
+        previous_joint_pain INTEGER DEFAULT 0,
+        chronic_joint_problems INTEGER DEFAULT 0,
+        previous_inflammation INTEGER DEFAULT 0,
+        previous_cartilage_problems INTEGER DEFAULT 0,
+        previous_ligament_problems INTEGER DEFAULT 0,
+        previous_fracture INTEGER DEFAULT 0,
+        has_past_injury INTEGER DEFAULT 0,
+        injury_type TEXT,
+        injury_date TEXT,
+        injury_mechanism TEXT,
+        injury_severity TEXT,
+        medical_treatment_required INTEGER DEFAULT 0,
+        immobilization_required INTEGER DEFAULT 0,
+        physiotherapy_performed INTEGER DEFAULT 0,
+        current_symptoms_after_injury TEXT,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE
+      )
+    ''');
+
+    // Surgery History table
+    await db.execute('''
+      CREATE TABLE surgery_history (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        patient_id INTEGER NOT NULL,
+        joint TEXT NOT NULL,
+        side TEXT NOT NULL,
+        surgery_type TEXT NOT NULL,
+        surgery_date TEXT,
+        reason TEXT,
+        hospital TEXT,
+        implant_present INTEGER DEFAULT 0,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE
+      )
+    ''');
+
+    // Medical Images table
+    await db.execute('''
+      CREATE TABLE medical_images (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        patient_id INTEGER NOT NULL,
+        joint TEXT NOT NULL,
+        side TEXT NOT NULL,
+        image_type TEXT NOT NULL,
+        file_path TEXT NOT NULL,
+        source TEXT NOT NULL,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE
       )
     ''');
 
@@ -247,6 +311,15 @@ class DatabaseHelper {
       }
     }
 
+    if (oldVersion < 8) {
+      // Add mri_kl_grade to screenings table
+      try {
+        await db.execute('ALTER TABLE screenings ADD COLUMN mri_kl_grade INTEGER');
+      } catch (e) {
+        // Column might already exist, ignore error
+      }
+    }
+
     if (oldVersion < 5) {
       // Add updated_at column to sync_queue table if it doesn't exist
       try {
@@ -308,6 +381,77 @@ class DatabaseHelper {
       } catch (e) {
         // ignore
       }
+    }
+
+    if (oldVersion < 9) {
+      // Add columns to screenings table
+      try { await db.execute('ALTER TABLE screenings ADD COLUMN side TEXT'); } catch (_) {}
+      try { await db.execute('ALTER TABLE screenings ADD COLUMN symptoms_map TEXT'); } catch (_) {}
+      try { await db.execute('ALTER TABLE screenings ADD COLUMN functional_map TEXT'); } catch (_) {}
+      
+      // Create new tables
+      try {
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS medical_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            patient_id INTEGER NOT NULL,
+            joint TEXT NOT NULL,
+            side TEXT NOT NULL,
+            previous_diagnosis INTEGER DEFAULT 0,
+            previous_joint_pain INTEGER DEFAULT 0,
+            chronic_joint_problems INTEGER DEFAULT 0,
+            previous_inflammation INTEGER DEFAULT 0,
+            previous_cartilage_problems INTEGER DEFAULT 0,
+            previous_ligament_problems INTEGER DEFAULT 0,
+            previous_fracture INTEGER DEFAULT 0,
+            has_past_injury INTEGER DEFAULT 0,
+            injury_type TEXT,
+            injury_date TEXT,
+            injury_mechanism TEXT,
+            injury_severity TEXT,
+            medical_treatment_required INTEGER DEFAULT 0,
+            immobilization_required INTEGER DEFAULT 0,
+            physiotherapy_performed INTEGER DEFAULT 0,
+            current_symptoms_after_injury TEXT,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE
+          )
+        ''');
+      } catch (_) {}
+
+      try {
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS surgery_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            patient_id INTEGER NOT NULL,
+            joint TEXT NOT NULL,
+            side TEXT NOT NULL,
+            surgery_type TEXT NOT NULL,
+            surgery_date TEXT,
+            reason TEXT,
+            hospital TEXT,
+            implant_present INTEGER DEFAULT 0,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE
+          )
+        ''');
+      } catch (_) {}
+
+      try {
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS medical_images (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            patient_id INTEGER NOT NULL,
+            joint TEXT NOT NULL,
+            side TEXT NOT NULL,
+            image_type TEXT NOT NULL,
+            file_path TEXT NOT NULL,
+            source TEXT NOT NULL,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE
+          )
+        ''');
+      } catch (_) {}
     }
   }
 

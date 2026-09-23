@@ -14,12 +14,16 @@ class ScreeningProvider with ChangeNotifier {
   // until ProcessingScreen submits them.
   int? _draftPatientId;
   String? _draftJointId;
+  String? _draftSide;
   int _draftPainLevel = 0;
   String _draftStiffnessDuration = 'none';
   bool _draftSwelling = false;
   bool _draftPastInjury = false;
   String _draftPastInjuryDetail = '';
+  int _draftMriKlGrade = 0;
   String? _draftGaitData;
+  Map<String, dynamic> _draftSymptomsMap = {};
+  Map<String, dynamic> _draftFunctionalMap = {};
 
   List<Screening> get screenings => _screenings;
   Screening? get currentScreening => _currentScreening;
@@ -28,12 +32,16 @@ class ScreeningProvider with ChangeNotifier {
   bool get isOfflineResult => _isOfflineResult;
   int? get draftPatientId => _draftPatientId;
   String? get draftJointId => _draftJointId;
+  String? get draftSide => _draftSide;
   int get draftPainLevel => _draftPainLevel;
   String get draftStiffnessDuration => _draftStiffnessDuration;
   bool get draftSwelling => _draftSwelling;
   bool get draftPastInjury => _draftPastInjury;
   String get draftPastInjuryDetail => _draftPastInjuryDetail;
+  int get draftMriKlGrade => _draftMriKlGrade;
   String? get draftGaitData => _draftGaitData;
+  Map<String, dynamic> get draftSymptomsMap => _draftSymptomsMap;
+  Map<String, dynamic> get draftFunctionalMap => _draftFunctionalMap;
 
   set draftGaitData(String? value) {
     _draftGaitData = value;
@@ -47,6 +55,11 @@ class ScreeningProvider with ChangeNotifier {
 
   set draftJointId(String? value) {
     _draftJointId = value;
+    notifyListeners();
+  }
+
+  set draftSide(String? value) {
+    _draftSide = value;
     notifyListeners();
   }
 
@@ -72,6 +85,21 @@ class ScreeningProvider with ChangeNotifier {
 
   set draftPastInjuryDetail(String value) {
     _draftPastInjuryDetail = value;
+    notifyListeners();
+  }
+
+  set draftMriKlGrade(int value) {
+    _draftMriKlGrade = value;
+    notifyListeners();
+  }
+
+  set draftSymptomsMap(Map<String, dynamic> value) {
+    _draftSymptomsMap = value;
+    notifyListeners();
+  }
+
+  set draftFunctionalMap(Map<String, dynamic> value) {
+    _draftFunctionalMap = value;
     notifyListeners();
   }
 
@@ -356,31 +384,43 @@ class ScreeningProvider with ChangeNotifier {
   void setDraftAnswers({
     required int patientId,
     String? jointId,
+    String? side,
     required int painLevel,
     required String stiffnessDuration,
     required bool swelling,
     required bool pastInjury,
     required String pastInjuryDetail,
+    int mriKlGrade = 0,
+    Map<String, dynamic>? symptomsMap,
+    Map<String, dynamic>? functionalMap,
   }) {
     _draftPatientId = patientId;
     _draftJointId = jointId;
+    _draftSide = side;
     _draftPainLevel = painLevel;
     _draftStiffnessDuration = stiffnessDuration;
     _draftSwelling = swelling;
     _draftPastInjury = pastInjury;
     _draftPastInjuryDetail = pastInjuryDetail;
+    _draftMriKlGrade = mriKlGrade;
+    _draftSymptomsMap = symptomsMap ?? {};
+    _draftFunctionalMap = functionalMap ?? {};
     notifyListeners();
   }
 
   void clearDraft() {
     _draftPatientId = null;
     _draftJointId = null;
+    _draftSide = null;
     _draftPainLevel = 0;
     _draftStiffnessDuration = 'none';
     _draftSwelling = false;
     _draftPastInjury = false;
     _draftPastInjuryDetail = '';
+    _draftMriKlGrade = 0;
     _draftGaitData = null;
+    _draftSymptomsMap = {};
+    _draftFunctionalMap = {};
   }
 
   void setDraftGaitData(String data) {

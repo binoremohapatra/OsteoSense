@@ -108,13 +108,28 @@ class _ProcessingScreenState extends State<ProcessingScreen>
       }
     }
 
+    // Load patient to get demographics
+    final patientProvider = Provider.of<PatientProvider>(context, listen: false);
+    final patient = patientProvider.patients.firstWhere(
+      (p) => p.id == screeningProvider.draftPatientId,
+      orElse: () => patientProvider.selectedPatient ?? Patient(
+        name: 'Unknown', age: 50, gender: 'Unknown', weightKg: 70.0, heightCm: 170.0
+      )
+    );
+
     // Run AI prediction
     final prediction = await _tfliteService.predictRisk(
       painLevel: screeningProvider.draftPainLevel,
       stiffnessDuration: screeningProvider.draftStiffnessDuration,
       swelling: screeningProvider.draftSwelling,
       pastInjury: screeningProvider.draftPastInjury ? screeningProvider.draftPastInjuryDetail : null,
+      age: patient.age,
+      weightKg: patient.weightKg ?? 70.0,
+      heightCm: patient.heightCm ?? 170.0,
+      mriKlGrade: screeningProvider.draftMriKlGrade,
       gaitFeatures: gaitFeatures,
+      symptomsMap: screeningProvider.draftSymptomsMap,
+      functionalMap: screeningProvider.draftFunctionalMap,
     );
 
     if (!mounted) return;
@@ -130,11 +145,15 @@ class _ProcessingScreenState extends State<ProcessingScreen>
       userId: 1, // Temporarily hardcoded until auth is integrated
       screeningDate: DateTime.now(),
       jointId: screeningProvider.draftJointId,
+      side: screeningProvider.draftSide,
       painLevel: screeningProvider.draftPainLevel,
       stiffnessDuration: screeningProvider.draftStiffnessDuration,
       swelling: screeningProvider.draftSwelling,
       pastInjury: screeningProvider.draftPastInjury ? screeningProvider.draftPastInjuryDetail : null,
+      mriKlGrade: screeningProvider.draftMriKlGrade,
       gaitData: screeningProvider.draftGaitData,
+      symptomsMap: jsonEncode(screeningProvider.draftSymptomsMap),
+      functionalMap: jsonEncode(screeningProvider.draftFunctionalMap),
       riskLevel: prediction.riskLevel,
       confidence: prediction.confidence,
       contributingFactors: prediction.contributingFactors.join(','),

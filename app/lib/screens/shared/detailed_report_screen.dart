@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'dart:convert';
 import '../../models/screening.dart';
 import '../../models/patient.dart';
 import '../../theme/app_colors.dart';
@@ -131,6 +132,13 @@ class DetailedReportScreen extends StatelessWidget {
                         builder: (_) => PdfPreviewScreen(screening: screening, patient: patient),
                       ),
                     ),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: GlassButton(
+                    text: 'Export ML Data',
+                    onPressed: () => _showRawDataDialog(context),
                   ),
                 ),
               ],
@@ -308,32 +316,105 @@ class DetailedReportScreen extends StatelessWidget {
   }
 
   Widget _buildGaitCard() {
+    List<double>? gaitFeats;
+    try {
+      final decoded = jsonDecode(screening.gaitData!);
+      if (decoded is List) {
+        gaitFeats = decoded.map((e) => (e as num).toDouble()).toList();
+      }
+    } catch (e) {
+      debugPrint('Error decoding gait data: $e');
+    }
+
+    if (gaitFeats == null || gaitFeats.length < 44) {
+      return CustomCard(
+        variant: CardVariant.outlined,
+        padding: const EdgeInsets.all(AppSpacing.cardPaddingMd),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppColors.primarySurface,
+                borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+              ),
+              child: const Icon(Icons.directions_walk_rounded, color: AppColors.primary, size: 22),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('gait_data_recorded'.tr(), style: AppTypography.bodyMedium.copyWith(fontWeight: AppTypography.semiBold)),
+                  Text('accelerometer_data'.tr(), style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary)),
+                ],
+              ),
+            ),
+            const Icon(Icons.check_circle_rounded, color: AppColors.success, size: 20),
+          ],
+        ),
+      );
+    }
+
+    // Pull out some key metrics
+    final cadence = gaitFeats[0];
+    final strideTime = gaitFeats[1];
+    final piezoDominant = gaitFeats[23];
+    final emgRms = gaitFeats[34];
+
     return CustomCard(
       variant: CardVariant.outlined,
       padding: const EdgeInsets.all(AppSpacing.cardPaddingMd),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: AppColors.primarySurface,
-              borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-            ),
-            child: const Icon(Icons.directions_walk_rounded, color: AppColors.primary, size: 22),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.primarySurface,
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                ),
+                child: const Icon(Icons.analytics_rounded, color: AppColors.primary, size: 22),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Text('Sensor Analytics Data', style: AppTypography.bodyMedium.copyWith(fontWeight: AppTypography.semiBold)),
+              ),
+            ],
           ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('gait_data_recorded'.tr(), style: AppTypography.bodyMedium.copyWith(fontWeight: AppTypography.semiBold)),
-                Text('accelerometer_data'.tr(), style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary)),
-              ],
-            ),
+          const SizedBox(height: AppSpacing.md),
+          const Divider(color: AppColors.border, height: 1),
+          const SizedBox(height: AppSpacing.md),
+          GridView.count(
+            crossAxisCount: 2,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            childAspectRatio: 2.5,
+            mainAxisSpacing: AppSpacing.sm,
+            crossAxisSpacing: AppSpacing.sm,
+            children: [
+              _metricCell('Cadence', cadence > 0 ? '${cadence.toStringAsFixed(1)} Hz' : '--'),
+              _metricCell('Stride Time', strideTime > 0 ? '${strideTime.toStringAsFixed(2)} s' : '--'),
+              _metricCell('Piezo Dominant Freq', piezoDominant > 0 ? '${piezoDominant.toStringAsFixed(0)} Hz' : '--'),
+              _metricCell('Muscle EMG (RMS)', emgRms > 0 ? emgRms.toStringAsFixed(3) : '--'),
+            ],
           ),
-          const Icon(Icons.check_circle_rounded, color: AppColors.success, size: 20),
         ],
       ),
+    );
+  }
+
+  Widget _metricCell(String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(label, style: AppTypography.labelSmall.copyWith(color: AppColors.textSecondary)),
+        const SizedBox(height: 2),
+        Text(value, style: AppTypography.bodyMedium.copyWith(fontWeight: AppTypography.semiBold)),
+      ],
     );
   }
 
@@ -505,6 +586,86 @@ class DetailedReportScreen extends StatelessWidget {
           'adequate_sleep'.tr(),
         ];
     }
+  }
+
+  void _showRawDataDialog(BuildContext context) {
+    List<double> gaitFeats = [];
+    try {
+      final decoded = jsonDecode(screening.gaitData!);
+      if (decoded is List) {
+        gaitFeats = decoded.map((e) => (e as num).toDouble()).toList();
+      }
+    } catch (e) {
+      debugPrint('Error decoding gait data: $e');
+    }
+
+    // Assemble full 52-feature ML input vector
+    // Symptoms
+    final stiffnessVal = int.tryParse(screening.stiffnessDuration ?? '0') ?? 0;
+    final painLevel = (screening.painLevel ?? 0).toDouble();
+    final stiffnessDuration = stiffnessVal.toDouble();
+    final swelling = screening.swelling == true ? 1.0 : 0.0;
+    final pastInjury = (screening.pastInjury != null && screening.pastInjury!.isNotEmpty) ? 1.0 : 0.0;
+    final mriKlGrade = (screening.mriKlGrade ?? 0).toDouble();
+
+    // Demographics
+    final age = patient.age.toDouble();
+    final weightKg = patient.weightKg ?? 70.0;
+    final heightCm = patient.heightCm ?? 170.0;
+    double bmi = 0.0;
+    if (heightCm > 0) {
+      final heightM = heightCm / 100.0;
+      bmi = weightKg / (heightM * heightM);
+    }
+
+    final mlVector = [
+      ...gaitFeats,
+      painLevel,
+      stiffnessDuration,
+      swelling,
+      pastInjury,
+      mriKlGrade,
+      age,
+      weightKg,
+      heightCm,
+      bmi,
+    ];
+    
+    final riskLabel = screening.riskLevel ?? 'low';
+    final resultJson = jsonEncode({
+      'features_53': mlVector,
+      'risk_label': riskLabel,
+      'confidence': screening.confidence,
+    });
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        title: Text('ML Training Data', style: AppTypography.titleMedium),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Copy this JSON to train the ML model (${mlVector.length} features):', style: AppTypography.bodySmall),
+              const SizedBox(height: AppSpacing.md),
+              Container(
+                padding: const EdgeInsets.all(AppSpacing.sm),
+                color: AppColors.background,
+                child: SelectableText(resultJson, style: AppTypography.caption),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
   }
 }
 

@@ -248,12 +248,43 @@ def extract_features(record):
     gait_feats = extract_gait_features(record["gyro"], fs=record.get("fs_gyro", GYRO_FS_DEFAULT))
     piezo_feats = extract_piezo_features(record["piezo"], fs=record.get("fs_piezo", PIEZO_FS_DEFAULT))
     emg_feats = extract_emg_features(record["emg"], fs=record.get("fs_emg", EMG_FS_DEFAULT))
-    all_feats = {**gait_feats, **piezo_feats, **emg_feats}
+    
+    age = float(record.get("age", 50.0))
+    weight = float(record.get("weight_kg", 70.0))
+    height = float(record.get("height_cm", 170.0))
+    # Avoid division by zero
+    if height > 0:
+        bmi = weight / ((height / 100.0) ** 2)
+    else:
+        bmi = 24.0
+
+    clinical_feats = {
+        "pain_level": float(record.get("pain_level", 0.0)),
+        "stiffness_duration": float(record.get("stiffness_duration", 0.0)),
+        "swelling": float(record.get("swelling", 0.0)),
+        "past_injury": float(record.get("past_injury", 0.0)),
+        "mri_kl_grade": float(record.get("mri_kl_grade", 0.0)),
+        "age": age,
+        "weight_kg": weight,
+        "height_cm": height,
+        "bmi": bmi,
+        "sym_locking": float(record.get("sym_locking", 0.0)),
+        "sym_clicking": float(record.get("sym_clicking", 0.0)),
+        "sym_grinding": float(record.get("sym_grinding", 0.0)),
+        "sym_aching": float(record.get("sym_aching", 0.0)),
+        "sym_instability": float(record.get("sym_instability", 0.0)),
+        "func_standing": float(record.get("func_standing", 0.0)),
+        "func_walking": float(record.get("func_walking", 0.0)),
+        "func_stairs": float(record.get("func_stairs", 0.0)),
+        "func_chores": float(record.get("func_chores", 0.0)),
+    }
+    
+    all_feats = {**gait_feats, **piezo_feats, **emg_feats, **clinical_feats}
     return all_feats
 
 
 if __name__ == "__main__":
-    from simulate_data import simulate_subject
+    from simulate_data import simulate_subject  # type: ignore
     rec0 = simulate_subject(label=0, seed=1)
     rec1 = simulate_subject(label=1, seed=2)
     f0 = extract_features(rec0)

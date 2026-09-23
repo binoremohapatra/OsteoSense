@@ -52,10 +52,10 @@ class _BLEDeviceSelectorScreenState extends State<BLEDeviceSelectorScreen> {
             // Filter: show only JointSaathi devices OR devices with our Service UUID
             _scanResults.addAll(results.where((r) {
               final name = r.device.platformName.toLowerCase();
-              final hasTargetName = name.contains(_targetDeviceName.toLowerCase());
+              final hasTargetName = name == _targetDeviceName.toLowerCase();
               final hasTargetUuid = r.advertisementData.serviceUuids
-                  .any((uuid) => uuid.toString().toLowerCase().contains('4fafc201'));
-              // Show if name matches OR UUID matches
+                  .any((uuid) => uuid.toString().toLowerCase() == _targetServiceUuid.toLowerCase());
+              // Show ONLY if exact name matches OR exact UUID matches
               return hasTargetName || hasTargetUuid;
             }));
           });

@@ -28,6 +28,9 @@ class PhoneSensorDataSource implements SensorDataSource {
   Stream<SensorData>? get emgStream => null; // Phone doesn't have EMG sensor
 
   @override
+  Stream<int>? get batteryStream => null; // Phone doesn't have battery monitoring through this interface
+
+  @override
   String get deviceName => 'Phone Sensors';
 
   @override

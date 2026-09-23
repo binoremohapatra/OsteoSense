@@ -46,5 +46,19 @@
   "pain_level",
   "stiffness_duration",
   "swelling",
-  "past_injury"
+  "past_injury",
+  "mri_kl_grade",
+  "age",
+  "weight_kg",
+  "height_cm",
+  "bmi",
+  "sym_locking",
+  "sym_clicking",
+  "sym_grinding",
+  "sym_aching",
+  "sym_instability",
+  "func_standing",
+  "func_walking",
+  "func_stairs",
+  "func_chores"
 ]

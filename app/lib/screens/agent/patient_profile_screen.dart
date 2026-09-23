@@ -337,16 +337,24 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
     final riskColor = AppColors.getRiskColor(screening.riskLevel ?? 'low');
     final isLast = index == 0; // Most recent first
 
-    return CustomCard(
-      variant: screening.riskLevel == 'high'
-          ? CardVariant.riskHigh
-          : screening.riskLevel == 'medium'
-              ? CardVariant.riskMedium
-              : CardVariant.riskLow,
-      padding: const EdgeInsets.all(AppSpacing.cardPaddingMd),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+    return GestureDetector(
+      onTap: () {
+        final patientProvider = Provider.of<PatientProvider>(context, listen: false);
+        context.push('/screening/report', extra: {
+          'screening': screening,
+          'patient': patientProvider.selectedPatient,
+        });
+      },
+      child: CustomCard(
+        variant: screening.riskLevel == 'high'
+            ? CardVariant.riskHigh
+            : screening.riskLevel == 'medium'
+                ? CardVariant.riskMedium
+                : CardVariant.riskLow,
+        padding: const EdgeInsets.all(AppSpacing.cardPaddingMd),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
           // Timeline dot
           Stack(
             alignment: Alignment.center,
@@ -463,7 +471,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
           ),
         ],
       ),
-    ).animate().slideX(
+    )).animate().slideX(
       begin: -0.2,
       end: 0,
       duration: 300.ms,

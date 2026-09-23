@@ -187,17 +187,51 @@ def simulate_subject(duration_s=6.0, label=0, seed=None):
     piezo = simulate_piezo(duration_s, label, rng)
     emg = simulate_emg(duration_s, label, rng)
     
-    # Simulate clinical features based on risk label
+    # Simulate clinical features and demographics based on risk label
     if label == 0:
         pain_level = rng.integers(0, 3) # Low pain 0-2
         stiffness = rng.choice([0, 15]) # 0 or 15 mins
         swelling = False
         past_injury = bool(rng.choice([True, False], p=[0.1, 0.9]))
+        age = rng.integers(30, 60) # Younger, healthier baseline
+        height_cm = rng.uniform(155, 185)
+        # Healthy BMI is typically lower
+        bmi = rng.uniform(18.5, 24.9)
+        weight_kg = bmi * ((height_cm / 100) ** 2)
+        mri_kl_grade = rng.choice([0, 1], p=[0.9, 0.1])
+        
+        # Multimodal symptoms & functional
+        sym_locking = False
+        sym_clicking = bool(rng.choice([True, False], p=[0.1, 0.9]))
+        sym_grinding = False
+        sym_aching = bool(rng.choice([True, False], p=[0.2, 0.8]))
+        sym_instability = False
+        func_standing = rng.choice([0, 1], p=[0.8, 0.2])
+        func_walking = rng.choice([0, 1], p=[0.8, 0.2])
+        func_stairs = rng.choice([0, 1], p=[0.7, 0.3])
+        func_chores = rng.choice([0, 1], p=[0.9, 0.1])
     else:
         pain_level = rng.integers(4, 9) # Moderate/High pain 4-8
         stiffness = rng.choice([30, 60, 90]) # 30+ mins
         swelling = bool(rng.choice([True, False], p=[0.7, 0.3]))
         past_injury = bool(rng.choice([True, False], p=[0.4, 0.6]))
+        age = rng.integers(50, 85) # Older age increases OA risk
+        height_cm = rng.uniform(155, 185)
+        # Higher BMI correlates with OA
+        bmi = rng.uniform(25.0, 35.0)
+        weight_kg = bmi * ((height_cm / 100) ** 2)
+        mri_kl_grade = rng.choice([2, 3, 4], p=[0.5, 0.3, 0.2])
+
+        # Multimodal symptoms & functional
+        sym_locking = bool(rng.choice([True, False], p=[0.4, 0.6]))
+        sym_clicking = bool(rng.choice([True, False], p=[0.7, 0.3]))
+        sym_grinding = bool(rng.choice([True, False], p=[0.6, 0.4]))
+        sym_aching = bool(rng.choice([True, False], p=[0.8, 0.2]))
+        sym_instability = bool(rng.choice([True, False], p=[0.5, 0.5]))
+        func_standing = rng.choice([1, 2, 3], p=[0.3, 0.4, 0.3])
+        func_walking = rng.choice([1, 2, 3], p=[0.2, 0.5, 0.3])
+        func_stairs = rng.choice([2, 3], p=[0.6, 0.4])
+        func_chores = rng.choice([1, 2, 3], p=[0.4, 0.4, 0.2])
 
     return {
         "gyro": gyro,
@@ -211,6 +245,19 @@ def simulate_subject(duration_s=6.0, label=0, seed=None):
         "stiffness_duration": float(stiffness),
         "swelling": 1.0 if swelling else 0.0,
         "past_injury": 1.0 if past_injury else 0.0,
+        "mri_kl_grade": float(mri_kl_grade),
+        "age": float(age),
+        "weight_kg": float(weight_kg),
+        "height_cm": float(height_cm),
+        "sym_locking": 1.0 if sym_locking else 0.0,
+        "sym_clicking": 1.0 if sym_clicking else 0.0,
+        "sym_grinding": 1.0 if sym_grinding else 0.0,
+        "sym_aching": 1.0 if sym_aching else 0.0,
+        "sym_instability": 1.0 if sym_instability else 0.0,
+        "func_standing": float(func_standing),
+        "func_walking": float(func_walking),
+        "func_stairs": float(func_stairs),
+        "func_chores": float(func_chores),
     }
 
 

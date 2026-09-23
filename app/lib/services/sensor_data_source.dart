@@ -15,6 +15,9 @@ abstract class SensorDataSource {
   /// Stream of EMG (muscle activity) data - for ESP32 wearable
   Stream<SensorData>? get emgStream;
 
+  /// Stream of battery percentage data - for ESP32 wearable
+  Stream<int>? get batteryStream;
+
   /// Initialize the sensor data source
   Future<void> initialize();
 

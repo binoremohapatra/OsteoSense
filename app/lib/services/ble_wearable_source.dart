@@ -12,17 +12,20 @@ class BLEWearableSensorSource implements SensorDataSource {
   static const String _gyroCharUuid = 'beb5483f-36e1-4688-b7f5-ea07361b26a9';
   static const String _piezoCharUuid = 'beb54840-36e1-4688-b7f5-ea07361b26aa';
   static const String _emgCharUuid = 'beb54841-36e1-4688-b7f5-ea07361b26ab';
+  static const String _batteryCharUuid = 'beb54843-36e1-4688-b7f5-ea07361b26ad';
 
   final BluetoothDevice device;
   BluetoothCharacteristic? _accelCharacteristic;
   BluetoothCharacteristic? _gyroCharacteristic;
   BluetoothCharacteristic? _piezoCharacteristic;
   BluetoothCharacteristic? _emgCharacteristic;
+  BluetoothCharacteristic? _batteryCharacteristic;
 
   StreamSubscription<List<int>>? _accelSubscription;
   StreamSubscription<List<int>>? _gyroSubscription;
   StreamSubscription<List<int>>? _piezoSubscription;
   StreamSubscription<List<int>>? _emgSubscription;
+  StreamSubscription<List<int>>? _batterySubscription;
 
   final StreamController<SensorData> _accelerometerController =
       StreamController<SensorData>.broadcast();
@@ -32,6 +35,8 @@ class BLEWearableSensorSource implements SensorDataSource {
       StreamController<SensorData>.broadcast();
   final StreamController<SensorData> _emgController =
       StreamController<SensorData>.broadcast();
+  final StreamController<int> _batteryController =
+      StreamController<int>.broadcast();
 
   bool _isConnected = false;
   bool _isRecording = false;
@@ -57,6 +62,7 @@ class BLEWearableSensorSource implements SensorDataSource {
   /// Additional streams for ESP32 wearable sensors
   Stream<SensorData> get piezoStream => _piezoController.stream;
   Stream<SensorData> get emgStream => _emgController.stream;
+  Stream<int> get batteryStream => _batteryController.stream;
 
   @override
   String get deviceName => device.platformName;
@@ -115,6 +121,10 @@ class BLEWearableSensorSource implements SensorDataSource {
               _emgCharacteristic = characteristic;
               print('Found EMG characteristic: $uuid');
             }
+            if (uuid.contains(_batteryCharUuid.toLowerCase())) {
+              _batteryCharacteristic = characteristic;
+              print('Found Battery characteristic: $uuid');
+            }
           }
         }
       }
@@ -127,7 +137,7 @@ class BLEWearableSensorSource implements SensorDataSource {
 
       print('BLE initialization successful. Sensors: Accel=${_accelCharacteristic != null}, '
             'Gyro=${_gyroCharacteristic != null}, Piezo=${_piezoCharacteristic != null}, '
-            'EMG=${_emgCharacteristic != null}');
+            'EMG=${_emgCharacteristic != null}, Battery=${_batteryCharacteristic != null}');
     } catch (e) {
       print('BLE initialization error: $e');
       _isConnected = false;
@@ -196,6 +206,17 @@ class BLEWearableSensorSource implements SensorDataSource {
       );
     }
 
+    // Enable notifications on Battery characteristic
+    if (_batteryCharacteristic != null) {
+      await _batteryCharacteristic!.setNotifyValue(true);
+      _batterySubscription = _batteryCharacteristic!.onValueReceived.listen(
+        (value) {
+          _parseBatteryData(value);
+        },
+        onError: (error) => print('Battery stream error: $error'),
+      );
+    }
+
     print('Started recording from all available sensors');
   }
 
@@ -216,11 +237,15 @@ class BLEWearableSensorSource implements SensorDataSource {
     if (_emgCharacteristic != null) {
       await _emgCharacteristic!.setNotifyValue(false);
     }
+    if (_batteryCharacteristic != null) {
+      await _batteryCharacteristic!.setNotifyValue(false);
+    }
 
     await _accelSubscription?.cancel();
     await _gyroSubscription?.cancel();
     await _piezoSubscription?.cancel();
     await _emgSubscription?.cancel();
+    await _batterySubscription?.cancel();
 
     print('Stopped recording from all sensors');
   }
@@ -234,6 +259,7 @@ class BLEWearableSensorSource implements SensorDataSource {
     await _gyroscopeController.close();
     await _piezoController.close();
     await _emgController.close();
+    await _batteryController.close();
     _isConnected = false;
   }
 
@@ -358,5 +384,22 @@ class BLEWearableSensorSource implements SensorDataSource {
       value -= 0x10000;
     }
     return value;
+  }
+
+  /// Parse battery percentage data from BLE packet
+  /// ESP32 wearable format: 2 bytes (little-endian, percentage 0-100)
+  void _parseBatteryData(List<int> data) {
+    try {
+      if (data.length < 2) return;
+
+      final batteryPercentage = _bytesToInt16(data, 0);
+
+      // Clamp to 0-100 range
+      final clampedPercentage = batteryPercentage.clamp(0, 100);
+
+      _batteryController.add(clampedPercentage);
+    } catch (e) {
+      print('Error parsing battery data: $e');
+    }
   }
 }

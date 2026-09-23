@@ -11,6 +11,7 @@ MPU6050 mpu;
 // Sensor Pins Setup
 #define PIEZO_PIN   34
 #define EMG_PIN     35    // EMG Pin
+#define BATTERY_PIN 33    // Battery voltage monitoring (ADC1_CH5)
 #define MIDPOINT    2048
 #define DAC_OUT_PIN 25
 
@@ -23,12 +24,14 @@ bool deviceConnected = false;
 #define ACCEL_UUID   "beb5483e-36e1-4688-b7f5-ea07361b26a8"
 #define GYRO_UUID    "beb5483f-36e1-4688-b7f5-ea07361b26a9"
 #define PIEZO_UUID   "beb54840-36e1-4688-b7f5-ea07361b26aa"
-#define EMG_UUID     "beb54841-36e1-4688-b7f5-ea07361b26ab" 
+#define EMG_UUID     "beb54841-36e1-4688-b7f5-ea07361b26ab"
+#define BATTERY_UUID "beb54843-36e1-4688-b7f5-ea07361b26ad" 
 
 BLECharacteristic *pAccelChar;
 BLECharacteristic *pGyroChar;
 BLECharacteristic *pPiezoChar;
 BLECharacteristic *pEMGChar; // EMG Characteristic
+BLECharacteristic *pBatteryChar; // Battery Characteristic
 
 // Piezo & EMG Average padhne ka function
 int readSensorAverage(int pin, int samples) {
@@ -53,6 +56,7 @@ void setup() {
   
   pinMode(PIEZO_PIN, INPUT);
   pinMode(EMG_PIN, INPUT);
+  pinMode(BATTERY_PIN, INPUT);
 
   // MPU init
   mpu.initialize();
@@ -97,6 +101,13 @@ void setup() {
     BLECharacteristic::PROPERTY_NOTIFY | BLECharacteristic::PROPERTY_READ
   );
   pEMGChar->addDescriptor(new BLE2902());
+
+  // Battery Characteristic
+  pBatteryChar = pService->createCharacteristic(
+    BATTERY_UUID,
+    BLECharacteristic::PROPERTY_NOTIFY | BLECharacteristic::PROPERTY_READ
+  );
+  pBatteryChar->addDescriptor(new BLE2902());
 
   pService->start();
   
@@ -150,7 +161,15 @@ void loop() {
   int rawEMG = readSensorAverage(EMG_PIN, 10);
   float emgValue = rawEMG / 4095.0; // Graph ke liye 0 se +1
 
-  // --- 4. Send via BLE (APP EXPECTS BINARY DATA, NOT STRINGS) ---
+  // --- 4. Read Battery ---
+  int rawBattery = readSensorAverage(BATTERY_PIN, 10);
+  float batteryVoltage = (rawBattery / 4095.0) * 3.3; // 0-3.3V range
+  // Calculate battery percentage (3.0V = 0%, 3.3V = 100%)
+  float batteryPercentage = ((batteryVoltage - 3.0) / 0.3) * 100.0;
+  if (batteryPercentage < 0) batteryPercentage = 0;
+  if (batteryPercentage > 100) batteryPercentage = 100;
+
+  // --- 5. Send via BLE (APP EXPECTS BINARY DATA, NOT STRINGS) ---
   if (deviceConnected) {
     
     // Accelerometer
@@ -184,6 +203,12 @@ void loop() {
     uint8_t eData[2] = { (uint8_t)(eInt & 0xFF), (uint8_t)((eInt >> 8) & 0xFF) };
     pEMGChar->setValue(eData, 2);
     pEMGChar->notify();
+
+    // Battery (send as percentage 0-100)
+    int16_t battInt = (int16_t)(batteryPercentage);
+    uint8_t battData[2] = { (uint8_t)(battInt & 0xFF), (uint8_t)((battInt >> 8) & 0xFF) };
+    pBatteryChar->setValue(battData, 2);
+    pBatteryChar->notify();
   }
 
   // --- Debug print ---
@@ -191,6 +216,7 @@ void loop() {
   Serial.print("Gyro: ");  Serial.print(gx); Serial.print(", "); Serial.print(gy); Serial.print(", "); Serial.println(gz);
   Serial.print("Piezo: "); Serial.print(rawPiezo); Serial.print(" Amp: "); Serial.println(amplitude);
   Serial.print("EMG: ");   Serial.println(rawEMG);
+  Serial.print("Battery: "); Serial.print(batteryVoltage); Serial.print("V ("); Serial.print(batteryPercentage); Serial.println("%)");
 
   delay(20); // 50Hz pe sampling (App model expects 50Hz)
 }

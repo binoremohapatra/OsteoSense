@@ -19,6 +19,7 @@ class JointSelectionScreen extends StatefulWidget {
 
 class _JointSelectionScreenState extends State<JointSelectionScreen> {
   String? _selectedJoint;
+  String? _selectedSide;
 
   final List<JointOption> _joints = [
     JointOption(
@@ -71,11 +72,22 @@ class _JointSelectionScreenState extends State<JointSelectionScreen> {
     setState(() {
       _selectedJoint = jointId;
     });
+  }
 
-    // Navigate to symptom questionnaire
-    context.push('/screening/symptoms', extra: {
+  void _selectSide(String side) {
+    setState(() {
+      _selectedSide = side;
+    });
+  }
+
+  void _onNextPressed() {
+    if (_selectedJoint == null || _selectedSide == null) return;
+    
+    // Navigate to medical history
+    context.push('/screening/medical_history', extra: {
       'patientId': widget.patientId,
-      'jointId': jointId,
+      'jointId': _selectedJoint,
+      'side': _selectedSide,
     });
   }
 
@@ -136,6 +148,29 @@ class _JointSelectionScreenState extends State<JointSelectionScreen> {
                         return _buildJointCard(joint, index);
                       },
                     ),
+                    const SizedBox(height: AppSpacing.xl),
+                    Text(
+                      'Which side?',
+                      style: AppTypography.headlineMedium.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ).animate().fadeIn(duration: AppMotion.standard),
+                    const SizedBox(height: AppSpacing.md),
+                    Row(
+                      children: [
+                        Expanded(child: _buildSideCard('Left', Icons.swipe_left)),
+                        const SizedBox(width: AppSpacing.md),
+                        Expanded(child: _buildSideCard('Right', Icons.swipe_right)),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    Row(
+                      children: [
+                        Expanded(child: _buildSideCard('Both', Icons.compare_arrows)),
+                        const SizedBox(width: AppSpacing.md),
+                        Expanded(child: _buildSideCard('N/A', Icons.block)),
+                      ],
+                    ),
                   ],
                 ),
               ),
@@ -161,13 +196,13 @@ class _JointSelectionScreenState extends State<JointSelectionScreen> {
                   const SizedBox(width: AppSpacing.md),
                   Expanded(
                     child: ElevatedButton.icon(
-                      onPressed: _selectedJoint != null
-                          ? () => _selectJoint(_selectedJoint!)
+                      onPressed: _selectedJoint != null && _selectedSide != null
+                          ? _onNextPressed
                           : null,
                       icon: const Icon(Icons.arrow_forward, size: 18),
                       label: Text('next'.tr()),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: _selectedJoint != null
+                        backgroundColor: _selectedJoint != null && _selectedSide != null
                             ? AppColors.primary
                             : AppColors.textSecondary.withValues(alpha: 0.3),
                         foregroundColor: Colors.white,
@@ -324,6 +359,47 @@ class _JointSelectionScreenState extends State<JointSelectionScreen> {
         end: const Offset(1, 1),
         duration: AppMotion.standard,
         curve: AppMotion.curveSpring,
+      ),
+    );
+  }
+
+  Widget _buildSideCard(String side, IconData icon) {
+    final isSelected = _selectedSide == side;
+
+    return GestureDetector(
+      onTap: () => _selectSide(side),
+      child: AnimatedContainer(
+        duration: AppMotion.fast,
+        curve: AppMotion.curve,
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+        decoration: BoxDecoration(
+          color: isSelected 
+              ? AppColors.primary.withValues(alpha: 0.1)
+              : AppColors.surface,
+          borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+          border: Border.all(
+            color: isSelected ? AppColors.primary : AppColors.border,
+            width: isSelected ? 2 : 1,
+          ),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              color: isSelected ? AppColors.primary : AppColors.textSecondary,
+              size: 24,
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              side,
+              style: AppTypography.titleSmall.copyWith(
+                color: isSelected ? AppColors.primary : AppColors.textPrimary,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

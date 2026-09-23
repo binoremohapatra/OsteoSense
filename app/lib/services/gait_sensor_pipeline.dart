@@ -85,7 +85,7 @@ class GaitSensorPipeline {
   List<double> get gyroZ => List.from(_gyroZ);
   List<double> get piezoData => List.from(_piezoData);
   List<double> get emgData => List.from(_emgData);
-  
+
   // Sensor availability
   bool get hasAccelerometer => _accelX.isNotEmpty;
   bool get hasGyroscope => _gyroX.isNotEmpty;
@@ -222,10 +222,10 @@ class GaitSensorPipeline {
     
     // Simulated piezo (joint vibration)
     final piezoValue = stepSignal * 0.3 + noise * 0.1;
-    
+
     // Simulated EMG (muscle activity)
     final emgValue = (stepSignal.abs() * 0.5) + noise * 0.2;
-    
+
     _addSampleToBuffer(sample, piezoValue, emgValue);
   }
   
@@ -264,10 +264,10 @@ class GaitSensorPipeline {
               userAccelY: userAccelData[idx + 1],
               userAccelZ: userAccelData[idx + 2],
             );
-            
+
             // No piezo/EMG from phone sensors
             _addSampleToBuffer(sample, 0.0, 0.0);
-            
+
             // Notify UI update (throttled)
             if (sampleCount % 10 == 0) {
               onDataUpdate?.call();
@@ -381,7 +381,7 @@ class GaitSensorPipeline {
     if (_signalBuffer.length > _maxBufferSize) {
       _signalBuffer.removeAt(0);
     }
-    
+
     // Update graph buffers
     _accelX.add(sample.accelX);
     _accelY.add(sample.accelY);
@@ -391,7 +391,7 @@ class GaitSensorPipeline {
     _gyroZ.add(sample.gyroZ);
     _piezoData.add(piezoValue);
     _emgData.add(emgValue);
-    
+
     // Trim graph buffers
     if (_accelX.length > _graphBufferSize) {
       _accelX.removeAt(0);
@@ -450,7 +450,7 @@ class GaitSensorPipeline {
       features['cadence'] = 0.0;
       features['stride'] = 0.0;
       features['stability'] = 0.0;
-      
+
       _currentFeatures = SignalFeatures.fromMap(features);
       _updatePipelineStatus(2, PipelineStageStatus.ready);
       _updatePipelineStatus(3, PipelineStageStatus.ready);
@@ -469,6 +469,9 @@ class GaitSensorPipeline {
     String stiffnessDuration = '0',
     bool swelling = false,
     String pastInjury = '',
+    int age = 50,
+    double weightKg = 70.0,
+    double heightCm = 170.0,
   }) async {
     if (_currentFeatures == null) {
       debugPrint('No features available for prediction');
@@ -493,6 +496,10 @@ class GaitSensorPipeline {
         stiffnessDuration: stiffnessDuration,
         swelling: swelling,
         pastInjury: pastInjury,
+        age: age,
+        weightKg: weightKg,
+        heightCm: heightCm,
+        mriKlGrade: 0,
         gaitFeatures: featureVector,
         piezoFeatures: null,
         emgFeatures: null,

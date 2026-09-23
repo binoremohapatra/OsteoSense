@@ -1,8 +1,8 @@
 #!/bin/sh
 # This is a generated file; do not edit or check into version control.
-export "FLUTTER_ROOT=C:\Flutter\flutter_windows_3.47.3-stable\flutter"
-export "FLUTTER_APPLICATION_PATH=C:\OsteoSense\OsteoSense\app"
-export "FLUTTER_FRAMEWORK_SWIFT_PACKAGE_PATH=C:\OsteoSense\OsteoSense\app\ios\Flutter\ephemeral\Packages\.packages\FlutterFramework"
+export "FLUTTER_ROOT=C:\src\flutter"
+export "FLUTTER_APPLICATION_PATH=D:\OsteoSense\app"
+export "FLUTTER_FRAMEWORK_SWIFT_PACKAGE_PATH=D:\OsteoSense\app\ios\Flutter\ephemeral\Packages\.packages\FlutterFramework"
 export "COCOAPODS_PARALLEL_CODE_SIGN=true"
 export "FLUTTER_TARGET=lib\main.dart"
 export "FLUTTER_BUILD_DIR=build"

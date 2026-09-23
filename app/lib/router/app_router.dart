@@ -29,6 +29,11 @@ import '../screens/shared/preventive_care_category_screen.dart';
 import '../screens/shared/preventive_care_article_screen.dart';
 import '../screens/shared/select_patient_screen.dart';
 import '../screens/shared/joint_selection_screen.dart';
+import '../screens/shared/medical_history_screen.dart';
+import '../screens/shared/surgery_history_screen.dart';
+import '../screens/shared/functional_assessment_screen.dart';
+import '../screens/shared/image_upload_screen.dart';
+import '../screens/shared/assessment_overview_screen.dart';
 import '../models/patient.dart';
 import '../models/screening.dart';
 
@@ -376,6 +381,40 @@ final appRouter = GoRouter(
       },
     ),
     GoRoute(
+      path: '/screening/medical_history',
+      pageBuilder: (context, state) {
+        final data = state.extra as Map<String, dynamic>? ?? {};
+        final patientId = data['patientId'] as int? ?? 0;
+        final jointId = data['jointId'] as String? ?? 'Unknown';
+        final side = data['side'] as String? ?? 'N/A';
+        return SlideUpTransitionPage(
+          key: state.pageKey,
+          child: MedicalHistoryScreen(
+            patientId: patientId,
+            jointId: jointId,
+            side: side,
+          ),
+        );
+      },
+    ),
+    GoRoute(
+      path: '/screening/surgery_history',
+      pageBuilder: (context, state) {
+        final data = state.extra as Map<String, dynamic>? ?? {};
+        final patientId = data['patientId'] as int? ?? 0;
+        final jointId = data['jointId'] as String? ?? 'Unknown';
+        final side = data['side'] as String? ?? 'N/A';
+        return SlideUpTransitionPage(
+          key: state.pageKey,
+          child: SurgeryHistoryScreen(
+            patientId: patientId,
+            jointId: jointId,
+            side: side,
+          ),
+        );
+      },
+    ),
+    GoRoute(
       path: '/screening/symptoms',
       pageBuilder: (context, state) {
         // Guard against null extra — GoRouter can re-evaluate routes during
@@ -396,6 +435,27 @@ final appRouter = GoRouter(
           child: SymptomQuestionnaireScreen(patientId: patientId, jointId: jointId),
         );
       },
+    ),
+    GoRoute(
+      path: '/screening/functional_assessment',
+      pageBuilder: (context, state) => SlideUpTransitionPage(
+        key: state.pageKey,
+        child: const FunctionalAssessmentScreen(),
+      ),
+    ),
+    GoRoute(
+      path: '/screening/image_upload',
+      pageBuilder: (context, state) => SlideUpTransitionPage(
+        key: state.pageKey,
+        child: const ImageUploadScreen(),
+      ),
+    ),
+    GoRoute(
+      path: '/screening/overview',
+      pageBuilder: (context, state) => SlideUpTransitionPage(
+        key: state.pageKey,
+        child: const AssessmentOverviewScreen(),
+      ),
     ),
     GoRoute(
       path: '/screening/gait',

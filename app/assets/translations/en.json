@@ -624,6 +624,7 @@
   "gait_assessment_test": "Gait Assessment Test",
   "stand_naturally_device": "Stand naturally with your device in your pocket",
   "walk_normal_comfortable": "Walk at a normal, comfortable pace",
+  "test_duration_30_seconds": "Test duration: 30 seconds",
   "walk_straight_line": "Walk in a straight line if possible",
   "language_title": "Language",
   "notifications_title": "Notifications",
@@ -776,5 +777,5 @@
   "pp_content_10": "If you have any questions about this privacy policy, please contact us at support@jointsaathi.com",
   "weight_kg": "Weight (kg)",
   "height_cm": "Height (cm)",
-  "test_duration_60_seconds": "Test duration: 60 seconds"
+  "battery": "Battery"
 }

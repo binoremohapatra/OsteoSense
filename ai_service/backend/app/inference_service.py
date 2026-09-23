@@ -26,7 +26,7 @@ class InferenceService:
             self.metadata = json.load(f)
 
     def score_window(self, gyro_flat, piezo_flat, emg_flat, fs_gyro, fs_piezo, fs_emg,
-                     pain_level=0, stiffness_duration=0, swelling=0, past_injury=0):
+                     pain_level=0, stiffness_duration=0, swelling=0, past_injury=0, **kwargs):
         """
         gyro_flat: flat list, length N*3
         piezo_flat: flat list, length M
@@ -49,6 +49,10 @@ class InferenceService:
             "swelling": float(swelling),
             "past_injury": float(past_injury)
         }
+        # Add any extra multimodal factors (like mri_kl_grade, sym_locking, etc.)
+        for k, v in kwargs.items():
+            record[k] = v
+
         feats = extract_features(record)
 
         x = np.array([[feats.get(c, 0.0) for c in self.feature_cols]])
