@@ -654,7 +654,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
               child: BentoStatWidget(
                 icon: Icon(Icons.people_rounded, color: AppColors.primary, size: 20),
                 iconBg: AppColors.primarySurface,
-                label: 'total_patient'.tr(),
+                label: 'total_patients'.tr(),
                 value: '$totalPatients',
               ),
             ),

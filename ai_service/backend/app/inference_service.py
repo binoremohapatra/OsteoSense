@@ -25,25 +25,29 @@ class InferenceService:
         with open(model_dir / "model_metadata.json") as f:
             self.metadata = json.load(f)
 
-    def score_window(self, gyro_flat, piezo_flat, emg_flat, fs_gyro, fs_piezo, fs_emg,
+    def score_window(self, gyro_flat, piezo_flat, emg_flat, accel_flat, fs_gyro, fs_piezo, fs_emg, fs_accel,
                      pain_level=0, stiffness_duration=0, swelling=0, past_injury=0, **kwargs):
         """
         gyro_flat: flat list, length N*3
         piezo_flat: flat list, length M
         emg_flat: flat list, length K
+        accel_flat: flat list, length J*3
         Returns: (risk_score: float, risk_label: str, feats: dict, top_features: list[dict])
         """
         gyro = np.array(gyro_flat, dtype=np.float32).reshape(-1, 3)
         piezo = np.array(piezo_flat, dtype=np.float32)
         emg = np.array(emg_flat, dtype=np.float32)
+        accel = np.array(accel_flat, dtype=np.float32).reshape(-1, 3) if accel_flat else np.zeros((0, 3), dtype=np.float32)
 
         record = {
             "gyro": gyro, 
             "piezo": piezo, 
             "emg": emg, 
+            "accel": accel,
             "fs_gyro": fs_gyro, 
             "fs_piezo": fs_piezo, 
             "fs_emg": fs_emg,
+            "fs_accel": fs_accel,
             "pain_level": pain_level,
             "stiffness_duration": 0.0 if str(stiffness_duration).lower() == "none" else (float(str(stiffness_duration).replace('>','').replace('<','').split('-')[0]) if type(stiffness_duration) == str else stiffness_duration),
             "swelling": float(swelling),

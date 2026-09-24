@@ -47,7 +47,7 @@ class _SurgeryHistoryScreenState extends State<SurgeryHistoryScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: CustomAppBar(
-        title: 'Surgery History',
+        title: 'surgery_history'.tr(),
         showBackButton: true,
       ),
       body: SafeArea(
@@ -60,60 +60,74 @@ class _SurgeryHistoryScreenState extends State<SurgeryHistoryScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Past Surgeries',
+                      'past_surgeries'.tr(),
                       style: AppTypography.headlineMedium.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     const SizedBox(height: AppSpacing.sm),
                     Text(
-                      'For ${widget.side} ${widget.jointId}',
+                      '${'for_side_joint'.tr().replaceAll('{side}', widget.side).replaceAll('{joint}', widget.jointId)}',
                       style: AppTypography.bodyLarge.copyWith(
                         color: AppColors.textSecondary,
                       ),
                     ),
                     const SizedBox(height: AppSpacing.xl),
                     
-                    Container(
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-                        border: Border.all(color: AppColors.border),
-                      ),
-                      child: SwitchListTile(
-                        title: Text('Have you had surgery on this joint?', style: AppTypography.bodyLarge),
-                        value: _hasHadSurgery,
-                        onChanged: (val) => setState(() => _hasHadSurgery = val),
-                        activeColor: AppColors.primary,
+                    Material(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                          border: Border.all(color: AppColors.border),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                          child: SwitchListTile(
+                            title: Text('have_you_had_surgery_on_this_joint'.tr(), style: AppTypography.bodyLarge),
+                            value: _hasHadSurgery,
+                            onChanged: (val) => setState(() => _hasHadSurgery = val),
+                            activeColor: AppColors.primary,
+                          ),
+                        ),
                       ),
                     ),
                     
                     if (_hasHadSurgery) ...[
                       const SizedBox(height: AppSpacing.xl),
                       Text(
-                        'Surgery Details',
+                        'surgery_details'.tr(),
                         style: AppTypography.titleLarge,
                       ),
                       const SizedBox(height: AppSpacing.md),
                       TextField(
-                        decoration: const InputDecoration(
-                          labelText: 'Type of Surgery (e.g. ACL Repair, Replacement)',
+                        decoration: InputDecoration(
+                          labelText: 'type_of_surgery'.tr(),
                           border: OutlineInputBorder(),
                         ),
                         onChanged: (val) => _surgeryType = val,
                       ),
                       const SizedBox(height: AppSpacing.md),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: AppColors.surface,
-                          borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-                          border: Border.all(color: AppColors.border),
-                        ),
-                        child: SwitchListTile(
-                          title: Text('Are there implants/hardware present?', style: AppTypography.bodyLarge),
-                          value: _implantPresent,
-                          onChanged: (val) => setState(() => _implantPresent = val),
-                          activeColor: AppColors.primary,
+                      Material(
+                        color: Colors.transparent,
+                        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: AppColors.surface,
+                            borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                            border: Border.all(color: AppColors.border),
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                            child: SwitchListTile(
+                              title: Text('are_there_implants_hardware'.tr(), style: AppTypography.bodyLarge),
+                              value: _implantPresent,
+                              onChanged: (val) => setState(() => _implantPresent = val),
+                              activeColor: AppColors.primary,
+                            ),
+                          ),
                         ),
                       ),
                     ],

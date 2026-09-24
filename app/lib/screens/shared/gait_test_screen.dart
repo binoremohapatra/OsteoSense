@@ -48,6 +48,9 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
   String? _connectedDeviceName;
   int? _batteryPercentage;
   StreamSubscription<int>? _batterySubscription;
+  bool _modelReady = false;
+  bool _sensorsOK = false;
+  StreamSubscription<Map<String, bool>>? _statusSubscription;
 
   void _subscribeToBattery() {
     final hardwareSource = _sensorPipeline.hardwareSource;
@@ -57,6 +60,21 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
         if (mounted) {
           setState(() {
             _batteryPercentage = percentage;
+          });
+        }
+      });
+    }
+  }
+
+  void _subscribeToStatus() {
+    final hardwareSource = _sensorPipeline.hardwareSource;
+    if (hardwareSource != null && hardwareSource.deviceStatusStream != null) {
+      _statusSubscription?.cancel();
+      _statusSubscription = hardwareSource.deviceStatusStream!.listen((status) {
+        if (mounted) {
+          setState(() {
+            _modelReady = status['modelReady'] ?? false;
+            _sensorsOK = status['sensorsOK'] ?? false;
           });
         }
       });
@@ -83,6 +101,7 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
     _sensorService.dispose();
     _sensorPipeline.dispose();
     _batterySubscription?.cancel();
+    _statusSubscription?.cancel();
     super.dispose();
   }
   
@@ -200,6 +219,7 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
         _sensorPipeline.setSourceType(SignalSourceType.hardware);
       });
       _subscribeToBattery();
+      _subscribeToStatus();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Connected to $result'),
@@ -565,6 +585,11 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
               setState(() {
                 _sourceType = value == 'Simulated' ? SignalSourceType.simulated : SignalSourceType.hardware;
                 _sensorPipeline.setSourceType(_sourceType);
+                
+                // When switching to hardware, ensure simulation is stopped
+                if (_sourceType == SignalSourceType.hardware) {
+                  _sensorPipeline.clearBuffers();
+                }
               });
             },
             segmentAsString: (v) => v,
@@ -744,6 +769,10 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
           _buildStatusRow('sampling'.tr(), _isRecording ? 'active'.tr() : 'stopped'.tr()),
           if (!isSimulated && _batteryPercentage != null)
             _buildStatusRow('Battery', '$_batteryPercentage%'),
+          if (!isSimulated)
+            _buildStatusRow('Model Ready', _modelReady ? 'Yes (Local)' : 'No'),
+          if (!isSimulated)
+            _buildStatusRow('Sensors OK', _sensorsOK ? 'Yes' : 'No'),
         ],
       ),
     );
@@ -1224,10 +1253,12 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildPredictionRow('Model', 'OA Risk Classifier'),
+                _buildPredictionRow('Model', '3-Class OA Risk Classifier'),
                 _buildPredictionRow('Source', _sourceType.name.toUpperCase()),
                 _buildPredictionRow('Prediction', prediction.riskLevel.toUpperCase()),
                 _buildPredictionRow('Confidence', '${(prediction.confidence * 100).toStringAsFixed(1)}%'),
+                if (prediction.uncertainty != null)
+                  _buildPredictionRow('Uncertainty', '${(prediction.uncertainty! * 100).toStringAsFixed(1)}%'),
                 _buildPredictionRow('Inference', '${prediction.inferenceTimeMs} ms'),
                 const SizedBox(height: AppSpacing.sm),
                 LinearProgressIndicator(
@@ -1237,8 +1268,83 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
                     AppColors.getRiskColor(prediction.riskLevel),
                   ),
                 ),
+                const SizedBox(height: AppSpacing.md),
+                
+                // Feature Extraction Details
+                Container(
+                  padding: const EdgeInsets.all(AppSpacing.sm),
+                  decoration: BoxDecoration(
+                    color: AppColors.primarySurface,
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.list, color: AppColors.primary, size: 16),
+                          const SizedBox(width: AppSpacing.xs),
+                          Text('Feature Extraction', style: AppTypography.labelSmall.copyWith(fontWeight: AppTypography.semiBold)),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      _buildFeatureDetail('Total Features', '203'),
+                      _buildFeatureDetail('Gait Features', '~90'),
+                      _buildFeatureDetail('Clinical Features', '~25'),
+                      _buildFeatureDetail('Sensor Features', '~40'),
+                      _buildFeatureDetail('Demographic', '~4'),
+                    ],
+                  ),
+                ),
+                
+                const SizedBox(height: AppSpacing.md),
+                
+                // Contributing Factors
+                if (prediction.contributingFactors.isNotEmpty) ...[
+                  Container(
+                    padding: const EdgeInsets.all(AppSpacing.sm),
+                    decoration: BoxDecoration(
+                      color: AppColors.warning.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.warning_amber, color: AppColors.warning, size: 16),
+                            const SizedBox(width: AppSpacing.xs),
+                            Text('Risk Factors', style: AppTypography.labelSmall.copyWith(fontWeight: AppTypography.semiBold)),
+                          ],
+                        ),
+                        const SizedBox(height: AppSpacing.xs),
+                        ...prediction.contributingFactors.take(5).map((factor) => 
+                          Padding(
+                            padding: const EdgeInsets.only(left: AppSpacing.sm, bottom: 2),
+                            child: Text('• $factor', style: AppTypography.caption),
+                          ),
+                        ),
+                        if (prediction.contributingFactors.length > 5)
+                          Text('... and ${prediction.contributingFactors.length - 5} more', style: AppTypography.caption),
+                      ],
+                    ),
+                  ),
+                ],
               ],
             ),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildFeatureDetail(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: AppTypography.caption.copyWith(color: AppColors.textSecondary)),
+          Text(value, style: AppTypography.caption.copyWith(fontWeight: AppTypography.semiBold)),
         ],
       ),
     );

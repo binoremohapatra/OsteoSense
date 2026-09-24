@@ -49,14 +49,14 @@ class _SymptomQuestionnaireScreenState
 
   // ── Q6: Expanded Symptoms
   final Map<String, bool> _painChars = {
-    'Sharp': false, 'Dull': false, 'Burning': false, 'Aching': false, 'Stabbing': false, 'Throbbing': false
+    'pain_sharp': false, 'pain_dull': false, 'pain_burning': false, 'pain_aching': false, 'pain_stabbing': false, 'pain_throbbing': false
   };
   final Map<String, bool> _stiffnessTriggers = {
-    'Morning': false, 'After sitting': false, 'After inactivity': false, 'After exercise': false
+    'stiff_morning': false, 'stiff_after_sitting': false, 'stiff_after_inactivity': false, 'stiff_after_exercise': false
   };
   final Map<String, bool> _otherSymptoms = {
-    'Warmth': false, 'Redness': false, 'Tenderness': false, 'Clicking': false, 
-    'Grinding': false, 'Locking': false, 'Giving way': false, 'Instability': false, 'Reduced mobility': false
+    'sym_warmth': false, 'sym_redness': false, 'sym_tenderness': false, 'sym_clicking': false, 
+    'sym_grinding': false, 'sym_locking': false, 'sym_giving_way': false, 'sym_instability': false, 'sym_reduced_mobility': false
   };
 
   bool _isNavigating = false;
@@ -108,7 +108,7 @@ class _SymptomQuestionnaireScreenState
 
     if (patientId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a patient first')),
+        SnackBar(content: Text('please_select_a_patient_first'.tr())),
       );
       setState(() => _isNavigating = false);
       return;
@@ -884,11 +884,11 @@ class _SymptomQuestionnaireScreenState
   // ─────────────────────────────────────────────────────
   Widget _buildQ5MriReport() {
     final options = [
-      (value: 0, label: 'Normal / None', desc: 'No MRI or healthy joints', icon: Icons.health_and_safety_outlined, color: AppColors.riskLow),
-      (value: 1, label: 'Grade 1: Doubtful', desc: 'Doubtful joint space narrowing', icon: Icons.warning_amber_rounded, color: AppColors.riskLow),
-      (value: 2, label: 'Grade 2: Mild', desc: 'Definite osteophytes, possible narrowing', icon: Icons.error_outline, color: AppColors.riskMedium),
-      (value: 3, label: 'Grade 3: Moderate', desc: 'Multiple osteophytes, definite narrowing', icon: Icons.warning_rounded, color: AppColors.riskMedium),
-      (value: 4, label: 'Grade 4: Severe', desc: 'Large osteophytes, severe narrowing', icon: Icons.report_problem_rounded, color: AppColors.riskHigh),
+      (value: 0, label: 'mri_normal_none'.tr(), desc: 'mri_normal_desc'.tr(), icon: Icons.health_and_safety_outlined, color: AppColors.riskLow),
+      (value: 1, label: 'mri_grade1_doubtful'.tr(), desc: 'mri_grade1_desc'.tr(), icon: Icons.warning_amber_rounded, color: AppColors.riskLow),
+      (value: 2, label: 'mri_grade2_mild'.tr(), desc: 'mri_grade2_desc'.tr(), icon: Icons.error_outline, color: AppColors.riskMedium),
+      (value: 3, label: 'mri_grade3_moderate'.tr(), desc: 'mri_grade3_desc'.tr(), icon: Icons.warning_rounded, color: AppColors.riskMedium),
+      (value: 4, label: 'mri_grade4_severe'.tr(), desc: 'mri_grade4_desc'.tr(), icon: Icons.report_problem_rounded, color: AppColors.riskHigh),
     ];
 
     return SingleChildScrollView(
@@ -898,9 +898,9 @@ class _SymptomQuestionnaireScreenState
         children: [
           const SizedBox(height: AppSpacing.lg),
           _buildQuestionHeader(
-            questionNumber: 'Question 4',
-            question: 'MRI Scan / Medical Report',
-            hint: 'If the patient has an MRI report, select the Kellgren-Lawrence (KL) Grade or severity level. This data will be used by our ML model.',
+            questionNumber: 'question_4_mri'.tr(),
+            question: 'mri_scan_medical_report'.tr(),
+            hint: 'mri_hint'.tr(),
           ),
           const SizedBox(height: AppSpacing.xl),
           ...options.asMap().entries.map((entry) {
@@ -982,13 +982,13 @@ class _SymptomQuestionnaireScreenState
         children: [
           const SizedBox(height: AppSpacing.lg),
           _buildQuestionHeader(
-            questionNumber: 'Question 5',
-            question: 'Expanded Symptoms',
-            hint: 'Select any additional symptoms you are experiencing.',
+            questionNumber: 'question_5_symptoms'.tr(),
+            question: 'expanded_symptoms'.tr(),
+            hint: 'expanded_symptoms_hint'.tr(),
           ),
           const SizedBox(height: AppSpacing.xl),
           
-          Text('Pain Characteristics', style: AppTypography.titleMedium),
+          Text('pain_characteristics'.tr(), style: AppTypography.titleMedium),
           const SizedBox(height: AppSpacing.sm),
           Wrap(
             spacing: AppSpacing.sm,
@@ -996,7 +996,7 @@ class _SymptomQuestionnaireScreenState
             children: _painChars.keys.map((key) {
               final isSelected = _painChars[key] ?? false;
               return FilterChip(
-                label: Text(key),
+                label: Text(key.tr()),
                 selected: isSelected,
                 onSelected: (val) => setState(() => _painChars[key] = val),
                 selectedColor: AppColors.primary.withOpacity(0.2),
@@ -1005,7 +1005,7 @@ class _SymptomQuestionnaireScreenState
           ),
           
           const SizedBox(height: AppSpacing.lg),
-          Text('Stiffness Triggers', style: AppTypography.titleMedium),
+          Text('stiffness_triggers'.tr(), style: AppTypography.titleMedium),
           const SizedBox(height: AppSpacing.sm),
           Wrap(
             spacing: AppSpacing.sm,
@@ -1013,7 +1013,7 @@ class _SymptomQuestionnaireScreenState
             children: _stiffnessTriggers.keys.map((key) {
               final isSelected = _stiffnessTriggers[key] ?? false;
               return FilterChip(
-                label: Text(key),
+                label: Text(key.tr()),
                 selected: isSelected,
                 onSelected: (val) => setState(() => _stiffnessTriggers[key] = val),
                 selectedColor: AppColors.primary.withOpacity(0.2),
@@ -1022,7 +1022,7 @@ class _SymptomQuestionnaireScreenState
           ),
           
           const SizedBox(height: AppSpacing.lg),
-          Text('Other Observations', style: AppTypography.titleMedium),
+          Text('other_observations'.tr(), style: AppTypography.titleMedium),
           const SizedBox(height: AppSpacing.sm),
           Wrap(
             spacing: AppSpacing.sm,
@@ -1030,7 +1030,7 @@ class _SymptomQuestionnaireScreenState
             children: _otherSymptoms.keys.map((key) {
               final isSelected = _otherSymptoms[key] ?? false;
               return FilterChip(
-                label: Text(key),
+                label: Text(key.tr()),
                 selected: isSelected,
                 onSelected: (val) => setState(() => _otherSymptoms[key] = val),
                 selectedColor: AppColors.primary.withOpacity(0.2),

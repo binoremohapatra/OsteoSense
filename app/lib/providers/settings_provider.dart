@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 class SettingsProvider with ChangeNotifier {
   String _language = 'en';
@@ -71,6 +73,15 @@ class SettingsProvider with ChangeNotifier {
       await prefs.setString('language', language);
     } catch (e) {
       debugPrint('Error saving language: $e');
+    }
+  }
+
+  // Method to update Easy Localization locale
+  static Future<void> updateLocale(BuildContext context, String languageCode) async {
+    try {
+      await context.setLocale(Locale(languageCode));
+    } catch (e) {
+      debugPrint('Error updating locale: $e');
     }
   }
 

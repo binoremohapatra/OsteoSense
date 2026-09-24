@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'dart:convert';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:intl/intl.dart';
@@ -108,6 +109,9 @@ class PdfService {
                   children: [
                     pw.Text('Confidence: ${((screening.confidence ?? 0) * 100).round()}%',
                         style: const pw.TextStyle(fontSize: 10, color: grayText)),
+                    if (screening.mlUncertainty != null)
+                      pw.Text('Uncertainty: ${(screening.mlUncertainty! * 100).round()}%',
+                          style: const pw.TextStyle(fontSize: 10, color: grayText)),
                     pw.Text(
                       'Source: ${_sourceLabel(screening)}',
                       style: const pw.TextStyle(fontSize: 9, color: grayText),
@@ -132,12 +136,43 @@ class PdfService {
 
           pw.SizedBox(height: 16),
 
-          // ── Contributing factors
-          _section('Contributing Factors', teal),
-          pw.SizedBox(height: 8),
-          ..._factorsList(screening),
+          // ── Gait data
+          if (screening.gaitData != null) ...[
+            _section('Gait Analysis', teal),
+            pw.SizedBox(height: 8),
+            _infoGrid([
+              ['Sensor Data', 'Recorded'],
+              ['Cadence', '${_extractCadence(screening.gaitData)} Hz'],
+              ['Stride Time', '${_extractStrideTime(screening.gaitData)} s'],
+            ]),
+            pw.SizedBox(height: 16),
+          ],
 
-          pw.SizedBox(height: 16),
+          // ── Advanced ML features
+          if (screening.advancedFeaturesVector != null) ...[
+            _section('Advanced ML Features', teal),
+            pw.SizedBox(height: 8),
+            _infoGrid([
+              ['Total Features', '203'],
+              ['Gait Variability', '${(screening.gaitVariability ?? 0.0).toStringAsFixed(3)}'],
+              ['Gait Asymmetry', '${(screening.gaitAsymmetry ?? 0.0).toStringAsFixed(3)}'],
+              ['Gait Smoothness', '${(screening.gaitSmoothness ?? 0.0).toStringAsFixed(3)}'],
+              ['Postural Stability', '${(screening.posturalStability ?? 0.0).toStringAsFixed(3)}'],
+              ['Pain Frequency', screening.painFrequency ?? 'N/A'],
+              ['Activity Limitation', screening.activityLimitation ?? 'N/A'],
+              ['Symptom Duration', screening.symptomDuration ?? 'N/A'],
+              ['Medication Use', screening.medicationUse == true ? 'Yes' : 'No'],
+            ]),
+            pw.SizedBox(height: 16),
+          ],
+
+          // ── Contributing factors (only show if data is available from app)
+          if (screening.contributingFactors != null && screening.contributingFactors!.isNotEmpty) ...[
+            _section('Contributing Factors', teal),
+            pw.SizedBox(height: 8),
+            ..._factorsList(screening),
+            pw.SizedBox(height: 16),
+          ],
 
           // ── AI Reasoning
           if (screening.aiReasoning != null) ...[
@@ -219,10 +254,18 @@ class PdfService {
   }
 
   static PdfColor _riskPdfColor(String riskLevel) {
-    switch (riskLevel) {
-      case 'high': return const PdfColor.fromInt(0xFFFF3B30);
-      case 'medium': return const PdfColor.fromInt(0xFFFF9500);
-      default: return const PdfColor.fromInt(0xFF34C759);
+    switch (riskLevel.toLowerCase()) {
+      case 'high':
+      case 'high_risk':
+        return const PdfColor.fromInt(0xFFFF3B30);
+      case 'medium':
+      case 'moderate':
+      case 'low_risk':
+        return const PdfColor.fromInt(0xFFFF9500);
+      case 'low':
+      case 'healthy':
+      default:
+        return const PdfColor.fromInt(0xFF34C759);
     }
   }
 
@@ -237,11 +280,38 @@ class PdfService {
 
   static String _capitalize(String s) => s.isEmpty ? s : '${s[0].toUpperCase()}${s.substring(1)}';
 
-  static String _sourceLabel(Screening screening) => 'AI Assessment';
+  static String _sourceLabel(Screening screening) => 'Advanced AI Assessment (3-model ensemble)';
+
+  static String _extractCadence(String? gaitData) {
+    if (gaitData == null) return '--';
+    try {
+      final decoded = jsonDecode(gaitData);
+      if (decoded is List && decoded.isNotEmpty) {
+        return (decoded[0] as num).toStringAsFixed(1);
+      }
+    } catch (e) {
+      // Error parsing
+    }
+    return '--';
+  }
+
+  static String _extractStrideTime(String? gaitData) {
+    if (gaitData == null) return '--';
+    try {
+      final decoded = jsonDecode(gaitData);
+      if (decoded is List && decoded.length > 1) {
+        return (decoded[1] as num).toStringAsFixed(2);
+      }
+    } catch (e) {
+      // Error parsing
+    }
+    return '--';
+  }
 
   static List<String> _getRecommendations(String riskLevel) {
-    switch (riskLevel) {
+    switch (riskLevel.toLowerCase()) {
       case 'high':
+      case 'high_risk':
         return [
           'Refer urgently to an orthopedic specialist for clinical evaluation',
           'Consider X-ray or MRI imaging of affected joints',
@@ -250,6 +320,8 @@ class PdfService {
           'Schedule follow-up within 2 weeks',
         ];
       case 'medium':
+      case 'moderate':
+      case 'low_risk':
         return [
           'Schedule consultation with a physician within 1 month',
           'Recommend physiotherapy assessment',
@@ -257,6 +329,8 @@ class PdfService {
           'Prescribe low-impact exercise program',
           'Follow-up screening in 3 months',
         ];
+      case 'low':
+      case 'healthy':
       default:
         return [
           'Maintain healthy lifestyle and regular exercise (30 min/day)',

@@ -22,6 +22,22 @@ class Screening {
   final bool synced;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  
+  // Advanced ML features
+  final String? painFrequency;
+  final String? activityLimitation;
+  final bool? medicationUse;
+  final String? symptomDuration;
+  final String? painCharacteristics;
+  final String? stiffnessTriggers;
+  final String? otherSymptoms;
+  final String? functionalDifficulty;
+  final double? gaitVariability;
+  final double? gaitAsymmetry;
+  final double? gaitSmoothness;
+  final double? posturalStability;
+  final double? mlUncertainty;
+  final String? advancedFeaturesVector;
 
   Screening({
     this.id,
@@ -47,6 +63,20 @@ class Screening {
     this.synced = false,
     this.createdAt,
     this.updatedAt,
+    this.painFrequency,
+    this.activityLimitation,
+    this.medicationUse,
+    this.symptomDuration,
+    this.painCharacteristics,
+    this.stiffnessTriggers,
+    this.otherSymptoms,
+    this.functionalDifficulty,
+    this.gaitVariability,
+    this.gaitAsymmetry,
+    this.gaitSmoothness,
+    this.posturalStability,
+    this.mlUncertainty,
+    this.advancedFeaturesVector,
   }) : screeningDate = screeningDate ?? DateTime.now();
 
   Map<String, dynamic> toMap() {
@@ -74,6 +104,20 @@ class Screening {
       'synced': synced ? 1 : 0,
       'created_at': createdAt?.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
+      'pain_frequency': painFrequency,
+      'activity_limitation': activityLimitation,
+      'medication_use': medicationUse == true ? 1 : 0,
+      'symptom_duration': symptomDuration,
+      'pain_characteristics': painCharacteristics,
+      'stiffness_triggers': stiffnessTriggers,
+      'other_symptoms': otherSymptoms,
+      'functional_difficulty': functionalDifficulty,
+      'gait_variability': gaitVariability,
+      'gait_asymmetry': gaitAsymmetry,
+      'gait_smoothness': gaitSmoothness,
+      'postural_stability': posturalStability,
+      'ml_uncertainty': mlUncertainty,
+      'advanced_features_vector': advancedFeaturesVector,
     };
   }
 
@@ -102,6 +146,20 @@ class Screening {
       synced: (map['synced'] as int?) == 1,
       createdAt: map['created_at'] != null ? DateTime.parse(map['created_at'] as String) : null,
       updatedAt: map['updated_at'] != null ? DateTime.parse(map['updated_at'] as String) : null,
+      painFrequency: map['pain_frequency'] as String?,
+      activityLimitation: map['activity_limitation'] as String?,
+      medicationUse: (map['medication_use'] as int?) == 1,
+      symptomDuration: map['symptom_duration'] as String?,
+      painCharacteristics: map['pain_characteristics'] as String?,
+      stiffnessTriggers: map['stiffness_triggers'] as String?,
+      otherSymptoms: map['other_symptoms'] as String?,
+      functionalDifficulty: map['functional_difficulty'] as String?,
+      gaitVariability: map['gait_variability'] as double?,
+      gaitAsymmetry: map['gait_asymmetry'] as double?,
+      gaitSmoothness: map['gait_smoothness'] as double?,
+      posturalStability: map['postural_stability'] as double?,
+      mlUncertainty: map['ml_uncertainty'] as double?,
+      advancedFeaturesVector: map['advanced_features_vector'] as String?,
     );
   }
 
@@ -129,6 +187,20 @@ class Screening {
     bool? synced,
     DateTime? createdAt,
     DateTime? updatedAt,
+    String? painFrequency,
+    String? activityLimitation,
+    bool? medicationUse,
+    String? symptomDuration,
+    String? painCharacteristics,
+    String? stiffnessTriggers,
+    String? otherSymptoms,
+    String? functionalDifficulty,
+    double? gaitVariability,
+    double? gaitAsymmetry,
+    double? gaitSmoothness,
+    double? posturalStability,
+    double? mlUncertainty,
+    String? advancedFeaturesVector,
   }) {
     return Screening(
       id: id ?? this.id,
@@ -154,6 +226,20 @@ class Screening {
       synced: synced ?? this.synced,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      painFrequency: painFrequency ?? this.painFrequency,
+      activityLimitation: activityLimitation ?? this.activityLimitation,
+      medicationUse: medicationUse ?? this.medicationUse,
+      symptomDuration: symptomDuration ?? this.symptomDuration,
+      painCharacteristics: painCharacteristics ?? this.painCharacteristics,
+      stiffnessTriggers: stiffnessTriggers ?? this.stiffnessTriggers,
+      otherSymptoms: otherSymptoms ?? this.otherSymptoms,
+      functionalDifficulty: functionalDifficulty ?? this.functionalDifficulty,
+      gaitVariability: gaitVariability ?? this.gaitVariability,
+      gaitAsymmetry: gaitAsymmetry ?? this.gaitAsymmetry,
+      gaitSmoothness: gaitSmoothness ?? this.gaitSmoothness,
+      posturalStability: posturalStability ?? this.posturalStability,
+      mlUncertainty: mlUncertainty ?? this.mlUncertainty,
+      advancedFeaturesVector: advancedFeaturesVector ?? this.advancedFeaturesVector,
     );
   }
 }

@@ -18,6 +18,7 @@ MPU6050 mpu;
 // BLE setup
 BLEServer* pServer = NULL;
 bool deviceConnected = false;
+bool oldDeviceConnected = false;
 
 // Service + characteristic UUIDs 
 #define SERVICE_UUID "4fafc201-1fb5-459e-8fcc-c5c9c331914b"
@@ -25,13 +26,19 @@ bool deviceConnected = false;
 #define GYRO_UUID    "beb5483f-36e1-4688-b7f5-ea07361b26a9"
 #define PIEZO_UUID   "beb54840-36e1-4688-b7f5-ea07361b26aa"
 #define EMG_UUID     "beb54841-36e1-4688-b7f5-ea07361b26ab"
-#define BATTERY_UUID "beb54843-36e1-4688-b7f5-ea07361b26ad" 
+#define BATTERY_UUID "beb54843-36e1-4688-b7f5-ea07361b26ad"
+#define STATUS_UUID  "beb54844-36e1-4688-b7f5-ea07361b26ac" // Device status characteristic
 
 BLECharacteristic *pAccelChar;
 BLECharacteristic *pGyroChar;
 BLECharacteristic *pPiezoChar;
 BLECharacteristic *pEMGChar; // EMG Characteristic
 BLECharacteristic *pBatteryChar; // Battery Characteristic
+BLECharacteristic *pStatusChar; // Status Characteristic
+
+// Device status flags
+bool modelReady = true; // Model is locally available
+bool sensorsOK = false; // Sensor health status
 
 // Piezo & EMG Average padhne ka function
 int readSensorAverage(int pin, int samples) {
@@ -42,11 +49,40 @@ int readSensorAverage(int pin, int samples) {
   return sum / samples;
 }
 
+// Sensor health check function
+bool checkSensorHealth() {
+  // Check if MPU6050 is responding
+  if (!mpu.testConnection()) {
+    return false;
+  }
+  
+  // Check if piezo readings are within expected range
+  int piezoReading = analogRead(PIEZO_PIN);
+  if (piezoReading < 100 || piezoReading > 4000) {
+    return false;
+  }
+  
+  // Check if EMG readings are within expected range
+  int emgReading = analogRead(EMG_PIN);
+  if (emgReading < 100 || emgReading > 4000) {
+    return false;
+  }
+  
+  return true;
+}
+
 class MyServerCallbacks: public BLEServerCallbacks {
-  void onConnect(BLEServer* pServer) { deviceConnected = true; }
+  void onConnect(BLEServer* pServer) { 
+    deviceConnected = true; 
+    oldDeviceConnected = false;
+    Serial.println("Device connected");
+  }
   void onDisconnect(BLEServer* pServer) { 
     deviceConnected = false; 
-    BLEDevice::startAdvertising(); // Disconnect hone pe wapas advertise karega
+    oldDeviceConnected = true;
+    Serial.println("Device disconnected");
+    // Disconnect hone pe wapas advertise karega
+    BLEDevice::startAdvertising(); 
   }
 };
 
@@ -62,8 +98,10 @@ void setup() {
   mpu.initialize();
   if (mpu.testConnection()) {
     Serial.println("MPU6050 connected");
+    sensorsOK = true;
   } else {
     Serial.println("MPU6050 failed");
+    sensorsOK = false;
   }
 
   // BLE init
@@ -109,7 +147,20 @@ void setup() {
   );
   pBatteryChar->addDescriptor(new BLE2902());
 
+  // Status Characteristic (sends device status to app)
+  pStatusChar = pService->createCharacteristic(
+    STATUS_UUID,
+    BLECharacteristic::PROPERTY_NOTIFY | BLECharacteristic::PROPERTY_READ
+  );
+  pStatusChar->addDescriptor(new BLE2902());
+
   pService->start();
+  
+  // Send initial status
+  sensorsOK = checkSensorHealth();
+  uint8_t statusData[2] = { (uint8_t)(modelReady ? 1 : 0), (uint8_t)(sensorsOK ? 1 : 0) };
+  pStatusChar->setValue(statusData, 2);
+  pStatusChar->notify();
   
   // Robust BLE Advertising setup
   // Main adv packet: Service UUID (so phones can filter/find us)
@@ -129,7 +180,39 @@ void setup() {
   Serial.println("BLE advertising started - Device name: JointSaathi");
 }
 
+unsigned long lastStatusUpdate = 0;
+unsigned long lastSensorCheck = 0;
+
 void loop() {
+  // Handle disconnection
+  if (!deviceConnected && oldDeviceConnected) {
+    delay(500); // Give the bluetooth stack the chance to get things ready
+    pServer->startAdvertising(); // Restart advertising
+    Serial.println("Started advertising again");
+    oldDeviceConnected = false;
+  }
+  
+  // Periodic sensor health check (every 5 seconds)
+  if (millis() - lastSensorCheck > 5000) {
+    sensorsOK = checkSensorHealth();
+    lastSensorCheck = millis();
+    
+    // Update status on sensor health change
+    if (deviceConnected) {
+      uint8_t statusData[2] = { (uint8_t)(modelReady ? 1 : 0), (uint8_t)(sensorsOK ? 1 : 0) };
+      pStatusChar->setValue(statusData, 2);
+      pStatusChar->notify();
+    }
+  }
+  
+  // Periodic status update (every 1 second)
+  if (millis() - lastStatusUpdate > 1000 && deviceConnected) {
+    uint8_t statusData[2] = { (uint8_t)(modelReady ? 1 : 0), (uint8_t)(sensorsOK ? 1 : 0) };
+    pStatusChar->setValue(statusData, 2);
+    pStatusChar->notify();
+    lastStatusUpdate = millis();
+  }
+
   // --- 1. Read MPU ---
   int16_t ax, ay, az;
   int16_t gx, gy, gz;
@@ -217,6 +300,7 @@ void loop() {
   Serial.print("Piezo: "); Serial.print(rawPiezo); Serial.print(" Amp: "); Serial.println(amplitude);
   Serial.print("EMG: ");   Serial.println(rawEMG);
   Serial.print("Battery: "); Serial.print(batteryVoltage); Serial.print("V ("); Serial.print(batteryPercentage); Serial.println("%)");
+  Serial.print("Status: ModelReady="); Serial.print(modelReady); Serial.print(" SensorsOK="); Serial.println(sensorsOK);
 
   delay(20); // 50Hz pe sampling (App model expects 50Hz)
 }

@@ -31,15 +31,46 @@ class SensorWindowIn(BaseModel):
     gyro: list[float] = Field(..., description="Flat list, length N*3: x,y,z,x,y,z,...")
     piezo: list[float] = Field(..., description="Flat list, length M: raw piezo disc waveform")
     emg: list[float] = Field(..., description="Flat list, length K: raw EMG waveform")
+    accel: list[float] = Field(default=[], description="Flat list, length J*3: x,y,z user accelerometer data")
     fs_gyro: int = Field(default=100, description="Gyro sample rate in Hz")
     fs_piezo: int = Field(default=4000, description="Piezo disc sample rate in Hz")
     fs_emg: int = Field(default=1000, description="EMG sample rate in Hz")
+    fs_accel: int = Field(default=100, description="Accelerometer sample rate in Hz")
 
-    # New Clinical Inputs (Multimodal)
     painLevel: Optional[int] = 0
     stiffnessDuration: Optional[str] = "0"
     swelling: Optional[bool] = False
     pastInjury: Optional[bool] = False
+    mri_kl_grade: Optional[int] = 0
+    past_surgery: Optional[bool] = False
+    
+    # Medical History Flags
+    med_hx_diagnosis: Optional[bool] = False
+    med_hx_joint_pain: Optional[bool] = False
+    med_hx_chronic: Optional[bool] = False
+    med_hx_inflammation: Optional[bool] = False
+    med_hx_cartilage: Optional[bool] = False
+    med_hx_ligament: Optional[bool] = False
+    med_hx_fracture: Optional[bool] = False
+    
+    # Multimodal Features
+    sym_locking: Optional[bool] = False
+    sym_clicking: Optional[bool] = False
+    sym_grinding: Optional[bool] = False
+    sym_instability: Optional[bool] = False
+    
+    # Pain Characteristics
+    pain_type_sharp: Optional[bool] = False
+    pain_type_dull: Optional[bool] = False
+    pain_type_burning: Optional[bool] = False
+    pain_type_aching: Optional[bool] = False
+    pain_type_stabbing: Optional[bool] = False
+    pain_type_throbbing: Optional[bool] = False
+    
+    func_standing: Optional[float] = 0.0
+    func_walking: Optional[float] = 0.0
+    func_stairs: Optional[float] = 0.0
+    func_chores: Optional[float] = 0.0
 
     @field_validator("gyro")
     @classmethod
@@ -87,14 +118,31 @@ class ClinicalPredictionRequest(BaseModel):
     stiffness_duration: str = Field(..., description="Stiffness duration category: <30, 30-60, >60, none")
     swelling: bool = Field(..., description="Joint swelling present")
     past_injury: bool = Field(..., description="History of joint injury")
+    past_surgery: bool = Field(default=False, description="Has had past surgery on the joint")
     mri_kl_grade: int = Field(default=0, description="KL Grade from MRI/X-ray (0-4)")
     
-    # 9 Multimodal Features
+    # Medical History Flags
+    med_hx_diagnosis: bool = Field(default=False)
+    med_hx_joint_pain: bool = Field(default=False)
+    med_hx_chronic: bool = Field(default=False)
+    med_hx_inflammation: bool = Field(default=False)
+    med_hx_cartilage: bool = Field(default=False)
+    med_hx_ligament: bool = Field(default=False)
+    med_hx_fracture: bool = Field(default=False)
+    
+    # Multimodal Features
     sym_locking: bool = Field(default=False)
     sym_clicking: bool = Field(default=False)
     sym_grinding: bool = Field(default=False)
-    sym_aching: bool = Field(default=False)
     sym_instability: bool = Field(default=False)
+    
+    # Pain Characteristics
+    pain_type_sharp: bool = Field(default=False)
+    pain_type_dull: bool = Field(default=False)
+    pain_type_burning: bool = Field(default=False)
+    pain_type_aching: bool = Field(default=False)
+    pain_type_stabbing: bool = Field(default=False)
+    pain_type_throbbing: bool = Field(default=False)
     
     func_standing: float = Field(default=0.0)
     func_walking: float = Field(default=0.0)

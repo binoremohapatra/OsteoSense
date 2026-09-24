@@ -36,6 +36,7 @@ class _ProcessingScreenState extends State<ProcessingScreen>
     _steps = [
       ProcessingStep(label: 'analyzing_symptoms'.tr(), status: StepStatus.inProgress),
       ProcessingStep(label: 'processing_gait_data'.tr(), status: StepStatus.pending),
+      ProcessingStep(label: 'extracting_features'.tr(), status: StepStatus.pending),
       ProcessingStep(label: 'calculating_risk_factors'.tr(), status: StepStatus.pending),
       ProcessingStep(label: 'generating_recommendations'.tr(), status: StepStatus.pending),
     ];
@@ -63,6 +64,10 @@ class _ProcessingScreenState extends State<ProcessingScreen>
     await Future.delayed(const Duration(seconds: 2));
     _updateStep(1, StepStatus.completed);
     _updateStep(2, StepStatus.inProgress);
+
+    await Future.delayed(const Duration(seconds: 2));
+    _updateStep(2, StepStatus.completed);
+    _updateStep(3, StepStatus.inProgress);
 
     if (!mounted) return;
     final screeningProvider = Provider.of<ScreeningProvider>(context, listen: false);
@@ -139,6 +144,15 @@ class _ProcessingScreenState extends State<ProcessingScreen>
     await Future.delayed(const Duration(seconds: 1));
     _updateStep(3, StepStatus.completed);
 
+    // Generate contributing factors from questionnaire responses
+    final questionnaireFactors = screeningProvider.generateContributingFactors();
+    
+    // Combine backend factors with questionnaire factors
+    final allFactors = [
+      ...prediction.contributingFactors,
+      ...questionnaireFactors,
+    ];
+
     // Construct the final screening object first
     final newScreening = Screening(
       patientId: screeningProvider.draftPatientId!,
@@ -156,8 +170,9 @@ class _ProcessingScreenState extends State<ProcessingScreen>
       functionalMap: jsonEncode(screeningProvider.draftFunctionalMap),
       riskLevel: prediction.riskLevel,
       confidence: prediction.confidence,
-      contributingFactors: prediction.contributingFactors.join(','),
+      contributingFactors: allFactors.join('|'),
       aiReasoning: prediction.reasoning,
+      mlUncertainty: prediction.uncertainty,
       doctorRecommendations: _generateRecommendations(prediction.riskLevel),
       synced: false,
     );
@@ -177,18 +192,23 @@ class _ProcessingScreenState extends State<ProcessingScreen>
       await Future.delayed(const Duration(milliseconds: 1500));
       
       if (mounted) {
-        // Navigate to report page instead of result page
+        // Always navigate to detailed report page
         final patientProvider = Provider.of<PatientProvider>(context, listen: false);
         final patient = patientProvider.selectedPatient;
+
+        final screeningToSend = screeningProvider.currentScreening ?? newScreening;
         
         if (patient != null) {
           context.push('/screening/report', extra: {
-            'screening': screeningProvider.currentScreening ?? newScreening,
+            'screening': screeningToSend,
             'patient': patient,
           });
         } else {
-          // Fallback to result page if no patient
-          context.push('/screening/result', extra: screeningProvider.currentScreening ?? newScreening);
+          // Fallback to detailed report without patient
+          context.push('/screening/report', extra: {
+            'screening': screeningToSend,
+            'patient': null,
+          });
         }
       }
     } else {

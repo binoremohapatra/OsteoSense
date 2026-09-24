@@ -6,6 +6,9 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 import '../../providers/screening_provider.dart';
+import '../../services/database_helper.dart';
+import '../../models/medical_history.dart';
+import '../../models/surgery_history.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_spacing.dart';
 import '../../theme/app_typography.dart';
@@ -37,7 +40,25 @@ class AssessmentOverviewScreen extends StatelessWidget {
           onPressed: () => context.pop(),
         ),
       ),
-      body: Stack(
+      body: FutureBuilder(
+        future: Future.wait([
+          DatabaseHelper().query('medical_history', where: 'patient_id = ?', whereArgs: [provider.draftPatientId], orderBy: 'created_at DESC', limit: 1),
+          DatabaseHelper().query('surgery_history', where: 'patient_id = ?', whereArgs: [provider.draftPatientId], orderBy: 'created_at DESC', limit: 1),
+        ]),
+        builder: (context, AsyncSnapshot<List<List<Map<String, dynamic>>>> snapshot) {
+          MedicalHistory? medHistory;
+          SurgeryHistory? surHistory;
+          
+          if (snapshot.hasData) {
+            if (snapshot.data![0].isNotEmpty) {
+              medHistory = MedicalHistory.fromMap(snapshot.data![0].first);
+            }
+            if (snapshot.data![1].isNotEmpty) {
+              surHistory = SurgeryHistory.fromMap(snapshot.data![1].first);
+            }
+          }
+          
+          return Stack(
         children: [
           Positioned.fill(
             child: IgnorePointer(
@@ -142,6 +163,38 @@ class AssessmentOverviewScreen extends StatelessWidget {
                               _summaryRow('Triggers', _getMapKeys(provider.draftSymptomsMap['stiffness_triggers'])),
                             ],
                             
+                            if (medHistory != null) ...[
+                              const Divider(height: AppSpacing.xl),
+                              _summaryRow('Prev. Diagnosis', medHistory.previousDiagnosis == true ? 'yes'.tr() : 'no'.tr()),
+                              _summaryRow('Prev. Joint Pain', medHistory.previousJointPain == true ? 'yes'.tr() : 'no'.tr()),
+                              _summaryRow('Chronic Joint Prob.', medHistory.chronicJointProblems == true ? 'yes'.tr() : 'no'.tr()),
+                              _summaryRow('Past Inflammation', medHistory.previousInflammation == true ? 'yes'.tr() : 'no'.tr()),
+                              _summaryRow('Cartilage Prob.', medHistory.previousCartilageProblems == true ? 'yes'.tr() : 'no'.tr()),
+                              _summaryRow('Ligament Prob.', medHistory.previousLigamentProblems == true ? 'yes'.tr() : 'no'.tr()),
+                              _summaryRow('Past Fracture', medHistory.previousFracture == true ? 'yes'.tr() : 'no'.tr()),
+                              _summaryRow('Past Injury', medHistory.hasPastInjury == true ? 'yes'.tr() : 'no'.tr()),
+                              if (medHistory.hasPastInjury == true) ...[
+                                _summaryRow('Injury Type', medHistory.injuryType ?? 'N/A'),
+                                _summaryRow('Severity', medHistory.injurySeverity ?? 'N/A'),
+                                _summaryRow('Mechanism', medHistory.injuryMechanism ?? 'N/A'),
+                                _summaryRow('Med. Treatment', medHistory.medicalTreatmentRequired == true ? 'yes'.tr() : 'no'.tr()),
+                                _summaryRow('Immobilization', medHistory.immobilizationRequired == true ? 'yes'.tr() : 'no'.tr()),
+                                _summaryRow('Physiotherapy', medHistory.physiotherapyPerformed == true ? 'yes'.tr() : 'no'.tr()),
+                                _summaryRow('Current Symptoms', medHistory.currentSymptomsAfterInjury ?? 'N/A'),
+                              ]
+                            ],
+                            
+                            if (surHistory != null) ...[
+                              const Divider(height: AppSpacing.xl),
+                              _summaryRow('Past Surgery', 'yes'.tr()),
+                              _summaryRow('Surgery Type', surHistory.surgeryType),
+                              if (surHistory.surgeryDate != null)
+                                _summaryRow('Surgery Date', surHistory.surgeryDate!),
+                              if (surHistory.reason != null)
+                                _summaryRow('Reason', surHistory.reason!),
+                              _summaryRow('Implant Present', surHistory.implantPresent == true ? 'yes'.tr() : 'no'.tr()),
+                            ],
+                            
                             if (provider.draftFunctionalMap.isNotEmpty) ...[
                               const Divider(height: AppSpacing.xl),
                               ...provider.draftFunctionalMap.entries.map((e) => _summaryRow(e.key, '${e.value}/3')),
@@ -191,6 +244,8 @@ class AssessmentOverviewScreen extends StatelessWidget {
             ],
           ),
         ],
+      );
+    }
       ),
     );
   }

@@ -136,9 +136,15 @@ class GaitSensorPipeline {
     _clearBuffers();
     _updatePipelineStatus(0, PipelineStageStatus.receiving);
     
+    // Explicitly stop simulation if we're in hardware mode
+    if (_sourceType != SignalSourceType.simulated) {
+      _stopSimulation();
+    }
+    
     if (_sourceType == SignalSourceType.simulated) {
       await _startSimulation();
     } else {
+      // Hardware mode - use real sensor data only
       await _startHardwareRecording();
     }
   }
@@ -197,6 +203,11 @@ class GaitSensorPipeline {
   
   /// Generate simulated sample
   void _generateSimulatedSample() {
+    // Safety check: never generate simulated data in hardware mode
+    if (_sourceType != SignalSourceType.simulated) {
+      return;
+    }
+    
     final now = DateTime.now();
     final t = _simSampleCount / _simParams.sampleRate;
     
@@ -591,6 +602,11 @@ class GaitSensorPipeline {
     _currentFeatures = null;
     _currentPrediction = null;
     _predictionHistory.clear();
+  }
+
+  /// Public method to clear buffers (for UI calls)
+  void clearBuffers() {
+    _clearBuffers();
   }
   
   /// Reset pipeline status

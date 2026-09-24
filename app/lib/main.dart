@@ -42,6 +42,10 @@ void main() async {
   final settingsProvider = SettingsProvider();
   await settingsProvider.loadSettings();
 
+  // Get saved language or default to English
+  final savedLanguage = settingsProvider.language;
+  final initialLocale = Locale(savedLanguage);
+
   runApp(EasyLocalization(
     supportedLocales: const [
       Locale('en'),
@@ -59,6 +63,7 @@ void main() async {
     ],
     path: 'assets/translations',
     fallbackLocale: const Locale('en'),
+    startLocale: initialLocale,
     child: JointSaathiApp(settingsProvider: settingsProvider),
   ));
 }
@@ -77,20 +82,24 @@ class JointSaathiApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ScreeningProvider()),
         ChangeNotifierProvider.value(value: settingsProvider),
       ],
-      child: MaterialApp.router(
-        title: 'JointSaathi',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.lightTheme.copyWith(
-          textTheme: GoogleFonts.interTextTheme(AppTheme.lightTheme.textTheme),
-        ),
-        darkTheme: AppTheme.darkTheme.copyWith(
-          textTheme: GoogleFonts.interTextTheme(AppTheme.darkTheme.textTheme),
-        ),
-        themeMode: ThemeMode.light,
-        localizationsDelegates: context.localizationDelegates,
-        supportedLocales: context.supportedLocales,
-        locale: context.locale,
-        routerConfig: appRouter,
+      child: Consumer<SettingsProvider>(
+        builder: (context, settings, child) {
+          return MaterialApp.router(
+            title: 'JointSaathi',
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.lightTheme.copyWith(
+              textTheme: GoogleFonts.interTextTheme(AppTheme.lightTheme.textTheme),
+            ),
+            darkTheme: AppTheme.darkTheme.copyWith(
+              textTheme: GoogleFonts.interTextTheme(AppTheme.darkTheme.textTheme),
+            ),
+            themeMode: ThemeMode.light,
+            localizationsDelegates: context.localizationDelegates,
+            supportedLocales: context.supportedLocales,
+            locale: Locale(settings.language),
+            routerConfig: appRouter,
+          );
+        },
       ),
     );
   }

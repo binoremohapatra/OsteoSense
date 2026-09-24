@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/app_colors.dart';
@@ -21,7 +22,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
     if (phone.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter phone and new password')),
+        SnackBar(content: Text('please_enter_phone_and_new'.tr())),
       );
       return;
     }
@@ -37,7 +38,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       setState(() => _isLoading = false);
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Password updated successfully!')),
+          SnackBar(content: Text('password_updated_successfully'.tr())),
         );
         Navigator.pop(context);
       } else {
@@ -54,7 +55,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Reset Password')),
+      appBar: AppBar(title: Text('reset_password'.tr())),
       body: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(
@@ -83,7 +84,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 ? const CircularProgressIndicator()
                 : ElevatedButton(
                     onPressed: _handleReset,
-                    child: const Text('Reset Password'),
+                    child: Text('reset_password'.tr()),
                   ),
           ],
         ),

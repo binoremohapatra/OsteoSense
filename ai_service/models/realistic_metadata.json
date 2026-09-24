@@ -1,0 +1,20 @@
+{
+  "model_type": "realistic_ensemble",
+  "n_classes": 2,
+  "class_names": [
+    "healthy",
+    "oa_risk"
+  ],
+  "n_features": 203,
+  "test_accuracy": 0.8916666666666667,
+  "roc_auc": 0.900527924423451,
+  "n_models": 2,
+  "model_names": [
+    "Regularized_RF",
+    "Regularized_GB"
+  ],
+  "target_accuracy_range": "85-90%",
+  "noise_level": 0.2,
+  "overlap_level": 0.1,
+  "label_noise": 0.03
+}

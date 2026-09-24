@@ -235,6 +235,44 @@ def extract_emg_features(emg_signal, fs=EMG_FS_DEFAULT):
 
 
 # ---------------------------------------------------------------------------
+# ACCELEROMETER FEATURES (from phone sensor)
+# ---------------------------------------------------------------------------
+
+def extract_accel_features(accel, fs=100):
+    """
+    accel: (J, 3) array
+    """
+    feats = {}
+    if len(accel) == 0:
+        feats["accel_rms"] = 0.0
+        feats["estimated_steps"] = 0.0
+        feats["regularity_score"] = 0.0
+        return feats
+
+    # Simply calculate RMS across all axes
+    rms_x = np.sqrt(np.mean(accel[:, 0]**2))
+    rms_y = np.sqrt(np.mean(accel[:, 1]**2))
+    rms_z = np.sqrt(np.mean(accel[:, 2]**2))
+    feats["accel_rms"] = (rms_x + rms_y + rms_z) / 3.0
+    
+    # Estimate steps simply by finding peaks in the norm
+    accel_norm = np.linalg.norm(accel, axis=1)
+    peaks, _ = sp_signal.find_peaks(accel_norm, distance=int(fs*0.5))
+    feats["estimated_steps"] = float(len(peaks))
+    
+    # Regularity score (autocorrelation of norm)
+    norm_centered = accel_norm - np.mean(accel_norm)
+    if np.sum(norm_centered**2) > 0:
+        autocorr = np.correlate(norm_centered, norm_centered, mode='full')
+        autocorr = autocorr[len(autocorr)//2:] / np.max(autocorr)
+        feats["regularity_score"] = np.mean(autocorr)
+    else:
+        feats["regularity_score"] = 0.0
+        
+    return feats
+
+
+# ---------------------------------------------------------------------------
 # COMBINE INTO ONE FEATURE VECTOR
 # ---------------------------------------------------------------------------
 
@@ -242,44 +280,28 @@ def extract_features(record):
     """
     record: dict as produced by simulate_data.simulate_subject()
             (or, later, real sensor recordings with the SAME keys/shapes:
-             'gyro' (N,3), 'piezo' (M,), 'emg' (K,), 'fs_gyro', 'fs_piezo', 'fs_emg')
-    Returns: dict of all features (gait + piezo + emg), flat, ready for a DataFrame row.
+             'gyro' (N,3), 'piezo' (M,), 'emg' (K,), 'fs_gyro', 'fs_piezo', 'fs_emg',
+             'clinical_factors' (dict), 'image_features' (dict))
+    Returns: dict of all features (gait + piezo + emg + clinical + image), flat, ready for a DataFrame row.
     """
     gait_feats = extract_gait_features(record["gyro"], fs=record.get("fs_gyro", GYRO_FS_DEFAULT))
     piezo_feats = extract_piezo_features(record["piezo"], fs=record.get("fs_piezo", PIEZO_FS_DEFAULT))
     emg_feats = extract_emg_features(record["emg"], fs=record.get("fs_emg", EMG_FS_DEFAULT))
-    
-    age = float(record.get("age", 50.0))
-    weight = float(record.get("weight_kg", 70.0))
-    height = float(record.get("height_cm", 170.0))
-    # Avoid division by zero
-    if height > 0:
-        bmi = weight / ((height / 100.0) ** 2)
-    else:
-        bmi = 24.0
 
-    clinical_feats = {
-        "pain_level": float(record.get("pain_level", 0.0)),
-        "stiffness_duration": float(record.get("stiffness_duration", 0.0)),
-        "swelling": float(record.get("swelling", 0.0)),
-        "past_injury": float(record.get("past_injury", 0.0)),
-        "mri_kl_grade": float(record.get("mri_kl_grade", 0.0)),
-        "age": age,
-        "weight_kg": weight,
-        "height_cm": height,
-        "bmi": bmi,
-        "sym_locking": float(record.get("sym_locking", 0.0)),
-        "sym_clicking": float(record.get("sym_clicking", 0.0)),
-        "sym_grinding": float(record.get("sym_grinding", 0.0)),
-        "sym_aching": float(record.get("sym_aching", 0.0)),
-        "sym_instability": float(record.get("sym_instability", 0.0)),
-        "func_standing": float(record.get("func_standing", 0.0)),
-        "func_walking": float(record.get("func_walking", 0.0)),
-        "func_stairs": float(record.get("func_stairs", 0.0)),
-        "func_chores": float(record.get("func_chores", 0.0)),
-    }
-    
-    all_feats = {**gait_feats, **piezo_feats, **emg_feats, **clinical_feats}
+    accel = record.get("accel", np.zeros((0, 3)))
+    accel_feats = extract_accel_features(accel, fs=record.get("fs_accel", GYRO_FS_DEFAULT))
+
+    # Get clinical factors (already encoded)
+    clinical_feats = record.get("clinical_factors", {})
+
+    # Get image features (already extracted)
+    image_feats = record.get("image_features", {})
+
+    # Prefix clinical and image features to avoid name collisions
+    clinical_feats_prefixed = {f"clinical_{k}": v for k, v in clinical_feats.items()}
+    image_feats_prefixed = {f"image_{k}": v for k, v in image_feats.items()}
+
+    all_feats = {**gait_feats, **piezo_feats, **emg_feats, **accel_feats, **clinical_feats_prefixed, **image_feats_prefixed}
     return all_feats
 
 

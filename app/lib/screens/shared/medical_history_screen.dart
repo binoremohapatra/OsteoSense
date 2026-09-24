@@ -51,7 +51,7 @@ class _MedicalHistoryScreenState extends State<MedicalHistoryScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: CustomAppBar(
-        title: 'Medical History',
+        title: 'medical_history'.tr(),
         showBackButton: true,
       ),
       body: SafeArea(
@@ -64,14 +64,14 @@ class _MedicalHistoryScreenState extends State<MedicalHistoryScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Past Medical History',
+                      'past_medical_history'.tr(),
                       style: AppTypography.headlineMedium.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     const SizedBox(height: AppSpacing.sm),
                     Text(
-                      'For ${widget.side} ${widget.jointId}',
+                      '${'for_side_joint'.tr().replaceAll('{side}', widget.side).replaceAll('{joint}', widget.jointId)}',
                       style: AppTypography.bodyLarge.copyWith(
                         color: AppColors.textSecondary,
                       ),
@@ -79,35 +79,35 @@ class _MedicalHistoryScreenState extends State<MedicalHistoryScreen> {
                     const SizedBox(height: AppSpacing.xl),
                     
                     _buildSwitchTile(
-                      'Previous Diagnosis of Arthritis',
+                      'previous_diagnosis_of_arthritis'.tr(),
                       _previousDiagnosis,
                       (val) => setState(() => _previousDiagnosis = val),
                     ),
                     const SizedBox(height: AppSpacing.md),
                     
                     _buildSwitchTile(
-                      'Previous Joint Pain Episodes',
+                      'previous_joint_pain_episodes'.tr(),
                       _previousJointPain,
                       (val) => setState(() => _previousJointPain = val),
                     ),
                     const SizedBox(height: AppSpacing.md),
                     
                     _buildSwitchTile(
-                      'Chronic Joint Problems',
+                      'chronic_joint_problems'.tr(),
                       _chronicJointProblems,
                       (val) => setState(() => _chronicJointProblems = val),
                     ),
                     const SizedBox(height: AppSpacing.md),
                     
                     _buildSwitchTile(
-                      'Previous Joint Inflammation/Swelling',
+                      'previous_joint_inflammation_swelling'.tr(),
                       _previousInflammation,
                       (val) => setState(() => _previousInflammation = val),
                     ),
                     const SizedBox(height: AppSpacing.md),
                     
                     _buildSwitchTile(
-                      'History of Injury to this joint',
+                      'history_of_injury_to_this_joint'.tr(),
                       _hasPastInjury,
                       (val) => setState(() => _hasPastInjury = val),
                     ),
@@ -129,17 +129,24 @@ class _MedicalHistoryScreenState extends State<MedicalHistoryScreen> {
   }
 
   Widget _buildSwitchTile(String title, bool value, Function(bool) onChanged) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: SwitchListTile(
-        title: Text(title, style: AppTypography.bodyLarge),
-        value: value,
-        onChanged: onChanged,
-        activeColor: AppColors.primary,
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+          child: SwitchListTile(
+            title: Text(title, style: AppTypography.bodyLarge),
+            value: value,
+            onChanged: onChanged,
+            activeColor: AppColors.primary,
+          ),
+        ),
       ),
     );
   }

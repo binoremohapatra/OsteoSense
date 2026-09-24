@@ -347,6 +347,7 @@ class MLClassifierInfo {
 class MLPrediction {
   final String riskLevel;
   final double confidence;
+  final double? uncertainty;
   final List<String> contributingFactors;
   final String reasoning;
   final DateTime timestamp;
@@ -357,6 +358,7 @@ class MLPrediction {
   MLPrediction({
     required this.riskLevel,
     required this.confidence,
+    this.uncertainty,
     required this.contributingFactors,
     required this.reasoning,
     required this.timestamp,
@@ -374,6 +376,7 @@ class MLPrediction {
     return MLPrediction(
       riskLevel: prediction.riskLevel,
       confidence: prediction.confidence,
+      uncertainty: prediction.uncertainty,
       contributingFactors: prediction.contributingFactors,
       reasoning: prediction.reasoning,
       timestamp: DateTime.now(),

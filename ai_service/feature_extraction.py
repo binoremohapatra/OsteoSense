@@ -1,12 +1,13 @@
 """
 feature_extraction.py
 ----------------------
-Converts raw sensor windows (gyro, piezo) into a fixed-length feature
+Converts raw sensor windows (gyro, piezo, emg) into a fixed-length feature
 vector for classical ML (Random Forest / XGBoost / SVM).
 
-Two feature groups, matching the two-sensor hardware setup:
+Three feature groups, matching the three-sensor hardware setup:
   1. GAIT features        -> from gyro (3-axis angular velocity)
   2. PIEZO/VAG features   -> from piezo disc (joint sound/vibration)
+  3. EMG features        -> from EMG (muscle activity sensor)
 
 No accelerometer, no separate mic - gyro alone carries the gait dynamics
 signal, and the piezo disc is the vibration/sound pickup (previously
@@ -25,6 +26,7 @@ from scipy.stats import entropy as shannon_entropy
 
 GYRO_FS_DEFAULT = 100
 PIEZO_FS_DEFAULT = 4000
+EMG_FS_DEFAULT = 1000
 
 
 # ---------------------------------------------------------------------------
@@ -80,6 +82,88 @@ def extract_gait_features(gyro, fs=GYRO_FS_DEFAULT):
         feats["stride_amplitude_cv"] = np.std(peak_vals) / (np.abs(np.mean(peak_vals)) + 1e-8)
     else:
         feats["stride_amplitude_cv"] = 0.0
+
+    return feats
+
+
+# ---------------------------------------------------------------------------
+# ACCELEROMETER FEATURES (from phone sensor)
+# ---------------------------------------------------------------------------
+
+def extract_accel_features(accel, fs=100):
+    """
+    accel: (J, 3) array
+    """
+    feats = {}
+    if len(accel) == 0:
+        feats["accel_rms"] = 0.0
+        feats["estimated_steps"] = 0.0
+        feats["regularity_score"] = 0.0
+        return feats
+
+    # Simply calculate RMS across all axes
+    rms_x = np.sqrt(np.mean(accel[:, 0]**2))
+    rms_y = np.sqrt(np.mean(accel[:, 1]**2))
+    rms_z = np.sqrt(np.mean(accel[:, 2]**2))
+    feats["accel_rms"] = (rms_x + rms_y + rms_z) / 3.0
+
+    # Estimate steps simply by finding peaks in the norm
+    accel_norm = np.linalg.norm(accel, axis=1)
+    peaks, _ = sp_signal.find_peaks(accel_norm, distance=int(fs*0.5))
+    feats["estimated_steps"] = float(len(peaks))
+
+    # Regularity score (autocorrelation of norm)
+    norm_centered = accel_norm - np.mean(accel_norm)
+    if np.sum(norm_centered**2) > 0:
+        autocorr = np.correlate(norm_centered, norm_centered, mode='full')
+        autocorr = autocorr[len(autocorr)//2:] / np.max(autocorr)
+        feats["regularity_score"] = np.mean(autocorr)
+    else:
+        feats["regularity_score"] = 0.0
+
+    return feats
+
+
+# ---------------------------------------------------------------------------
+# EMG (Electromyography) FEATURES
+# ---------------------------------------------------------------------------
+
+def extract_emg_features(emg_signal, fs=EMG_FS_DEFAULT):
+    """
+    emg_signal: (N,) raw EMG signal from muscle activity sensor
+    Returns dict of scalar EMG features.
+    EMG captures muscle activation patterns - OA patients show altered
+    muscle recruitment patterns during gait.
+    """
+    feats = {}
+
+    # Basic time-domain features
+    feats["emg_rms"] = np.sqrt(np.mean(emg_signal ** 2))
+    feats["emg_mav"] = np.mean(np.abs(emg_signal))
+    feats["emg_std"] = np.std(emg_signal)
+    feats["emg_peak"] = np.max(np.abs(emg_signal))
+
+    # Zero-crossing rate (muscle firing rate proxy)
+    zero_crossings = np.sum(np.diff(np.sign(emg_signal)) != 0)
+    feats["emg_zcr"] = zero_crossings / len(emg_signal)
+
+    # Spectral features (muscle activation frequency content)
+    freqs, psd = sp_signal.welch(emg_signal, fs=fs, nperseg=min(256, len(emg_signal)))
+    total_power = np.sum(psd) + 1e-8
+
+    # Median frequency (muscle activation frequency)
+    cumsum = np.cumsum(psd)
+    median_freq_idx = np.searchsorted(cumsum, total_power / 2)
+    feats["emg_median_freq"] = freqs[median_freq_idx]
+
+    # Spectral entropy (regularity of muscle activation)
+    psd_norm = psd / total_power
+    feats["emg_spectral_entropy"] = shannon_entropy(psd_norm + 1e-12)
+
+    # Energy in different frequency bands
+    feats["emg_band_low_0_50"] = _band_energy(freqs, psd, 0, 50) / total_power
+    feats["emg_band_mid_50_150"] = _band_energy(freqs, psd, 50, 150) / total_power
+    feats["emg_band_high_150_500"] = _band_energy(freqs, psd, 150, 500) / total_power
 
     return feats
 
@@ -165,12 +249,28 @@ def extract_features(record):
     """
     record: dict as produced by simulate_data.simulate_subject()
             (or, later, real sensor recordings with the SAME keys/shapes:
-             'gyro' (N,3), 'piezo' (M,), 'fs_gyro', 'fs_piezo')
-    Returns: dict of all features (gait + piezo), flat, ready for a DataFrame row.
+             'gyro' (N,3), 'piezo' (M,), 'emg' (N,), 'accel' (J,3), 'fs_gyro', 'fs_piezo', 'fs_emg', 'fs_accel',
+             'clinical_factors' (dict), 'image_features' (dict))
+    Returns: dict of all features (gait + piezo + emg + accel + clinical + image), flat, ready for a DataFrame row.
     """
     gait_feats = extract_gait_features(record["gyro"], fs=record.get("fs_gyro", GYRO_FS_DEFAULT))
     piezo_feats = extract_piezo_features(record["piezo"], fs=record.get("fs_piezo", PIEZO_FS_DEFAULT))
-    all_feats = {**gait_feats, **piezo_feats}
+    emg_feats = extract_emg_features(record["emg"], fs=record.get("fs_emg", EMG_FS_DEFAULT))
+
+    accel = record.get("accel", np.zeros((0, 3)))
+    accel_feats = extract_accel_features(accel, fs=record.get("fs_accel", GYRO_FS_DEFAULT))
+
+    # Add clinical factors directly
+    clinical_feats = record.get("clinical_factors", {})
+
+    # Add image features directly
+    image_feats = record.get("image_features", {})
+
+    # Prefix clinical and image features to avoid name collisions
+    clinical_feats_prefixed = {f"clinical_{k}": v for k, v in clinical_feats.items()}
+    image_feats_prefixed = {f"image_{k}": v for k, v in image_feats.items()}
+
+    all_feats = {**gait_feats, **piezo_feats, **emg_feats, **accel_feats, **clinical_feats_prefixed, **image_feats_prefixed}
     return all_feats
 
 

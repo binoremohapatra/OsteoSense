@@ -19,7 +19,7 @@
     }
   },
   "test_auc": 1.0,
-  "n_features": 62,
+  "n_features": 78,
   "n_train": 240,
   "n_test": 60,
   "note": "Trained on SYNTHETIC data. Re-train on real sensor data before clinical use."

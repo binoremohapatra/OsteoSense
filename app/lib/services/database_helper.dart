@@ -24,7 +24,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 9,
+      version: 10,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -324,6 +324,80 @@ class DatabaseHelper {
       // Add updated_at column to sync_queue table if it doesn't exist
       try {
         await db.execute('ALTER TABLE sync_queue ADD COLUMN updated_at TEXT DEFAULT CURRENT_TIMESTAMP');
+      } catch (e) {
+        // Column might already exist, ignore error
+      }
+    }
+
+    if (oldVersion < 10) {
+      // Add advanced ML feature columns to screenings table
+      try {
+        await db.execute('ALTER TABLE screenings ADD COLUMN pain_frequency TEXT');
+      } catch (e) {
+        // Column might already exist, ignore error
+      }
+      try {
+        await db.execute('ALTER TABLE screenings ADD COLUMN activity_limitation TEXT');
+      } catch (e) {
+        // Column might already exist, ignore error
+      }
+      try {
+        await db.execute('ALTER TABLE screenings ADD COLUMN medication_use INTEGER DEFAULT 0');
+      } catch (e) {
+        // Column might already exist, ignore error
+      }
+      try {
+        await db.execute('ALTER TABLE screenings ADD COLUMN symptom_duration TEXT');
+      } catch (e) {
+        // Column might already exist, ignore error
+      }
+      try {
+        await db.execute('ALTER TABLE screenings ADD COLUMN pain_characteristics TEXT');
+      } catch (e) {
+        // Column might already exist, ignore error
+      }
+      try {
+        await db.execute('ALTER TABLE screenings ADD COLUMN stiffness_triggers TEXT');
+      } catch (e) {
+        // Column might already exist, ignore error
+      }
+      try {
+        await db.execute('ALTER TABLE screenings ADD COLUMN other_symptoms TEXT');
+      } catch (e) {
+        // Column might already exist, ignore error
+      }
+      try {
+        await db.execute('ALTER TABLE screenings ADD COLUMN functional_difficulty TEXT');
+      } catch (e) {
+        // Column might already exist, ignore error
+      }
+      try {
+        await db.execute('ALTER TABLE screenings ADD COLUMN gait_variability REAL DEFAULT 0.0');
+      } catch (e) {
+        // Column might already exist, ignore error
+      }
+      try {
+        await db.execute('ALTER TABLE screenings ADD COLUMN gait_asymmetry REAL DEFAULT 0.0');
+      } catch (e) {
+        // Column might already exist, ignore error
+      }
+      try {
+        await db.execute('ALTER TABLE screenings ADD COLUMN gait_smoothness REAL DEFAULT 0.0');
+      } catch (e) {
+        // Column might already exist, ignore error
+      }
+      try {
+        await db.execute('ALTER TABLE screenings ADD COLUMN postural_stability REAL DEFAULT 0.0');
+      } catch (e) {
+        // Column might already exist, ignore error
+      }
+      try {
+        await db.execute('ALTER TABLE screenings ADD COLUMN ml_uncertainty REAL DEFAULT 0.0');
+      } catch (e) {
+        // Column might already exist, ignore error
+      }
+      try {
+        await db.execute('ALTER TABLE screenings ADD COLUMN advanced_features_vector TEXT');
       } catch (e) {
         // Column might already exist, ignore error
       }

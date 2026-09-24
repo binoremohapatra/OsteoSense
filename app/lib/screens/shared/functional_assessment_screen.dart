@@ -26,33 +26,33 @@ class _FunctionalAssessmentScreenState extends State<FunctionalAssessmentScreen>
       case 'hip':
       case 'ankle':
         return [
-          'Difficulty walking on flat surfaces',
-          'Difficulty going up/down stairs',
-          'Difficulty squatting or bending',
-          'Difficulty standing from a seated position'
+          'difficulty_walking_flat'.tr(),
+          'difficulty_stairs'.tr(),
+          'difficulty_squatting'.tr(),
+          'difficulty_standing'.tr()
         ];
       case 'shoulder':
       case 'elbow':
         return [
-          'Difficulty reaching overhead',
-          'Difficulty lifting heavy objects',
-          'Difficulty dressing/grooming',
-          'Difficulty sleeping on affected side'
+          'difficulty_reaching_overhead'.tr(),
+          'difficulty_lifting_heavy'.tr(),
+          'difficulty_dressing_grooming'.tr(),
+          'difficulty_sleeping_affected'.tr()
         ];
       case 'wrist':
       case 'fingers / hand':
         return [
-          'Difficulty gripping objects',
-          'Difficulty opening jars',
-          'Difficulty typing or writing',
-          'Difficulty carrying bags'
+          'difficulty_gripping'.tr(),
+          'difficulty_opening_jars'.tr(),
+          'difficulty_typing'.tr(),
+          'difficulty_carrying_bags'.tr()
         ];
       default:
         return [
-          'Difficulty with daily activities',
-          'Limitation in range of motion',
-          'Weakness in the joint',
-          'Difficulty bearing weight'
+          'difficulty_daily_activities'.tr(),
+          'limitation_range_motion'.tr(),
+          'weakness_joint'.tr(),
+          'difficulty_bearing_weight'.tr()
         ];
     }
   }
@@ -69,62 +69,65 @@ class _FunctionalAssessmentScreenState extends State<FunctionalAssessmentScreen>
 
   @override
   Widget build(BuildContext context) {
-    final screeningProvider = context.read<ScreeningProvider>();
-    final jointId = screeningProvider.draftJointId ?? 'Unknown Joint';
-    final questions = _getQuestionsForJoint(jointId);
+    return Consumer<ScreeningProvider>(
+      builder: (context, screeningProvider, child) {
+        final jointId = screeningProvider.draftJointId ?? 'Unknown Joint';
+        final questions = _getQuestionsForJoint(jointId);
 
-    // Initialize scores to 0 (No difficulty) if not set
-    for (var q in questions) {
-      if (!_functionalScores.containsKey(q)) {
-        _functionalScores[q] = 0;
-      }
-    }
+        // Initialize scores to 0 (No difficulty) if not set
+        for (var q in questions) {
+          if (!_functionalScores.containsKey(q)) {
+            _functionalScores[q] = 0;
+          }
+        }
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: CustomAppBar(
-        title: 'Functional Assessment',
-        showBackButton: true,
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(AppSpacing.lg),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Functional Limitations',
-                      style: AppTypography.headlineMedium.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+        return Scaffold(
+          backgroundColor: AppColors.background,
+          appBar: CustomAppBar(
+            title: 'functional_assessment'.tr(),
+            showBackButton: true,
+          ),
+          body: SafeArea(
+            child: Column(
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(AppSpacing.lg),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'functional_limitations'.tr(),
+                          style: AppTypography.headlineMedium.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.sm),
+                        Text(
+                          'rate_difficulty'.tr() + ' $jointId',
+                          style: AppTypography.bodyLarge.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.xl),
+                        
+                        ...questions.map((q) => _buildQuestionCard(q)),
+                      ],
                     ),
-                    const SizedBox(height: AppSpacing.sm),
-                    Text(
-                      'Rate difficulty (0 = None, 3 = Severe) for $jointId',
-                      style: AppTypography.bodyLarge.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.xl),
-                    
-                    ...questions.map((q) => _buildQuestionCard(q)),
-                  ],
+                  ),
                 ),
-              ),
+                Padding(
+                  padding: const EdgeInsets.all(AppSpacing.lg),
+                  child: MagneticButton(
+                    text: 'next'.tr(),
+                    onPressed: _proceed,
+                  ),
+                ),
+              ],
             ),
-            Padding(
-              padding: const EdgeInsets.all(AppSpacing.lg),
-              child: MagneticButton(
-                text: 'next'.tr(),
-                onPressed: _proceed,
-              ),
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 

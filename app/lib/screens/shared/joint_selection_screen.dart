@@ -7,6 +7,8 @@ import '../../theme/app_spacing.dart';
 import '../../theme/app_typography.dart';
 import '../../theme/app_motion.dart';
 import '../../widgets/common/index.dart';
+import '../../providers/screening_provider.dart';
+import 'package:provider/provider.dart';
 
 class JointSelectionScreen extends StatefulWidget {
   final int? patientId;
@@ -83,6 +85,12 @@ class _JointSelectionScreenState extends State<JointSelectionScreen> {
   void _onNextPressed() {
     if (_selectedJoint == null || _selectedSide == null) return;
     
+    // Save to provider
+    final provider = context.read<ScreeningProvider>();
+    provider.draftPatientId = widget.patientId;
+    provider.draftJointId = _selectedJoint;
+    provider.draftSide = _selectedSide;
+    
     // Navigate to medical history
     context.push('/screening/medical_history', extra: {
       'patientId': widget.patientId,
@@ -96,7 +104,7 @@ class _JointSelectionScreenState extends State<JointSelectionScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: CustomAppBar(
-        title: 'Select Joint',
+        title: 'select_joint'.tr(),
         centerTitle: false,
         showBackButton: true,
         leading: IconButton(

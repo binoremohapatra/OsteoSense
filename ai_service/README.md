@@ -61,6 +61,26 @@ difference.
 These map to features reported in real vibroarthrography (VAG) and OA gait
 literature — worth citing in your report for credibility.
 
+## Expanded 80+ Feature Schema (New Model Upgrades)
+
+To make the AI more robust for real clinical use, the feature vector has been expanded to ingest **all UI inputs**. 
+The backend model now expects:
+- **Demographics:** `age`, `bmi`, `gender_male`, `gender_female`
+- **General Clinical:** `pain_level` (0-10), `stiffness_duration` (categorical mappings), `swelling`, `past_injury`, `mri_kl_grade`
+- **Symptom Flags:** `sym_locking`, `sym_clicking`, `sym_grinding`, `sym_aching`, `sym_instability`
+- **Pain Types:** `pain_sharp`, `pain_dull`, `pain_burning`, `pain_aching`, `pain_stabbing`, `pain_throbbing`
+- **Stiffness Triggers:** `trigger_morning`, `trigger_sitting`, `trigger_inactivity`, `trigger_exercise`
+- **Functional Limitations (0-3 scale):** `func_standing`, `func_walking`, `func_stairs`, `func_chores`, `func_gripping`, `func_jars`, `func_typing`, `func_bags`
+- **Medical History Flags:** `hist_prev_diagnosis`, `hist_chronic`, `hist_inflammation`, `hist_cartilage`, `hist_ligament`, `hist_fracture`, `hist_past_injury`
+- **Surgical History Flags:** `hist_surgery`, `hist_implant`
+- **Full Sensor Set:** 
+  - `gyro` (Gyroscope RMS & Extracted factors)
+  - `piezo` (Acoustic emissions, Crepitus bands)
+  - `accel` (Accelerometer RMS, Estimated Steps, Regularity)
+
+**For the ML Engineer:** 
+When retraining the models on real data, refer to `schemas.py` and `feature_extraction.py` to see exactly how these categorical and boolean fields are one-hot encoded or scaled into the final continuous feature vector of size `~78-80`.
+
 ## How to plug in real data (the important part)
 
 1. **Public datasets** — look for a VAG (vibroarthrography) dataset and a

@@ -18,6 +18,9 @@ abstract class SensorDataSource {
   /// Stream of battery percentage data - for ESP32 wearable
   Stream<int>? get batteryStream;
 
+  /// Stream of device status (modelReady, sensorsOK) - for ESP32 wearable
+  Stream<Map<String, bool>>? get deviceStatusStream;
+
   /// Initialize the sensor data source
   Future<void> initialize();
 

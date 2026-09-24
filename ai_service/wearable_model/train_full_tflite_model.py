@@ -26,13 +26,12 @@ def train_and_export():
     X = np.array(X, dtype=np.float32)
     y = np.array(y, dtype=np.int32)
     
-    print(f"Dataset shape: X={X.shape}, y={y.shape}")
-    if X.shape[1] != 62:
-        print(f"WARNING: Expected 62 features, got {X.shape[1]}")
+    num_features = X.shape[1]
+    print(f"Dataset shape: X={X.shape}, y={y.shape}, features={num_features}")
     
     # Deep Neural Network Architecture to match XGBoost capacity
     model = tf.keras.Sequential([
-        tf.keras.Input(shape=(62,)),
+        tf.keras.Input(shape=(num_features,)),
         tf.keras.layers.Dense(128, activation='relu'),
         tf.keras.layers.Dropout(0.3),
         tf.keras.layers.Dense(64, activation='relu'),

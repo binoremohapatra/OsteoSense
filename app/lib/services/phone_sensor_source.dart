@@ -31,6 +31,9 @@ class PhoneSensorDataSource implements SensorDataSource {
   Stream<int>? get batteryStream => null; // Phone doesn't have battery monitoring through this interface
 
   @override
+  Stream<Map<String, bool>>? get deviceStatusStream => null; // Phone doesn't have device status characteristic
+
+  @override
   String get deviceName => 'Phone Sensors';
 
   @override

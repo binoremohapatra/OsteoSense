@@ -189,10 +189,33 @@ def submit_session(payload: SensorWindowIn, db: Session = Depends(get_db)):
 
     try:
         proba, label, feats, top_features = inference_service.score_window(
-            payload.gyro, payload.piezo, payload.emg,
-            payload.fs_gyro, payload.fs_piezo, payload.fs_emg,
+            payload.gyro, payload.piezo, payload.emg, payload.accel,
+            payload.fs_gyro, payload.fs_piezo, payload.fs_emg, payload.fs_accel,
             payload.painLevel, payload.stiffnessDuration, 
-            payload.swelling, payload.pastInjury
+            payload.swelling, payload.pastInjury,
+            mri_kl_grade=payload.mri_kl_grade,
+            past_surgery=payload.past_surgery,
+            med_hx_diagnosis=payload.med_hx_diagnosis,
+            med_hx_joint_pain=payload.med_hx_joint_pain,
+            med_hx_chronic=payload.med_hx_chronic,
+            med_hx_inflammation=payload.med_hx_inflammation,
+            med_hx_cartilage=payload.med_hx_cartilage,
+            med_hx_ligament=payload.med_hx_ligament,
+            med_hx_fracture=payload.med_hx_fracture,
+            sym_locking=payload.sym_locking,
+            sym_clicking=payload.sym_clicking,
+            sym_grinding=payload.sym_grinding,
+            sym_instability=payload.sym_instability,
+            pain_type_sharp=payload.pain_type_sharp,
+            pain_type_dull=payload.pain_type_dull,
+            pain_type_burning=payload.pain_type_burning,
+            pain_type_aching=payload.pain_type_aching,
+            pain_type_stabbing=payload.pain_type_stabbing,
+            pain_type_throbbing=payload.pain_type_throbbing,
+            func_standing=payload.func_standing,
+            func_walking=payload.func_walking,
+            func_stairs=payload.func_stairs,
+            func_chores=payload.func_chores
         )
     except Exception as e:
         # Common causes: window too short for reliable feature extraction,

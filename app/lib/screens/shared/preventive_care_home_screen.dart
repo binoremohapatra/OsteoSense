@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import '../../theme/app_colors.dart';
@@ -10,11 +11,11 @@ import 'preventive_care_category_screen.dart';
 class PreventiveCareHomeScreen extends StatelessWidget {
   const PreventiveCareHomeScreen({super.key});
 
-  static const _categories = [
+  static final _categories = [
     _CareCategory(
       id: 'exercises',
-      title: 'Exercises',
-      subtitle: 'Strengthen joints & improve mobility',
+      title: 'exercises'.tr(),
+      subtitle: 'strengthen_joints_improve_mobility'.tr(),
       icon: Icons.fitness_center_rounded,
       articleCount: 3,
       gradient: LinearGradient(
@@ -25,8 +26,8 @@ class PreventiveCareHomeScreen extends StatelessWidget {
     ),
     _CareCategory(
       id: 'diet',
-      title: 'Diet & Nutrition',
-      subtitle: 'Anti-inflammatory foods for joint health',
+      title: 'diet_nutrition'.tr(),
+      subtitle: 'antiinflammatory_foods_for_joint_health'.tr(),
       icon: Icons.restaurant_menu_rounded,
       articleCount: 3,
       gradient: LinearGradient(
@@ -37,8 +38,8 @@ class PreventiveCareHomeScreen extends StatelessWidget {
     ),
     _CareCategory(
       id: 'lifestyle',
-      title: 'Lifestyle',
-      subtitle: 'Daily habits to protect your joints',
+      title: 'lifestyle'.tr(),
+      subtitle: 'daily_habits_to_protect_your'.tr(),
       icon: Icons.self_improvement_rounded,
       articleCount: 3,
       gradient: LinearGradient(

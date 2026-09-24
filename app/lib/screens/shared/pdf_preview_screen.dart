@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:printing/printing.dart';
@@ -27,14 +28,14 @@ class PdfPreviewScreen extends StatelessWidget {
     final screening = this.screening;
     final patient = this.patient;
     if (screening == null || patient == null) {
-      return const Scaffold(
-        body: Center(child: Text('Missing screening or patient data')),
+      return Scaffold(
+        body: Center(child: Text('missing_screening_or_patient_data'.tr())),
       );
     }
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: CustomAppBar(
-        title: 'Report Preview',
+        title: 'report_preview'.tr(),
         centerTitle: false,
         showBackButton: true,
         actions: [
@@ -128,13 +129,13 @@ class PdfPreviewScreen extends StatelessWidget {
                   allowPrinting: true,
                   canChangePageFormat: false,
                   canDebug: false,
-                  loadingWidget: const Center(
+                  loadingWidget: Center(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         CircularProgressIndicator(color: AppColors.primary),
                         SizedBox(height: 16),
-                        Text('Generating report...'),
+                        Text('generating_report'.tr()),
                       ],
                     ),
                   ),
@@ -226,7 +227,7 @@ class PdfPreviewScreen extends StatelessWidget {
               content: Row(children: [
                 const Icon(Icons.check_circle_rounded, color: Colors.white, size: 18),
                 const SizedBox(width: 8),
-                Expanded(child: Text('Downloaded successfully to Downloads folder')),
+                Expanded(child: Text('downloaded_successfully_to_downloads_folder'.tr())),
               ]),
               backgroundColor: AppColors.riskLow,
               behavior: SnackBarBehavior.floating,

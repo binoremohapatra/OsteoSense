@@ -28,29 +28,29 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
-    final settingsProvider = Provider.of<SettingsProvider>(context);
-
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: CustomAppBar(
-        title: 'settings'.tr(),
-        centerTitle: false,
-        showBackButton: false,
-      ),
-      body: Stack(
-        children: [
-          Positioned.fill(
-            child: IgnorePointer(
-              child: Opacity(
-                opacity: 0.25,
-                child: Image.asset(
-                  'assets/images/03_dashboard.gif',
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+    return Consumer<SettingsProvider>(
+      builder: (context, settingsProvider, child) {
+        return Scaffold(
+          backgroundColor: AppColors.background,
+          appBar: CustomAppBar(
+            title: 'settings'.tr(),
+            centerTitle: false,
+            showBackButton: false,
+          ),
+          body: Stack(
+            children: [
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: Opacity(
+                    opacity: 0.25,
+                    child: Image.asset(
+                      'assets/images/03_dashboard.gif',
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                    ),
+                  ),
                 ),
               ),
-            ),
-          ),
           SingleChildScrollView(
         padding: const EdgeInsets.all(AppSpacing.screenPaddingLg),
         child: Column(
@@ -183,6 +183,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.1, end: 0, duration: 400.ms),
         ],
       ),
+    );
+      },
     );
   }
 
@@ -379,9 +381,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () {
-          provider.setLanguage(code);
+        onTap: () async {
+          // Save language preference
+          await provider.setLanguage(code);
+          
+          // Change app locale
+          await context.setLocale(Locale(code));
+          
           Navigator.pop(context);
+          
+          // Show confirmation
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Language changed to $label'),
+                duration: const Duration(seconds: 2),
+              ),
+            );
+          }
         },
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.md),

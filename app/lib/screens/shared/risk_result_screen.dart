@@ -64,8 +64,8 @@ class _RiskResultScreenState extends State<RiskResultScreen> {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      appBar: const CustomAppBar(
-        title: 'Risk Assessment',
+      appBar: CustomAppBar(
+        title: 'risk_assessment'.tr(),
         centerTitle: false,
         showBackButton: true,
       ),

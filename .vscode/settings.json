@@ -1,0 +1,8 @@
+{
+    "chat.tools.terminal.autoApprove": {
+        "/^Set-Location app; flutter analyze lib\\\\screens\\\\shared\\\\image_upload_screen\\.dart$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
+    }
+}

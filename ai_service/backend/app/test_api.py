@@ -11,6 +11,7 @@ Run:
 
 import sys
 import os
+import numpy as np
 sys.path.insert(0, os.path.dirname(__file__))
 
 from fastapi.testclient import TestClient
@@ -34,9 +35,42 @@ def record_to_payload(record, device_id):
         "gyro": record["gyro"].flatten().tolist(),
         "piezo": record["piezo"].tolist(),
         "emg": record["emg"].tolist(),
+        "accel": record.get("accel", np.zeros((0, 3))).flatten().tolist(),
         "fs_gyro": record["fs_gyro"],
         "fs_piezo": record["fs_piezo"],
         "fs_emg": record.get("fs_emg", 1000),
+        "fs_accel": record.get("fs_accel", 100),
+        "painLevel": int(record.get("pain_level", 0)),
+        "stiffnessDuration": str(record.get("stiffness_duration", "0")),
+        "swelling": bool(record.get("swelling", False)),
+        "pastInjury": bool(record.get("past_injury", False)),
+        "past_surgery": bool(record.get("past_surgery", False)),
+        "mri_kl_grade": int(record.get("mri_kl_grade", 0)),
+        
+        "med_hx_diagnosis": bool(record.get("med_hx_diagnosis", False)),
+        "med_hx_joint_pain": bool(record.get("med_hx_joint_pain", False)),
+        "med_hx_chronic": bool(record.get("med_hx_chronic", False)),
+        "med_hx_inflammation": bool(record.get("med_hx_inflammation", False)),
+        "med_hx_cartilage": bool(record.get("med_hx_cartilage", False)),
+        "med_hx_ligament": bool(record.get("med_hx_ligament", False)),
+        "med_hx_fracture": bool(record.get("med_hx_fracture", False)),
+        
+        "sym_locking": bool(record.get("sym_locking", False)),
+        "sym_clicking": bool(record.get("sym_clicking", False)),
+        "sym_grinding": bool(record.get("sym_grinding", False)),
+        "sym_instability": bool(record.get("sym_instability", False)),
+        
+        "pain_type_sharp": bool(record.get("pain_type_sharp", False)),
+        "pain_type_dull": bool(record.get("pain_type_dull", False)),
+        "pain_type_burning": bool(record.get("pain_type_burning", False)),
+        "pain_type_aching": bool(record.get("pain_type_aching", False)),
+        "pain_type_stabbing": bool(record.get("pain_type_stabbing", False)),
+        "pain_type_throbbing": bool(record.get("pain_type_throbbing", False)),
+        
+        "func_standing": float(record.get("func_standing", 0.0)),
+        "func_walking": float(record.get("func_walking", 0.0)),
+        "func_stairs": float(record.get("func_stairs", 0.0)),
+        "func_chores": float(record.get("func_chores", 0.0)),
     }
 
 

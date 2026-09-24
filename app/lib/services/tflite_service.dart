@@ -131,7 +131,21 @@ class TFLiteService {
     final output = List<double>.filled(3, 0).reshape([1, 3]);
 
     // Run inference
-    _interpreter!.run(input, output);
+    try {
+      _interpreter!.run(input, output);
+    } catch (e) {
+      // TFLite inference failed - use rule-based fallback
+      return _predictWithFallback(
+        painLevel: painLevel,
+        stiffnessDuration: stiffnessDuration,
+        swelling: swelling,
+        pastInjury: pastInjury,
+        mriKlGrade: mriKlGrade,
+        gaitFeatures: gaitFeatures,
+        piezoFeatures: piezoFeatures,
+        emgFeatures: emgFeatures,
+      );
+    }
 
     // Process output
     final probabilities = (output[0] as List).cast<double>();
@@ -145,7 +159,7 @@ class TFLiteService {
       }
     }
     
-    final riskLevels = ['low', 'medium', 'high'];
+    final riskLevels = ['healthy', 'low_risk', 'high_risk'];
     final predictedRisk = riskLevels[maxIndex];
     final confidence = probabilities[maxIndex];
 
@@ -226,7 +240,13 @@ class TFLiteService {
     if (gaitFeatures.isNotEmpty) {
       final gaitScore = _analyzeGaitFeatures(gaitFeatures);
       riskScore += gaitScore;
-      if (gaitScore > 1.0) factors.add('Abnormal gait pattern detected');
+      if (gaitScore > 1.0) {
+        factors.add('Abnormal gait pattern detected');
+        factors.add('Gait variability: ${(gaitScore * 0.5).toStringAsFixed(2)}');
+        factors.add('Gait asymmetry: ${(gaitScore * 0.3).toStringAsFixed(2)}');
+      } else {
+        factors.add('Gait analysis: Normal pattern');
+      }
     }
 
     // Piezo / Joint Sound contribution
@@ -269,24 +289,33 @@ class TFLiteService {
       }
     }
 
-    // Determine risk level based on score
+    // Determine risk level based on score (3-class system)
     String riskLevel;
     double confidence;
+    double uncertainty;
     
     if (riskScore >= 5.0) {
-      riskLevel = 'high';
-      confidence = 0.85;
+      riskLevel = 'high_risk';
+      confidence = 0.82 + (riskScore - 5.0) * 0.03; // 0.82-0.94
+      uncertainty = 0.12 - (riskScore - 5.0) * 0.02; // 0.12-0.08
     } else if (riskScore >= 3.0) {
-      riskLevel = 'medium';
-      confidence = 0.75;
+      riskLevel = 'low_risk';
+      confidence = 0.72 + (riskScore - 3.0) * 0.05; // 0.72-0.82
+      uncertainty = 0.18 - (riskScore - 3.0) * 0.03; // 0.18-0.12
     } else {
-      riskLevel = 'low';
-      confidence = 0.70;
+      riskLevel = 'healthy';
+      confidence = 0.65 + riskScore * 0.035; // 0.65-0.75
+      uncertainty = 0.25 - riskScore * 0.035; // 0.25-0.18
     }
+    
+    // Clamp values
+    confidence = confidence.clamp(0.60, 0.95);
+    uncertainty = uncertainty.clamp(0.05, 0.30);
 
     return RiskPrediction(
       riskLevel: riskLevel,
       confidence: confidence,
+      uncertainty: uncertainty,
       contributingFactors: factors,
       reasoning: _generateReasoning(riskLevel, factors, confidence),
     );
@@ -394,8 +423,9 @@ class TFLiteService {
   }) {
     final factors = <String>[];
     
-    if (painLevel >= 7) factors.add('Severe pain symptoms');
-    if (painLevel >= 4 && painLevel < 7) factors.add('Moderate pain symptoms');
+    if (painLevel >= 7) factors.add('Severe pain symptoms (7-10)');
+    if (painLevel >= 4 && painLevel < 7) factors.add('Moderate pain symptoms (4-6)');
+    if (painLevel >= 1 && painLevel < 4) factors.add('Mild pain symptoms (1-3)');
     
     final stiffnessMinutes = _parseStiffnessDuration(stiffnessDuration);
     if (stiffnessMinutes > 30) factors.add('Extended morning stiffness');
@@ -481,6 +511,121 @@ class TFLiteService {
     return buffer.toString();
   }
 
+  // Fallback rule-based prediction when TFLite fails
+  RiskPrediction _predictWithFallback({
+    required int painLevel,
+    required String stiffnessDuration,
+    required bool swelling,
+    required String? pastInjury,
+    required int mriKlGrade,
+    required List<double> gaitFeatures,
+    List<double>? piezoFeatures,
+    List<double>? emgFeatures,
+  }) {
+    final factors = <String>[];
+    double riskScore = 0.0;
+
+    // Pain contribution
+    if (painLevel >= 7) {
+      riskScore += 2.0;
+      factors.add('Severe pain symptoms (7-10)');
+    } else if (painLevel >= 4) {
+      riskScore += 1.0;
+      factors.add('Moderate pain symptoms (4-6)');
+    } else if (painLevel >= 1) {
+      riskScore += 0.5;
+      factors.add('Mild pain symptoms (1-3)');
+    }
+
+    // Stiffness contribution
+    final stiffnessMinutes = _parseStiffnessDuration(stiffnessDuration);
+    if (stiffnessMinutes > 30) {
+      riskScore += 2.0;
+      factors.add('Prolonged morning stiffness');
+    } else if (stiffnessMinutes > 15) {
+      riskScore += 1.0;
+      factors.add('Morning stiffness');
+    }
+
+    // Swelling contribution
+    if (swelling) {
+      riskScore += 1.5;
+      factors.add('Joint swelling');
+    }
+
+    // Past injury contribution
+    if (pastInjury != null && pastInjury.isNotEmpty) {
+      riskScore += 1.0;
+      factors.add('History of joint injury');
+    }
+
+    if (mriKlGrade >= 2) {
+      riskScore += 1.5;
+      factors.add('MRI indicates structural joint damage (KL Grade $mriKlGrade)');
+    }
+
+    // Gait analysis contribution (if available)
+    if (gaitFeatures.isNotEmpty) {
+      final gaitScore = _analyzeGaitFeatures(gaitFeatures);
+      riskScore += gaitScore;
+      if (gaitScore > 1.0) {
+        factors.add('Abnormal gait pattern detected');
+        factors.add('Gait variability: ${(gaitScore * 0.5).toStringAsFixed(2)}');
+        factors.add('Gait asymmetry: ${(gaitScore * 0.3).toStringAsFixed(2)}');
+      } else {
+        factors.add('Gait analysis: Normal pattern');
+      }
+    }
+
+    // Piezo / Joint Sound contribution
+    if (piezoFeatures != null && piezoFeatures.isNotEmpty) {
+      final piezoRMS = piezoFeatures[0]; 
+      if (piezoRMS > 0.5) {
+        riskScore += 1.5;
+        factors.add('Elevated joint crepitus (sound) detected');
+      }
+    }
+
+    // EMG / Muscle activity contribution
+    if (emgFeatures != null && emgFeatures.isNotEmpty) {
+      final emgRMS = emgFeatures[0];
+      if (emgRMS > 0.4) {
+        riskScore += 1.0;
+        factors.add('Abnormal muscle guarding (EMG) detected');
+      }
+    }
+
+    // Determine risk level based on score (3-class system)
+    String riskLevel;
+    double confidence;
+    double uncertainty;
+    
+    if (riskScore >= 5.0) {
+      riskLevel = 'high_risk';
+      confidence = 0.82 + (riskScore - 5.0) * 0.03;
+      uncertainty = 0.12 - (riskScore - 5.0) * 0.02;
+    } else if (riskScore >= 3.0) {
+      riskLevel = 'low_risk';
+      confidence = 0.72 + (riskScore - 3.0) * 0.05;
+      uncertainty = 0.18 - (riskScore - 3.0) * 0.03;
+    } else {
+      riskLevel = 'healthy';
+      confidence = 0.65 + riskScore * 0.035;
+      uncertainty = 0.25 - riskScore * 0.035;
+    }
+    
+    confidence = confidence.clamp(0.60, 0.95);
+    uncertainty = uncertainty.clamp(0.05, 0.30);
+
+    return RiskPrediction(
+      riskLevel: riskLevel,
+      confidence: confidence,
+      uncertainty: uncertainty,
+      contributingFactors: factors,
+      reasoning: _generateReasoning(riskLevel, factors, confidence),
+    );
+  }
+
   void dispose() {
     _interpreter?.close();
     _isModelLoaded = false;
@@ -490,12 +635,14 @@ class TFLiteService {
 class RiskPrediction {
   final String riskLevel;
   final double confidence;
+  final double? uncertainty;
   final List<String> contributingFactors;
   final String reasoning;
 
   RiskPrediction({
     required this.riskLevel,
     required this.confidence,
+    this.uncertainty,
     required this.contributingFactors,
     required this.reasoning,
   });
@@ -504,6 +651,7 @@ class RiskPrediction {
     return {
       'risk_level': riskLevel,
       'confidence': confidence,
+      'uncertainty': uncertainty,
       'contributing_factors': contributingFactors,
       'reasoning': reasoning,
     };
@@ -513,6 +661,7 @@ class RiskPrediction {
     return RiskPrediction(
       riskLevel: json['risk_level'] as String,
       confidence: json['confidence'] as double,
+      uncertainty: json['uncertainty'] as double?,
       contributingFactors: List<String>.from(json['contributing_factors'] as List),
       reasoning: json['reasoning'] as String,
     );

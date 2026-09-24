@@ -1,0 +1,19 @@
+{
+  "model_type": "3class_ensemble",
+  "n_classes": 3,
+  "class_names": [
+    "healthy",
+    "low_risk",
+    "high_risk"
+  ],
+  "n_features": 203,
+  "test_accuracy": 0.8416666666666667,
+  "n_models": 2,
+  "model_names": [
+    "3class_RF",
+    "3class_GB"
+  ],
+  "noise_level": 0.2,
+  "overlap_level": 0.12,
+  "label_noise": 0.03
+}

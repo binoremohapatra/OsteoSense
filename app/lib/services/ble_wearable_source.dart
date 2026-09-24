@@ -13,6 +13,7 @@ class BLEWearableSensorSource implements SensorDataSource {
   static const String _piezoCharUuid = 'beb54840-36e1-4688-b7f5-ea07361b26aa';
   static const String _emgCharUuid = 'beb54841-36e1-4688-b7f5-ea07361b26ab';
   static const String _batteryCharUuid = 'beb54843-36e1-4688-b7f5-ea07361b26ad';
+  static const String _statusCharUuid = 'beb54844-36e1-4688-b7f5-ea07361b26ac';
 
   final BluetoothDevice device;
   BluetoothCharacteristic? _accelCharacteristic;
@@ -20,12 +21,14 @@ class BLEWearableSensorSource implements SensorDataSource {
   BluetoothCharacteristic? _piezoCharacteristic;
   BluetoothCharacteristic? _emgCharacteristic;
   BluetoothCharacteristic? _batteryCharacteristic;
+  BluetoothCharacteristic? _statusCharacteristic;
 
   StreamSubscription<List<int>>? _accelSubscription;
   StreamSubscription<List<int>>? _gyroSubscription;
   StreamSubscription<List<int>>? _piezoSubscription;
   StreamSubscription<List<int>>? _emgSubscription;
   StreamSubscription<List<int>>? _batterySubscription;
+  StreamSubscription<List<int>>? _statusSubscription;
 
   final StreamController<SensorData> _accelerometerController =
       StreamController<SensorData>.broadcast();
@@ -37,6 +40,8 @@ class BLEWearableSensorSource implements SensorDataSource {
       StreamController<SensorData>.broadcast();
   final StreamController<int> _batteryController =
       StreamController<int>.broadcast();
+  final StreamController<Map<String, bool>> _statusController =
+      StreamController<Map<String, bool>>.broadcast();
 
   bool _isConnected = false;
   bool _isRecording = false;
@@ -63,6 +68,8 @@ class BLEWearableSensorSource implements SensorDataSource {
   Stream<SensorData> get piezoStream => _piezoController.stream;
   Stream<SensorData> get emgStream => _emgController.stream;
   Stream<int> get batteryStream => _batteryController.stream;
+
+  Stream<Map<String, bool>> get deviceStatusStream => _statusController.stream;
 
   @override
   String get deviceName => device.platformName;
@@ -124,6 +131,10 @@ class BLEWearableSensorSource implements SensorDataSource {
             if (uuid.contains(_batteryCharUuid.toLowerCase())) {
               _batteryCharacteristic = characteristic;
               print('Found Battery characteristic: $uuid');
+            }
+            if (uuid.contains(_statusCharUuid.toLowerCase())) {
+              _statusCharacteristic = characteristic;
+              print('Found Status characteristic: $uuid');
             }
           }
         }
@@ -217,6 +228,17 @@ class BLEWearableSensorSource implements SensorDataSource {
       );
     }
 
+    // Enable notifications on Status characteristic (always active, not just during recording)
+    if (_statusCharacteristic != null) {
+      await _statusCharacteristic!.setNotifyValue(true);
+      _statusSubscription = _statusCharacteristic!.onValueReceived.listen(
+        (value) {
+          _parseStatusData(value);
+        },
+        onError: (error) => print('Status stream error: $error'),
+      );
+    }
+
     print('Started recording from all available sensors');
   }
 
@@ -240,12 +262,16 @@ class BLEWearableSensorSource implements SensorDataSource {
     if (_batteryCharacteristic != null) {
       await _batteryCharacteristic!.setNotifyValue(false);
     }
+    if (_statusCharacteristic != null) {
+      await _statusCharacteristic!.setNotifyValue(false);
+    }
 
     await _accelSubscription?.cancel();
     await _gyroSubscription?.cancel();
     await _piezoSubscription?.cancel();
     await _emgSubscription?.cancel();
     await _batterySubscription?.cancel();
+    await _statusSubscription?.cancel();
 
     print('Stopped recording from all sensors');
   }
@@ -260,6 +286,7 @@ class BLEWearableSensorSource implements SensorDataSource {
     await _piezoController.close();
     await _emgController.close();
     await _batteryController.close();
+    await _statusController.close();
     _isConnected = false;
   }
 
@@ -400,6 +427,26 @@ class BLEWearableSensorSource implements SensorDataSource {
       _batteryController.add(clampedPercentage);
     } catch (e) {
       print('Error parsing battery data: $e');
+    }
+  }
+
+  /// Parse device status data from BLE packet
+  /// ESP32 wearable format: 2 bytes [modelReady, sensorsOK]
+  void _parseStatusData(List<int> data) {
+    try {
+      if (data.length < 2) return;
+
+      final modelReady = data[0] == 1;
+      final sensorsOK = data[1] == 1;
+
+      print('Device status: modelReady=$modelReady, sensorsOK=$sensorsOK');
+
+      _statusController.add({
+        'modelReady': modelReady,
+        'sensorsOK': sensorsOK,
+      });
+    } catch (e) {
+      print('Error parsing status data: $e');
     }
   }
 }
