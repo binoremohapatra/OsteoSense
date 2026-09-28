@@ -235,6 +235,19 @@ class ApiService {
     }
   }
 
+  Future<List<dynamic>> getScreenings() async {
+    try {
+      final response = await _dio.get('/screenings');
+      final body = response.data;
+      if (body is Map && body.containsKey('data')) {
+        return body['data'] as List<dynamic>;
+      }
+      return response.data as List<dynamic>;
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
   Future<Map<String, dynamic>> getScreening(String id) async {
     try {
       final response = await _dio.get('/screenings/$id');

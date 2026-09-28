@@ -143,34 +143,24 @@ class SyncService {
       );
     }
 
-    _isSyncing = true;
+    // NOTE: Do NOT set _isSyncing = true here.
+    // syncPendingData() manages the _isSyncing flag itself.
+    // Setting it here caused a double-guard deadlock where syncPendingData
+    // would see _isSyncing=true and immediately return false, dropping all data.
     debugPrint('Starting full sync...');
 
     try {
-      final pushResult = await pushLocalChanges();
-      if (!pushResult.success) {
-        _isSyncing = false;
-        return pushResult;
-      }
-
-      final pullResult = await pullServerChanges();
+      final success = await syncPendingData();
       
       // Update last sync time
       await _db.updateLastSyncTime(DateTime.now());
 
-      _isSyncing = false;
-      
       return SyncResult(
-        success: pullResult.success,
-        syncedCount: pushResult.syncedCount + pullResult.syncedCount,
-        failedCount: pushResult.failedCount + pullResult.failedCount,
-        conflictCount: pushResult.conflictCount + pullResult.conflictCount,
-        message: 'Full sync completed',
-        conflicts: [...pushResult.conflicts, ...pullResult.conflicts],
+        success: success,
+        message: success ? 'Full sync completed' : 'Sync encountered errors',
       );
     } catch (e) {
       debugPrint('Full sync error: $e');
-      _isSyncing = false;
       return SyncResult(
         success: false,
         message: 'Sync failed: $e',
@@ -286,11 +276,21 @@ class SyncService {
           );
         }
 
-        // Increment retry counts for other errors
+        // Increment retry counts — do NOT delete data, mark as failed instead.
+        // Permanently-failed items (retry_count = -1) are preserved for recovery.
         for (var item in syncQueue) {
           final retryCount = (item['retry_count'] as int) + 1;
           if (retryCount >= AppConstants.maxRetryCount) {
-            await _db.removeFromSyncQueue(item['id'] as int);
+            debugPrint(
+              'Push item ${item['id']} (table=${item['table_name']}) exceeded max retries. '
+              'Marking as permanently failed (retry_count=-1).'
+            );
+            await _db.update(
+              'sync_queue',
+              {'retry_count': -1},
+              where: 'id = ?',
+              whereArgs: [item['id']],
+            );
             failedCount++;
           } else {
             await _db.update(
@@ -517,15 +517,18 @@ class SyncService {
   }
 
   Future<void> retryFailedSync() async {
-    final pendingItems = await _db.getPendingSyncItems();
+    final pendingItems = await _db.getSyncQueue();
     final failedItems = pendingItems.where((item) => 
       (item['retry_count'] as int) > 0 && (item['retry_count'] as int) < AppConstants.maxRetryCount
     ).toList();
 
-    debugPrint('Retrying ${failedItems.length} failed sync items');
+    // Also recover permanently-failed items (retry_count = -1)
+    final permanentlyFailed = await _db.getFailedSyncQueue();
 
-    // Reset retry counts
-    for (var item in failedItems) {
+    debugPrint('Retrying ${failedItems.length} failed + ${permanentlyFailed.length} permanently-failed sync items');
+
+    // Reset retry counts for all failed items
+    for (var item in [...failedItems, ...permanentlyFailed]) {
       await _db.update(
         'sync_queue',
         {'retry_count': 0},
@@ -538,10 +541,40 @@ class SyncService {
     await performFullSync();
   }
 
+  /// Manual data recovery: resets ALL permanently-failed sync items back to
+  /// retry_count=0 so they get picked up on the next sync.
+  /// Call this when you know connectivity was the issue (e.g. Sept 14 scenario).
+  Future<int> recoverFailedData() async {
+    final permanentlyFailed = await _db.getFailedSyncQueue();
+    if (permanentlyFailed.isEmpty) {
+      debugPrint('No permanently-failed sync items found to recover.');
+      return 0;
+    }
+
+    debugPrint('Recovering ${permanentlyFailed.length} permanently-failed sync items...');
+    for (var item in permanentlyFailed) {
+      await _db.update(
+        'sync_queue',
+        {'retry_count': 0},
+        where: 'id = ?',
+        whereArgs: [item['id']],
+      );
+    }
+
+    // Trigger sync immediately
+    await performFullSync();
+    return permanentlyFailed.length;
+  }
+
   Future<int> getFailedSyncCount() async {
     try {
       final syncQueue = await _db.getSyncQueue();
-      return syncQueue.where((item) => (item['retry_count'] as int) > 0).length;
+      // Count items that have been retried at least once (> 0) but are not
+      // permanently failed (-1). Those are tracked separately via getFailedSyncQueue().
+      return syncQueue.where((item) {
+        final rc = item['retry_count'] as int;
+        return rc > 0 && rc != -1;
+      }).length;
     } catch (e) {
       return 0;
     }
@@ -576,6 +609,23 @@ class SyncService {
         }
       }
 
+      // Recover unsynced items that might have been dropped from the queue due to max retries
+      final unsyncedPatients = await _db.query('patients', where: 'synced = 0 OR server_id IS NULL');
+      for (var p in unsyncedPatients) {
+        final existing = await _db.query('sync_queue', where: 'table_name = ? AND record_id = ?', whereArgs: ['patients', p['id']]);
+        if (existing.isEmpty) {
+          await _db.addToSyncQueue('patients', p['id'] as int, 'insert', p);
+        }
+      }
+      
+      final unsyncedScreenings = await _db.query('screenings', where: 'synced = 0 OR server_id IS NULL');
+      for (var s in unsyncedScreenings) {
+        final existing = await _db.query('sync_queue', where: 'table_name = ? AND record_id = ?', whereArgs: ['screenings', s['id']]);
+        if (existing.isEmpty) {
+          await _db.addToSyncQueue('screenings', s['id'] as int, 'insert', s);
+        }
+      }
+
       // Get all pending sync items
       final syncQueue = await _db.getSyncQueue();
       
@@ -606,7 +656,28 @@ class SyncService {
           if (tableName == 'patients') {
             patients.add(data);
           } else if (tableName == 'screenings') {
-            screenings.add(data);
+            // BUG FIX: Map local patient_id to server_id BEFORE sending to server.
+            // Previously, if server_id was null, the local SQLite integer ID was sent
+            // to the server as patient_id — which is an invalid MongoDB ObjectId,
+            // causing a silent failure (screening silently dropped, no crash).
+            final pId = data['patient_id'];
+            if (pId != null) {
+              final pRecords = await _db.query('patients', where: 'id = ?', whereArgs: [pId]);
+              if (pRecords.isNotEmpty && pRecords.first['server_id'] != null) {
+                data['patient_id'] = pRecords.first['server_id'];
+                screenings.add(data);
+              } else {
+                // Patient not yet synced to server — defer this screening.
+                // Do NOT add to screenings list; it will be retried on next sync
+                // once the patient has been synced and has a valid server_id.
+                debugPrint(
+                  'Deferring screening (localId=${data['localId']}) — '
+                  'parent patient (local_id=$pId) not yet synced to server.'
+                );
+              }
+            } else {
+              debugPrint('Skipping screening (localId=${data['localId']}) — patient_id is null.');
+            }
           }
           queueIds.add(item['id'] as int);
         } catch (e) {
@@ -664,10 +735,23 @@ class SyncService {
         debugPrint('Sync batch API failed: $e');
         
         // Increment retry counts
+        // BUG FIX: Previously items that exceeded maxRetryCount were permanently
+        // DELETED from the queue — causing irreversible data loss (Sept 14 issue).
+        // Now they are marked with retry_count = -1 (failed state) so they can
+        // be inspected, recovered, or manually retried later.
         for (var item in syncQueue) {
           final retryCount = (item['retry_count'] as int) + 1;
           if (retryCount >= AppConstants.maxRetryCount) {
-            await _db.removeFromSyncQueue(item['id'] as int);
+            debugPrint(
+              'Sync item ${item['id']} (table=${item['table_name']}) exceeded max retries. '
+              'Marking as permanently failed (retry_count=-1) instead of deleting.'
+            );
+            await _db.update(
+              'sync_queue',
+              {'retry_count': -1},  // -1 = permanently failed but NOT deleted
+              where: 'id = ?',
+              whereArgs: [item['id']],
+            );
           } else {
             await _db.update(
               'sync_queue',

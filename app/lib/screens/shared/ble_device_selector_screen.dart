@@ -123,7 +123,7 @@ class _BLEDeviceSelectorScreenState extends State<BLEDeviceSelectorScreen> {
           ),
         );
         await Future.delayed(const Duration(seconds: 1));
-        Navigator.pop(context, true);
+        Navigator.pop(context, device.platformName.isNotEmpty ? device.platformName : "JointSaathi");
       }
     } catch (e) {
       print('Error connecting to device: $e');

@@ -61,9 +61,11 @@ def generate_complex_scenario(scenario_type):
             "past_injury": False,  # No injury
             "mri_kl_grade": 2,  # But MRI shows OA
         }
+
     elif scenario_type == "recovered_patient":
         # Recovered patient - past injury but now healthy
         return {
+
             "label": 0,  # True healthy
             "complexity": "recovered",
             "pain_level": 0,  # No pain
@@ -97,6 +99,7 @@ def simulate_xray_report(kl_grade):
             "kl_grade": 1,
             "interpretation": "Doubtful OA"
         },
+
         2: {
             "finding": "Definite joint space narrowing, moderate osteophytes",
             "joint_space": "Moderate narrowing (1-2mm)",
@@ -106,6 +109,7 @@ def simulate_xray_report(kl_grade):
             "kl_grade": 2,
             "interpretation": "Mild OA"
         },
+        
         3: {
             "finding": "Marked joint space narrowing, large osteophytes",
             "joint_space": "Severe narrowing (<1mm)",

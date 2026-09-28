@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../../providers/screening_provider.dart';
 import '../../providers/patient_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../services/tflite_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_spacing.dart';
@@ -55,94 +56,95 @@ class _ProcessingScreenState extends State<ProcessingScreen>
   }
 
   Future<void> _processScreening() async {
-    await Future.delayed(const Duration(seconds: 2));
-    _updateStep(0, StepStatus.completed);
+    try {
+      await Future.delayed(const Duration(seconds: 2));
+      _updateStep(0, StepStatus.completed);
 
-    await Future.delayed(const Duration(seconds: 2));
-    _updateStep(1, StepStatus.inProgress);
+      await Future.delayed(const Duration(seconds: 2));
+      _updateStep(1, StepStatus.inProgress);
 
-    await Future.delayed(const Duration(seconds: 2));
-    _updateStep(1, StepStatus.completed);
-    _updateStep(2, StepStatus.inProgress);
+      await Future.delayed(const Duration(seconds: 2));
+      _updateStep(1, StepStatus.completed);
+      _updateStep(2, StepStatus.inProgress);
 
-    await Future.delayed(const Duration(seconds: 2));
-    _updateStep(2, StepStatus.completed);
-    _updateStep(3, StepStatus.inProgress);
+      await Future.delayed(const Duration(seconds: 2));
+      _updateStep(2, StepStatus.completed);
+      _updateStep(3, StepStatus.inProgress);
 
-    if (!mounted) return;
-    final screeningProvider = Provider.of<ScreeningProvider>(context, listen: false);
+      if (!mounted) return;
+      final screeningProvider = Provider.of<ScreeningProvider>(context, listen: false);
 
-    // Ensure we have a patient to run the screening against
-    if (screeningProvider.draftPatientId == null) {
-      if (mounted) Navigator.of(context).pop();
-      return;
-    }
+      // Ensure we have a patient to run the screening against
+      if (screeningProvider.draftPatientId == null) {
+        if (mounted) Navigator.of(context).pop();
+        return;
+      }
 
-    // Load TFLite model
-    await _tfliteService.loadModel();
+      // Load TFLite model
+      await _tfliteService.loadModel();
 
-    // Parse gait features if available
-    List<double> gaitFeatures = [];
-    if (screeningProvider.draftGaitData != null) {
-      try {
-        final decoded = jsonDecode(screeningProvider.draftGaitData!);
-        if (decoded is Map<String, dynamic>) {
-          // Extract numeric values from the features JSON map
-          gaitFeatures = decoded.values
-              .whereType<num>()
-              .map((v) => v.toDouble())
-              .toList();
-        } else if (decoded is List) {
-          gaitFeatures = decoded
-              .whereType<num>()
-              .map((v) => v.toDouble())
-              .toList();
-        }
-      } catch (e) {
-        // Legacy fallback: plain comma-separated string
+      // Parse gait features if available
+      List<double> gaitFeatures = [];
+      if (screeningProvider.draftGaitData != null) {
         try {
-          final parsed = screeningProvider.draftGaitData!
-              .replaceAll('[', '')
-              .replaceAll(']', '')
-              .split(',');
-          gaitFeatures =
-              parsed.map((e) => double.tryParse(e.trim()) ?? 0.0).toList();
-        } catch (_) {
-          // ignore — gaitFeatures stays empty
+          final decoded = jsonDecode(screeningProvider.draftGaitData!);
+          if (decoded is Map<String, dynamic>) {
+            // Extract numeric values from the features JSON map
+            gaitFeatures = decoded.values
+                .whereType<num>()
+                .map((v) => v.toDouble())
+                .toList();
+          } else if (decoded is List) {
+            gaitFeatures = decoded
+                .whereType<num>()
+                .map((v) => v.toDouble())
+                .toList();
+          }
+        } catch (e) {
+          // Legacy fallback: plain comma-separated string
+          try {
+            final parsed = screeningProvider.draftGaitData!
+                .replaceAll('[', '')
+                .replaceAll(']', '')
+                .split(',');
+            gaitFeatures =
+                parsed.map((e) => double.tryParse(e.trim()) ?? 0.0).toList();
+          } catch (_) {
+            // ignore — gaitFeatures stays empty
+          }
         }
       }
-    }
 
-    // Load patient to get demographics
-    final patientProvider = Provider.of<PatientProvider>(context, listen: false);
-    final patient = patientProvider.patients.firstWhere(
-      (p) => p.id == screeningProvider.draftPatientId,
-      orElse: () => patientProvider.selectedPatient ?? Patient(
-        name: 'Unknown', age: 50, gender: 'Unknown', weightKg: 70.0, heightCm: 170.0
-      )
-    );
+      // Load patient to get demographics
+      final patientProvider = Provider.of<PatientProvider>(context, listen: false);
+      final patient = patientProvider.patients.firstWhere(
+        (p) => p.id == screeningProvider.draftPatientId,
+        orElse: () => patientProvider.selectedPatient ?? Patient(
+          name: 'Unknown', age: 50, gender: 'Unknown', weightKg: 70.0, heightCm: 170.0
+        )
+      );
 
-    // Run AI prediction
-    final prediction = await _tfliteService.predictRisk(
-      painLevel: screeningProvider.draftPainLevel,
-      stiffnessDuration: screeningProvider.draftStiffnessDuration,
-      swelling: screeningProvider.draftSwelling,
-      pastInjury: screeningProvider.draftPastInjury ? screeningProvider.draftPastInjuryDetail : null,
-      age: patient.age,
-      weightKg: patient.weightKg ?? 70.0,
-      heightCm: patient.heightCm ?? 170.0,
-      mriKlGrade: screeningProvider.draftMriKlGrade,
-      gaitFeatures: gaitFeatures,
-      symptomsMap: screeningProvider.draftSymptomsMap,
-      functionalMap: screeningProvider.draftFunctionalMap,
-    );
+      // Run AI prediction
+      final prediction = await _tfliteService.predictRisk(
+        painLevel: screeningProvider.draftPainLevel,
+        stiffnessDuration: screeningProvider.draftStiffnessDuration,
+        swelling: screeningProvider.draftSwelling,
+        pastInjury: screeningProvider.draftPastInjury ? screeningProvider.draftPastInjuryDetail : null,
+        age: patient.age,
+        weightKg: patient.weightKg ?? 70.0,
+        heightCm: patient.heightCm ?? 170.0,
+        mriKlGrade: screeningProvider.draftMriKlGrade,
+        gaitFeatures: gaitFeatures,
+        symptomsMap: screeningProvider.draftSymptomsMap,
+        functionalMap: screeningProvider.draftFunctionalMap,
+      );
 
-    if (!mounted) return;
-    _updateStep(2, StepStatus.completed);
-    _updateStep(3, StepStatus.inProgress);
+      if (!mounted) return;
+      _updateStep(2, StepStatus.completed);
+      _updateStep(3, StepStatus.inProgress);
 
-    await Future.delayed(const Duration(seconds: 1));
-    _updateStep(3, StepStatus.completed);
+      await Future.delayed(const Duration(seconds: 1));
+      _updateStep(3, StepStatus.completed);
 
     // Generate contributing factors from questionnaire responses
     final questionnaireFactors = screeningProvider.generateContributingFactors();
@@ -156,7 +158,7 @@ class _ProcessingScreenState extends State<ProcessingScreen>
     // Construct the final screening object first
     final newScreening = Screening(
       patientId: screeningProvider.draftPatientId!,
-      userId: 1, // Temporarily hardcoded until auth is integrated
+      userId: Provider.of<AuthProvider>(context, listen: false).currentUser?.id ?? 1,
       screeningDate: DateTime.now(),
       jointId: screeningProvider.draftJointId,
       side: screeningProvider.draftSide,
@@ -185,35 +187,44 @@ class _ProcessingScreenState extends State<ProcessingScreen>
 
     if (!mounted) return;
 
-    if (success) {
-      // Show success state before navigating
-      setState(() => _showSuccess = true);
-      await _checkmarkController.forward();
-      await Future.delayed(const Duration(milliseconds: 1500));
-      
-      if (mounted) {
-        // Always navigate to detailed report page
-        final patientProvider = Provider.of<PatientProvider>(context, listen: false);
-        final patient = patientProvider.selectedPatient;
-
-        final screeningToSend = screeningProvider.currentScreening ?? newScreening;
+      if (success) {
+        // Show success state before navigating
+        setState(() => _showSuccess = true);
+        await _checkmarkController.forward();
+        await Future.delayed(const Duration(milliseconds: 1500));
         
-        if (patient != null) {
-          context.push('/screening/report', extra: {
+        if (mounted) {
+          final screeningToSend = screeningProvider.currentScreening ?? newScreening;
+          
+          context.pushReplacement('/screening/report', extra: {
             'screening': screeningToSend,
             'patient': patient,
           });
-        } else {
-          // Fallback to detailed report without patient
-          context.push('/screening/report', extra: {
-            'screening': screeningToSend,
-            'patient': null,
-          });
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(screeningProvider.errorMessage ?? 'Failed to save screening results.'),
+              backgroundColor: AppColors.error,
+              behavior: SnackBarBehavior.floating,
+            )
+          );
+          context.pop(); // Pop back to gait test but now user knows why
         }
       }
-    } else {
-      // Just navigate back without showing SnackBar to avoid lifecycle issues
-      context.pop();
+    } catch (e, stackTrace) {
+      debugPrint('Error during processing: $e\n$stackTrace');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('An unexpected error occurred during processing. Please try again.'),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+          )
+        );
+        context.pop();
+      }
     }
   }
 

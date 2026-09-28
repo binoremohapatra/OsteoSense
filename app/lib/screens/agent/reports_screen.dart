@@ -549,7 +549,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     bottomTitles: AxisTitles(
                       sideTitles: SideTitles(
                         showTitles: true,
-                        interval: 1,
+                        interval: _trendTab == 0 ? 1 : 5,
                         getTitlesWidget: (v, meta) {
                           final idx = v.toInt();
                           if (idx < 0 || idx >= finalLabels.length) return const SizedBox.shrink();

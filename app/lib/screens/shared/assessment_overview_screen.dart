@@ -281,7 +281,7 @@ class AssessmentOverviewScreen extends StatelessWidget {
   
   String _getMapKeys(dynamic mapData) {
     if (mapData == null || mapData is! Map) return '';
-    final selected = mapData.entries.where((e) => e.value == true).map((e) => e.key.toString()).toList();
+    final selected = mapData.entries.where((e) => e.value == true).map((e) => e.key.toString().tr()).toList();
     return selected.join(', ');
   }
 }

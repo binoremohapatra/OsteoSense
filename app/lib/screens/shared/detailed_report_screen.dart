@@ -132,26 +132,13 @@ class DetailedReportScreen extends StatelessWidget {
             const SizedBox(height: AppSpacing.xxl),
 
             // ── Action buttons
-            Row(
-              children: [
-                Expanded(
-                  child: MagneticButton(
-                    text: 'share_pdf'.tr(),
-                    onPressed: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => PdfPreviewScreen(screening: screening, patient: patient),
-                      ),
-                    ),
-                  ),
+            MagneticButton(
+              text: 'share_pdf'.tr(),
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => PdfPreviewScreen(screening: screening, patient: patient),
                 ),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: GlassButton(
-                    text: 'Export ML Data',
-                    onPressed: () => _showRawDataDialog(context),
-                  ),
-                ),
-              ],
+              ),
             ).animate().fadeIn(duration: AppMotion.standard, delay: 540.ms),
 
             const SizedBox(height: AppSpacing.lg),
@@ -236,7 +223,7 @@ class DetailedReportScreen extends StatelessWidget {
               border: Border.all(color: riskColor.withValues(alpha: 0.4)),
             ),
             child: Text(
-              (screening.riskLevel ?? 'low').toUpperCase(),
+              '${(screening.riskLevel ?? 'low').replaceAll(RegExp(r'_?risk', caseSensitive: false), '').replaceAll('_', ' ').trim().toUpperCase()} RISK',
               style: AppTypography.labelSmall.copyWith(
                 color: riskColor,
                 fontWeight: AppTypography.bold,
@@ -269,7 +256,7 @@ class DetailedReportScreen extends StatelessWidget {
                 Text('oa_risk_assessment'.tr(), style: AppTypography.labelSmall.copyWith(color: riskColor.withValues(alpha: 0.8))),
                 const SizedBox(height: 4),
                 Text(
-                  '${(screening.riskLevel ?? 'low').toUpperCase()} RISK',
+                  '${(screening.riskLevel ?? 'low').replaceAll(RegExp(r'_?risk', caseSensitive: false), '').replaceAll('_', ' ').trim().toUpperCase()} RISK',
                   style: AppTypography.headlineSmall.copyWith(color: riskColor, fontWeight: AppTypography.bold),
                 ),
                 const SizedBox(height: 4),
@@ -373,7 +360,7 @@ class DetailedReportScreen extends StatelessWidget {
     // Pain characteristics
     final painChars = symptomsMap['pain_characteristics'] as Map<String, dynamic>?;
     if (painChars != null) {
-      final selected = painChars.entries.where((e) => e.value == true).map((e) => e.key).toList();
+      final selected = painChars.entries.where((e) => e.value == true).map((e) => e.key.toString().tr()).toList();
       if (selected.isNotEmpty) {
         items.add(_answerRow('pain_characteristics'.tr(), selected.join(', '), Icons.info_outline));
         items.add(_divider());
@@ -383,7 +370,7 @@ class DetailedReportScreen extends StatelessWidget {
     // Stiffness triggers
     final stiffnessTriggers = symptomsMap['stiffness_triggers'] as Map<String, dynamic>?;
     if (stiffnessTriggers != null) {
-      final selected = stiffnessTriggers.entries.where((e) => e.value == true).map((e) => e.key).toList();
+      final selected = stiffnessTriggers.entries.where((e) => e.value == true).map((e) => e.key.toString().tr()).toList();
       if (selected.isNotEmpty) {
         items.add(_answerRow('stiffness_triggers'.tr(), selected.join(', '), Icons.info_outline));
         items.add(_divider());
@@ -393,7 +380,7 @@ class DetailedReportScreen extends StatelessWidget {
     // Other symptoms
     final otherSymptoms = symptomsMap['other_symptoms'] as Map<String, dynamic>?;
     if (otherSymptoms != null) {
-      final selected = otherSymptoms.entries.where((e) => e.value == true).map((e) => e.key).toList();
+      final selected = otherSymptoms.entries.where((e) => e.value == true).map((e) => e.key.toString().tr()).toList();
       if (selected.isNotEmpty) {
         items.add(_answerRow('other_symptoms'.tr(), selected.join(', '), Icons.info_outline));
         items.add(_divider());
@@ -497,10 +484,10 @@ class DetailedReportScreen extends StatelessWidget {
     }
 
     // Pull out some key metrics
-    final cadence = gaitFeats[0];
-    final strideTime = gaitFeats[1];
-    final piezoDominant = gaitFeats[23];
-    final emgRms = gaitFeats[34];
+    final cadence = gaitFeats.isNotEmpty ? gaitFeats[0] : 0.0;
+    final strideTime = gaitFeats.length > 1 ? gaitFeats[1] : 0.0;
+    final piezoDominant = gaitFeats.length > 23 ? gaitFeats[23] : 0.0;
+    final emgRms = gaitFeats.length > 33 ? gaitFeats[33] : 0.0;
 
     return CustomCard(
       variant: CardVariant.outlined,
@@ -537,8 +524,8 @@ class DetailedReportScreen extends StatelessWidget {
             children: [
               _metricCell('Cadence', cadence > 0 ? '${cadence.toStringAsFixed(1)} Hz' : '--'),
               _metricCell('Stride Time', strideTime > 0 ? '${strideTime.toStringAsFixed(2)} s' : '--'),
-              _metricCell('Piezo Dominant Freq', piezoDominant > 0 ? '${piezoDominant.toStringAsFixed(0)} Hz' : '--'),
-              _metricCell('Muscle EMG (RMS)', emgRms > 0 ? emgRms.toStringAsFixed(3) : '--'),
+              _metricCell('Piezo Dominant Freq', '${piezoDominant.toStringAsFixed(0)} Hz'),
+              _metricCell('Muscle EMG (RMS)', emgRms.toStringAsFixed(3)),
             ],
           ),
         ],
@@ -794,11 +781,19 @@ class DetailedReportScreen extends StatelessWidget {
 
   Widget _answerRow(String label, String value, IconData icon) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Icon(icon, size: 16, color: AppColors.textTertiary),
         const SizedBox(width: AppSpacing.md),
         Expanded(child: Text(label, style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary))),
-        Text(value, style: AppTypography.bodySmall.copyWith(fontWeight: AppTypography.semiBold)),
+        const SizedBox(width: AppSpacing.sm),
+        Flexible(
+          child: Text(
+            value,
+            style: AppTypography.bodySmall.copyWith(fontWeight: AppTypography.semiBold),
+            textAlign: TextAlign.right,
+          ),
+        ),
       ],
     );
   }

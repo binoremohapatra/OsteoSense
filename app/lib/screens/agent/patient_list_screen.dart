@@ -13,9 +13,6 @@ import '../../widgets/common/index.dart';
 import '../../widgets/premium/inputs/premium_inputs.dart';
 import '../../widgets/premium/loading/premium_loading.dart';
 import '../../widgets/premium/cards/premium_cards.dart';
-import 'add_patient_screen.dart';
-import 'patient_profile_screen.dart';
-import '../../widgets/common/open_container_card.dart';
 
 class PatientListScreen extends StatefulWidget {
   const PatientListScreen({super.key});
@@ -32,10 +29,31 @@ class _PatientListScreenState extends State<PatientListScreen> {
   @override
   void initState() {
     super.initState();
-    // Load patients after first frame so Provider is available
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<PatientProvider>(context, listen: false).loadPatients();
+      if (mounted) {
+        Provider.of<PatientProvider>(context, listen: false).loadPatients();
+      }
     });
+  }
+
+  // Refresh list when returning from add-patient screen
+  void _navigateToAddPatient() {
+    context.push('/agent/add-patient').then((_) {
+      if (mounted) {
+        // Re-read from local DB — new patient should already be in provider
+        // (addPatient inserts to memory immediately), but force a full
+        // reload to catch any edge cases where navigation timing differs.
+        Provider.of<PatientProvider>(context, listen: false).loadPatients();
+      }
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // NOTE: Do NOT call loadPatients() here — didChangeDependencies fires
+    // on every rebuild/dependency change, causing API spam (429 errors).
+    // loadPatients already handles throttling internally.
   }
 
   @override
@@ -94,11 +112,11 @@ class _PatientListScreenState extends State<PatientListScreen> {
               hint: 'search_patients_hint'.tr(),
               onChanged: (value) {
                 setState(() {});
-                if (value.isEmpty) {
-                  patientProvider.loadPatients();
-                } else {
+                // Search locally — no API call on every keystroke
+                if (value.isNotEmpty) {
                   patientProvider.searchPatients(value);
                 }
+                // When cleared, patients already in memory — no reload needed
               },
             ).animate().fadeIn(duration: 400.ms),
           ),
@@ -234,7 +252,7 @@ class _PatientListScreenState extends State<PatientListScreen> {
             width: 180,
             child: CustomButton(
               text: 'add_patient'.tr(),
-              onPressed: () => context.push('/agent/add-patient'),
+              onPressed: _navigateToAddPatient,
               variant: ButtonVariant.primary,
               size: ButtonSize.small,
               icon: const Icon(Icons.add),

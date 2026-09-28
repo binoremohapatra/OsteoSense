@@ -560,7 +560,7 @@
   "analysis_complete": "বিশ্লেষণ সম্পূর্ণ",
   "preparing_results": "আপনার ফলাফল প্রস্তুত করা হচ্ছে…",
   "ai_processing_description": "এআই মডেল আপনার স্ক্রিনিং ডেটা প্রক্রিয়া করছে",
-  "greeting_with_name": "{অভিবাদন}, {নাম}",
+  "greeting_with_name": "{greeting}, {name}",
   "weekly_screening_goal": "সাপ্তাহিক স্ক্রিনিং লক্ষ্য",
   "screenings_completed_this_week": "এই সপ্তাহে {count}টি স্ক্রিনিং সম্পন্ন হয়েছে",
   "sync_status": "সিঙ্ক অবস্থা",

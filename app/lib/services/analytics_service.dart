@@ -68,9 +68,7 @@ class AnalyticsService {
         final date = DateTime.parse(dateStr);
         
         if (date.isAfter(cutoffDate)) {
-          final key = period == 'week'
-              ? '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}'
-              : '${date.year}-${date.month.toString().padLeft(2, '0')}';
+          final key = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
           dateCount[key] = (dateCount[key] ?? 0) + 1;
         }
       }

@@ -70,7 +70,7 @@ dependencies:
 
   # Storage
   shared_preferences: ^2.2.2
-  share_plus: ^7.2.1
+  share_plus: ^13.3.0
 
   # Icons & Splash
   flutter_launcher_icons: ^0.13.1
@@ -89,7 +89,6 @@ dependencies:
   sign_in_with_apple: ^8.2.0
   fftea: ^1.5.0+1
   image_picker: ^1.2.3
-
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -107,9 +106,7 @@ flutter:
     - assets/translations/
 
 
-# ============================================================
-# APP ICON
-# ============================================================
+
 
 flutter_launcher_icons:
   android: true
@@ -127,10 +124,6 @@ flutter_launcher_icons:
   web:
     generate: false
 
-
-# ============================================================
-# SPLASH SCREEN
-# ============================================================
 
 flutter_native_splash:
 

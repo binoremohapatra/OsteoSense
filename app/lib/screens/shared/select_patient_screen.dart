@@ -37,15 +37,17 @@ class _SelectPatientScreenState extends State<SelectPatientScreen> {
   }
 
   Future<void> _loadPatients() async {
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final patientProvider = Provider.of<PatientProvider>(context, listen: false);
+    if (!mounted) return;
+    final patientProvider = Provider.of<PatientProvider>(context, listen: false);
+    // Only trigger load if patients not yet loaded
+    if (patientProvider.patients.isEmpty) {
       await patientProvider.loadPatients();
-      if (mounted) {
-        setState(() {
-          _filteredPatients = patientProvider.patients;
-        });
-      }
-    });
+    }
+    if (mounted) {
+      setState(() {
+        _filteredPatients = patientProvider.patients;
+      });
+    }
   }
 
   void _filterPatients() {

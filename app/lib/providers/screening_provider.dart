@@ -1,7 +1,9 @@
 import 'package:flutter/foundation.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../models/screening.dart';
 import '../services/api_service.dart';
 import '../services/database_helper.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ScreeningProvider with ChangeNotifier {
   List<Screening> _screenings = [];
@@ -112,13 +114,64 @@ class ScreeningProvider with ChangeNotifier {
       if (kDebugMode) {
         await Future.delayed(const Duration(milliseconds: 800));
       }
-      final db = DatabaseHelper();
-      final screeningsData = await db.query(
-        'screenings',
-        orderBy: 'screening_date DESC',
-      );
+      try {
+        final screeningsData = await ApiService().getScreenings();
+        final db = DatabaseHelper();
+        
+        List<Map<String, dynamic>> mappedScreenings = [];
+        final prefs = await SharedPreferences.getInstance();
+        final localUserId = prefs.getInt('current_user_id') ?? 1;
 
-      _screenings = screeningsData.map((data) => Screening.fromMap(data)).toList();
+        for (var data in screeningsData) {
+          final sData = Map<String, dynamic>.from(data as Map);
+          sData['server_id'] = sData['id'] ?? sData['_id'];
+          
+          // The API returns patientId as the string _id of the patient.
+          // We need to find the local SQLite patient_id.
+          final serverPatientId = sData['patientId'];
+          if (serverPatientId != null) {
+            final localPatients = await db.query('patients', where: 'server_id = ?', whereArgs: [serverPatientId]);
+            if (localPatients.isNotEmpty) {
+              sData['patient_id'] = localPatients.first['id'];
+              sData['user_id'] = localUserId;
+              sData['synced'] = 1;
+              
+              // Map API fields to SQLite schema fields
+              if (sData['screeningDate'] != null) sData['screening_date'] = sData['screeningDate'].toString();
+              if (sData['painLevel'] != null) sData['pain_level'] = sData['painLevel'];
+              if (sData['stiffnessDuration'] != null) sData['stiffness_duration'] = sData['stiffnessDuration'];
+              if (sData['riskLevel'] != null) sData['risk_level'] = sData['riskLevel'];
+              if (sData['aiReasoning'] != null) sData['ai_reasoning'] = sData['aiReasoning'];
+              if (sData['doctorRecommendations'] != null) sData['doctor_recommendations'] = sData['doctorRecommendations'];
+              
+              if (sData['createdAt'] != null) sData['created_at'] = sData['createdAt'].toString();
+              if (sData['updatedAt'] != null) sData['updated_at'] = sData['updatedAt'].toString();
+              
+              mappedScreenings.add(sData);
+            }
+          }
+        }
+        
+        if (mappedScreenings.isNotEmpty) {
+          await db.bulkUpsertScreenings(mappedScreenings);
+        }
+        
+        final localScreenings = await db.query(
+          'screenings',
+          orderBy: 'screening_date DESC',
+        );
+        _screenings = localScreenings.map((data) => Screening.fromMap(data)).toList();
+      } catch (apiError) {
+        if (kDebugMode) {
+          debugPrint('API call failed, falling back to local DB: $apiError');
+        }
+        final db = DatabaseHelper();
+        final localScreenings = await db.query(
+          'screenings',
+          orderBy: 'screening_date DESC',
+        );
+        _screenings = localScreenings.map((data) => Screening.fromMap(data)).toList();
+      }
     } catch (e) {
       _errorMessage = e.toString();
     } finally {
@@ -480,7 +533,7 @@ class ScreeningProvider with ChangeNotifier {
     if (_draftSymptomsMap.isNotEmpty) {
       final painChars = _draftSymptomsMap['pain_characteristics'] as Map<String, dynamic>?;
       if (painChars != null) {
-        final selectedPain = painChars.entries.where((e) => e.value == true).map((e) => e.key).toList();
+        final selectedPain = painChars.entries.where((e) => e.value == true).map((e) => e.key.toString().tr()).toList();
         if (selectedPain.isNotEmpty) {
           factors.add('Pain characteristics: ${selectedPain.join(', ')}');
         }
@@ -488,7 +541,7 @@ class ScreeningProvider with ChangeNotifier {
       
       final stiffnessTriggers = _draftSymptomsMap['stiffness_triggers'] as Map<String, dynamic>?;
       if (stiffnessTriggers != null) {
-        final selectedTriggers = stiffnessTriggers.entries.where((e) => e.value == true).map((e) => e.key).toList();
+        final selectedTriggers = stiffnessTriggers.entries.where((e) => e.value == true).map((e) => e.key.toString().tr()).toList();
         if (selectedTriggers.isNotEmpty) {
           factors.add('Stiffness triggers: ${selectedTriggers.join(', ')}');
         }
@@ -496,7 +549,7 @@ class ScreeningProvider with ChangeNotifier {
       
       final otherSymptoms = _draftSymptomsMap['other_symptoms'] as Map<String, dynamic>?;
       if (otherSymptoms != null) {
-        final selectedOthers = otherSymptoms.entries.where((e) => e.value == true).map((e) => e.key).toList();
+        final selectedOthers = otherSymptoms.entries.where((e) => e.value == true).map((e) => e.key.toString().tr()).toList();
         if (selectedOthers.isNotEmpty) {
           factors.add('Other symptoms: ${selectedOthers.join(', ')}');
         }

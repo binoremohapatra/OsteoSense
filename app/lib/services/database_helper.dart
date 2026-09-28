@@ -93,6 +93,20 @@ class DatabaseHelper {
         deleted INTEGER DEFAULT 0,
         created_at TEXT DEFAULT CURRENT_TIMESTAMP,
         updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        pain_frequency TEXT,
+        activity_limitation TEXT,
+        medication_use INTEGER DEFAULT 0,
+        symptom_duration TEXT,
+        pain_characteristics TEXT,
+        stiffness_triggers TEXT,
+        other_symptoms TEXT,
+        functional_difficulty TEXT,
+        gait_variability REAL DEFAULT 0.0,
+        gait_asymmetry REAL DEFAULT 0.0,
+        gait_smoothness REAL DEFAULT 0.0,
+        postural_stability REAL DEFAULT 0.0,
+        ml_uncertainty REAL DEFAULT 0.0,
+        advanced_features_vector TEXT,
         FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       )
@@ -606,6 +620,15 @@ class DatabaseHelper {
         // Filter valid columns to prevent SQLite errors
         var mapForDb = Map<String, dynamic>.from(pData);
         mapForDb.removeWhere((key, value) => !validColumns.contains(key));
+        
+        for (var key in mapForDb.keys.toList()) {
+          var value = mapForDb[key];
+          if (value is bool) {
+            mapForDb[key] = value ? 1 : 0;
+          } else if (value is List || value is Map) {
+            mapForDb[key] = jsonEncode(value);
+          }
+        }
 
         if (existing.isNotEmpty) {
           final id = existing.first['id'];
@@ -631,6 +654,67 @@ class DatabaseHelper {
     });
 
     return finalPatients;
+  }
+
+  Future<List<Map<String, dynamic>>> bulkUpsertScreenings(List<Map<String, dynamic>> screenings) async {
+    final db = await database;
+    List<Map<String, dynamic>> finalScreenings = [];
+
+    final validColumns = {
+      'id', 'server_id', 'patient_id', 'user_id', 'screening_date', 'joint_id', 'side',
+      'pain_level', 'stiffness_duration', 'swelling', 'past_injury', 'mri_kl_grade',
+      'gait_data', 'symptoms_map', 'functional_map', 'risk_level', 'confidence',
+      'contributing_factors', 'ai_reasoning', 'doctor_recommendations', 'synced', 'deleted',
+      'created_at', 'updated_at', 'pain_frequency', 'activity_limitation', 'medication_use',
+      'symptom_duration', 'pain_characteristics', 'stiffness_triggers', 'other_symptoms',
+      'functional_difficulty', 'gait_variability', 'gait_asymmetry', 'gait_smoothness',
+      'postural_stability', 'ml_uncertainty', 'advanced_features_vector'
+    };
+
+    await db.transaction((txn) async {
+      for (var sData in screenings) {
+        final serverId = sData['server_id'];
+        final existing = await txn.query('screenings', where: 'server_id = ?', whereArgs: [serverId]);
+
+        var mapForDb = Map<String, dynamic>.from(sData);
+        mapForDb.removeWhere((key, value) => !validColumns.contains(key));
+
+        for (var key in mapForDb.keys.toList()) {
+          var value = mapForDb[key];
+          if (value is bool) {
+            mapForDb[key] = value ? 1 : 0;
+          } else if (value is List || value is Map) {
+            mapForDb[key] = jsonEncode(value);
+          }
+        }
+
+        // Note: The patient_id should already be mapped to the local SQLite patient_id
+        // before passing to this function.
+
+        if (existing.isNotEmpty) {
+          final id = existing.first['id'];
+          sData['id'] = id;
+          mapForDb['id'] = id;
+          mapForDb['updated_at'] = DateTime.now().toIso8601String();
+          await txn.update('screenings', mapForDb, where: 'id = ?', whereArgs: [id]);
+          finalScreenings.add(sData);
+        } else {
+          sData['id'] = 0; 
+          mapForDb.remove('id');
+          if (!mapForDb.containsKey('created_at')) {
+            mapForDb['created_at'] = DateTime.now().toIso8601String();
+          }
+          if (!mapForDb.containsKey('updated_at')) {
+            mapForDb['updated_at'] = DateTime.now().toIso8601String();
+          }
+          final newId = await txn.insert('screenings', mapForDb);
+          sData['id'] = newId;
+          finalScreenings.add(sData);
+        }
+      }
+    });
+
+    return finalScreenings;
   }
 
 
@@ -668,7 +752,23 @@ class DatabaseHelper {
   }
 
   Future<List<Map<String, dynamic>>> getSyncQueue() async {
-    return await query('sync_queue', orderBy: 'created_at ASC');
+    // Exclude permanently-failed items (retry_count = -1).
+    // Those can be recovered separately via getFailedSyncQueue().
+    return await query(
+      'sync_queue',
+      where: 'retry_count != -1 OR retry_count IS NULL',
+      orderBy: 'created_at ASC',
+    );
+  }
+
+  /// Returns items that were permanently marked as failed (retry_count = -1).
+  /// Use this for data recovery or manual retry.
+  Future<List<Map<String, dynamic>>> getFailedSyncQueue() async {
+    return await query(
+      'sync_queue',
+      where: 'retry_count = -1',
+      orderBy: 'created_at ASC',
+    );
   }
 
   Future<void> removeFromSyncQueue(int id) async {
@@ -1020,9 +1120,12 @@ class DatabaseHelper {
 
   Future<List<Map<String, dynamic>>> getPendingSyncItems() async {
     final db = await database;
+    // Exclude permanently-failed items (retry_count = -1) from normal sync.
+    // Previously hardcoded 3 \u2014 now uses the same threshold as sync_service.
+    // Note: AppConstants not imported here so we keep 3 in sync with AppConstants.maxRetryCount.
     return await db.query(
       'sync_queue',
-      where: 'retry_count < 3',
+      where: 'retry_count >= 0 AND retry_count < 3',
       orderBy: 'created_at ASC',
     );
   }

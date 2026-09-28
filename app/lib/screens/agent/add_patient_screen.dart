@@ -70,12 +70,18 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
     if (!mounted) return;
 
     if (success) {
+      // Use the saved patient from provider — it has the correct local DB id.
+      // The local `patient` object was created before insert so id = null.
+      final savedPatient = patientProvider.selectedPatient;
+
       // Schedule notifications for the new patient
-      final notificationHelper = PatientNotificationHelper();
-      await notificationHelper.scheduleForNewPatient(
-        patientName: patient.name,
-        patientId: patient.id.toString(),
-      );
+      if (savedPatient != null) {
+        final notificationHelper = PatientNotificationHelper();
+        await notificationHelper.scheduleForNewPatient(
+          patientName: savedPatient.name,
+          patientId: savedPatient.id?.toString() ?? '',
+        );
+      }
 
       messenger.showSnackBar(
         SnackBar(
@@ -89,12 +95,12 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusSm)),
         ),
       );
-      
-      if (router.canPop()) {
-        router.pop(true);
-      } else {
-        router.go('/agent/patients');
-      }
+
+      // Always use go() so PatientListScreen rebuilds from scratch and
+      // its initState triggers loadPatients() — showing the new patient.
+      // router.pop(true) does NOT re-run initState on the list screen,
+      // causing the new patient to be invisible on some devices.
+      router.go('/agent/patients');
     } else {
       messenger.showSnackBar(
         SnackBar(

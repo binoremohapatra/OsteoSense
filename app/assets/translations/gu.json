@@ -558,7 +558,7 @@
   "analysis_complete": "વિશ્લેષણ પૂર્ણ થયું",
   "preparing_results": "તમારા પરિણામો તૈયાર થઈ રહ્યાં છે…",
   "ai_processing_description": "AI મોડેલ તમારી તપાસની માહિતીને પ્રક્રિયા કરી રહ્યું છે",
-  "greeting_with_name": "{નમસ્કાર}, {name}",
+  "greeting_with_name": "{greeting}, {name}",
   "weekly_screening_goal": "સાપ્તાહિક તપાસનું લક્ષ્ય",
   "screenings_completed_this_week": "આ અઠવાડિયે {count} તપાસો પૂર્ણ થઈ",
   "total_patient": "કુલ દર્દીઓ",

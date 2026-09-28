@@ -61,8 +61,18 @@ class InferenceService:
 
         x = np.array([[feats.get(c, 0.0) for c in self.feature_cols]])
         x_scaled = self.scaler.transform(x)
-        proba = float(self.model.predict_proba(x_scaled)[0, 1])
-        label = "OA-risk" if proba >= 0.5 else "healthy"
+        probas = self.model.predict_proba(x_scaled)[0]
+        max_idx = int(np.argmax(probas))
+        
+        if max_idx == 0:
+            proba = float(probas[1]*0.4 + probas[2])
+            label = "healthy"
+        elif max_idx == 1:
+            proba = float(0.4 + (probas[1]*0.2) + (probas[2]*0.3))
+            label = "low_risk"
+        else:
+            proba = float(0.7 + (probas[2]*0.3))
+            label = "OA-risk"
 
         top_features = None
         if hasattr(self.model, "feature_importances_"):

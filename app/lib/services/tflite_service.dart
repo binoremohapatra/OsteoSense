@@ -340,18 +340,27 @@ class TFLiteService {
     // Ensure the size is exactly 44 before appending clinical features
     final features = List<double>.from(gaitFeatures);
     
-    while (features.length < 44) {
+    // 1. Pad Gait Features exactly to 180 slots to match hospital model
+    while (features.length < 180) {
       features.add(0.0);
     }
     
-    // Append 4 Clinical Features (Multimodal AI)
+    // 2. Append Clinical Features (Next 9 slots)
+    // The hospital model has pain_level, stiffness, swelling, past_injury, etc. here
     features.add(painLevel.toDouble());
     features.add(_parseStiffnessDuration(stiffnessDuration).toDouble());
     features.add(swelling ? 1.0 : 0.0);
     features.add((pastInjury != null && pastInjury.isNotEmpty) ? 1.0 : 0.0);
+    features.add((pastInjury != null && pastInjury.toLowerCase().contains('surgery')) ? 1.0 : 0.0);
     features.add(mriKlGrade.toDouble());
+    
+    // Pad clinical section to exactly 9 slots (180 to 188)
+    while (features.length < 189) {
+      features.add(0.0);
+    }
 
-    // Append 4 Demographic Features
+    // 3. Append 4 Demographic Features (189 to 192)
+    // Age, Weight, Height, BMI (exactly matching 60, 80, 183, 23.88)
     features.add(age.toDouble());
     features.add(weightKg);
     features.add(heightCm);
@@ -361,23 +370,46 @@ class TFLiteService {
       bmi = weightKg / ((heightCm / 100.0) * (heightCm / 100.0));
     }
     features.add(bmi);
+
+    // Append 8 Medical History Features
+    // (If not provided directly, we extract from pastInjury notes or default to 0)
+    final injLower = pastInjury?.toLowerCase() ?? '';
+    features.add(injLower.contains('oa') || injLower.contains('arthritis') ? 1.0 : 0.0); // diagnosis
+    features.add(injLower.contains('pain') ? 1.0 : 0.0); // joint_pain
+    features.add(injLower.contains('chronic') ? 1.0 : 0.0); // chronic
+    features.add(injLower.contains('inflammation') ? 1.0 : 0.0); // inflammation
+    features.add(injLower.contains('cartilage') ? 1.0 : 0.0); // cartilage
+    features.add(injLower.contains('ligament') || injLower.contains('acl') ? 1.0 : 0.0); // ligament
+    features.add(injLower.contains('fracture') || injLower.contains('break') ? 1.0 : 0.0); // fracture
     
-    // Append 9 Multimodal Features (Symptoms & Functional)
+    // Append 4 Symptoms
     final otherSymptoms = symptomsMap?['other_symptoms'] as Map<String, dynamic>? ?? {};
     features.add((otherSymptoms['Locking'] == true) ? 1.0 : 0.0);
     features.add((otherSymptoms['Clicking'] == true) ? 1.0 : 0.0);
     features.add((otherSymptoms['Grinding'] == true) ? 1.0 : 0.0);
     features.add((otherSymptoms['Instability'] == true) ? 1.0 : 0.0);
     
+    // Append 6 Pain Types
     final painChars = symptomsMap?['pain_characteristics'] as Map<String, dynamic>? ?? {};
+    features.add((painChars['Sharp'] == true) ? 1.0 : 0.0);
+    features.add((painChars['Dull'] == true) ? 1.0 : 0.0);
+    features.add((painChars['Burning'] == true) ? 1.0 : 0.0);
     features.add((painChars['Aching'] == true) ? 1.0 : 0.0);
+    features.add((painChars['Stabbing'] == true) ? 1.0 : 0.0);
+    features.add((painChars['Throbbing'] == true) ? 1.0 : 0.0);
     
+    // Append 4 Functional Limits
     features.add((functionalMap?['Standing'] as num?)?.toDouble() ?? 0.0);
     features.add((functionalMap?['Walking'] as num?)?.toDouble() ?? 0.0);
     features.add((functionalMap?['Stairs'] as num?)?.toDouble() ?? 0.0);
     features.add((functionalMap?['Chores'] as num?)?.toDouble() ?? 0.0);
 
-    const expectedInputSize = 62;
+    const expectedInputSize = 203;
+    
+    // Pad array with zeros to match 203 size from hospital model
+    while (features.length < expectedInputSize) {
+      features.add(0.0);
+    }
     
     // Create 2D list for model input
     return [features.take(expectedInputSize).toList()];

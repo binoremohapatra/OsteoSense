@@ -11,6 +11,7 @@ import 'providers/settings_provider.dart';
 import 'services/firebase_messaging_service.dart';
 import 'services/notification_service.dart';
 import 'services/notification_scheduler.dart';
+import 'services/sync_service.dart';
 import 'router/app_router.dart';
 import 'utils/app_theme.dart';
 
@@ -42,6 +43,11 @@ void main() async {
   final settingsProvider = SettingsProvider();
   await settingsProvider.loadSettings();
 
+  // Start Sync Services
+  final syncService = SyncService();
+  syncService.startAutoSync();
+  syncService.startBackgroundSync(interval: const Duration(minutes: 15));
+
   // Get saved language or default to English
   final savedLanguage = settingsProvider.language;
   final initialLocale = Locale(savedLanguage);
@@ -60,6 +66,12 @@ void main() async {
       Locale('pa'),
       Locale('as'),
       Locale('or'),
+      Locale('bodo'),
+      Locale('garo'),
+      Locale('khasi'),
+      Locale('kokborok'),
+      Locale('manipuri'),
+      Locale('mizo'),
     ],
     path: 'assets/translations',
     fallbackLocale: const Locale('en'),

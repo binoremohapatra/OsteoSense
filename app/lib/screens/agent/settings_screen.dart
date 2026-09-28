@@ -3,10 +3,12 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'dart:io';
 import '../../providers/settings_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/screening_provider.dart';
 import '../../services/database_helper.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_spacing.dart';
@@ -153,6 +155,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ),
             ]).animate().fadeIn(duration: 300.ms, delay: 300.ms),
+            const SizedBox(height: AppSpacing.xl),
+            
+            // Developer Options
+            _buildSectionHeader('Developer Options', isDanger: false)
+                .animate()
+                .fadeIn(duration: 300.ms, delay: 350.ms),
+            const SizedBox(height: AppSpacing.md),
+            _buildSettingGroup([
+              _buildSettingItem(
+                icon: Icons.data_object,
+                title: 'Export Telemetry Data (CSV)',
+                subtitle: 'Exports all patients:  Gait Features, Pain, Swelling, KL Grade',
+                onTap: () => _exportDataToCsv(context),
+              ),
+            ]).animate().fadeIn(duration: 300.ms, delay: 400.ms),
             const SizedBox(height: AppSpacing.xl),
 
             // Danger Zone
@@ -333,6 +350,48 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ],
       ),
     );
+  }
+  
+  void _exportDataToCsv(BuildContext context) async {
+    try {
+      final provider = context.read<ScreeningProvider>();
+      final screenings = provider.screenings;
+      
+      if (screenings.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No patient data to export!')),
+        );
+        return;
+      }
+      
+      String csv = "PatientID,Date,RiskLevel,Pain,KLGrade,PastSurgery,Swelling,GaitSensorData (203 Features...)\n";
+      
+      for (final s in screenings) {
+        final arr = s.advancedFeaturesVector;
+        csv += "${s.patientId},${s.screeningDate.toIso8601String()},${s.riskLevel ?? 'Unknown'},${s.painLevel ?? 0},${s.mriKlGrade ?? 0},${s.pastInjury?.contains('surgery') == true ? 1 : 0},${s.swelling == true ? 1 : 0},[${arr ?? ''}]\n";
+      }
+      
+      final directory = await getApplicationDocumentsDirectory();
+      final path = "${directory.path}/osteo_telemetry_export_${DateTime.now().millisecondsSinceEpoch}.csv";
+      final file = File(path);
+      await file.writeAsString(csv);
+      
+      // Also print to console so developer can copy it instantly
+      debugPrint("\n\n--- DEVELOPER TELEMETRY CSV EXPORT ---");
+      debugPrint(csv);
+      debugPrint("--------------------------------------\n\n");
+      
+      if (context.mounted) {
+        // Trigger native share sheet so user can send via WhatsApp, Email, etc.
+        await Share.shareXFiles([XFile(path)], text: 'OsteoSense Patient Telemetry Data');
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Export failed: $e'), backgroundColor: AppColors.error),
+        );
+      }
+    }
   }
 
   void _showLanguageDialog(BuildContext context, SettingsProvider provider) {
