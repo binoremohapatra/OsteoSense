@@ -15,12 +15,15 @@ network connection is available.
 ## Highlights
 
 - Offline-first patient and screening workflows
-- On-device TFLite OA risk assessment
+- On-device TFLite OA risk assessment with 203-feature hospital-grade model
 - Precise gait analysis using a custom ESP32-based BLE wearable sensor
-- Multilingual support for 12 Indian languages (English, Hindi, Assamese, Bengali, Gujarati, Kannada, Malayalam, Marathi, Odia, Punjabi, Tamil, Telugu)
+- **Medical image analysis** for X-ray, MRI, and CT scans with KL grade estimation
+- **Multilingual support for 18 Indian languages** (English, Hindi, Assamese, Bengali, Gujarati, Kannada, Malayalam, Marathi, Odia, Punjabi, Tamil, Telugu, Bodo, Garo, Khasi, Kokborok, Manipuri, Mizo)
+- **Multi-class AI risk prediction** (Healthy, Low Risk, High Risk)
+- Enhanced sync service with data recovery and loss prevention
 - Risk results with confidence, contributing factors, and recommendations
 - PDF report generation and sharing
-- Local SQLite storage with online synchronization
+- Local SQLite storage with robust online synchronization
 - Healthcare worker authentication
 - Seamless BLE wearable integration for real-time sensor data collection
 
@@ -30,13 +33,24 @@ network connection is available.
 .
 ├── app/                  # Flutter mobile application
 │   ├── lib/              # Dart source, screens, services, models, widgets
-│   ├── assets/           # Images, icons, and TFLite model
+│   ├── assets/           # Images, icons, TFLite models, and translations
+│   │   ├── models/       # OA risk model and image analysis model
+│   │   └── translations/ # 18 language JSON files
 │   ├── android/          # Android project
 │   ├── ios/              # iOS project
 │   ├── test/              # Flutter tests
 │   └── pubspec.yaml
 ├── backend/              # Node.js API and data services
 └── ai_service/           # Python AI microservice
+    ├── backend/          # FastAPI endpoints and inference service
+    │   ├── test_*        # Medical image testing scripts
+    │   └── mock_*        # Sample medical images
+    └── requirements.txt
+├── test_scans/           # Medical image test datasets
+│   ├── xray/            # X-ray test images
+│   ├── mri/             # MRI test images
+│   └── ctscan/          # CT scan test images
+└── test_*.py            # Model testing and comparison scripts
 ```
 
 ## Technology
@@ -47,17 +61,20 @@ network connection is available.
 - Provider and GoRouter
 - SQLite (`sqflite`)
 - Dio and `connectivity_plus`
-- TensorFlow Lite (`tflite_flutter`)
+- TensorFlow Lite (`tflite_flutter`) with 203-feature model
 - `sensors_plus` and `flutter_blue_plus`
 - `fl_chart`, `pdf`, and `printing`
 - Flutter localization and `intl`
+- Medical image upload and analysis service
+- Enhanced sync service with data recovery
 
 ### Backend services
 
 - Node.js with Express
 - MongoDB
 - JWT authentication
-- Python FastAPI AI service
+- Python FastAPI AI service with medical image analysis
+- Multi-class risk prediction and KL grade estimation
 
 ## Requirements
 
@@ -123,13 +140,15 @@ python main.py
 
 ## Main workflow
 
-1. Select a language and complete onboarding.
+1. Select a language (18 options including Northeast Indian languages) and complete onboarding.
 2. Sign in or create a healthcare worker account.
 3. Add or select a patient.
-4. Complete the symptom questionnaire.
-5. Run the guided gait test.
-6. Review the AI-assisted risk result and recommendations.
-7. Generate a report and sync data when online.
+4. Complete the symptom questionnaire with pain and mobility assessment.
+5. **Optional:** Upload medical images (X-ray, MRI, CT) for AI analysis.
+6. Run the guided gait test with BLE wearable sensor.
+7. Review the AI-assisted risk result with multi-class prediction (Healthy/Low/High Risk).
+8. Generate a comprehensive PDF report with recommendations.
+9. Sync data when online (with automatic recovery of failed sync items).
 
 ## Configuration
 
@@ -147,6 +166,23 @@ The backend reads configuration from environment variables in `backend/.env`.
 Use strong, unique JWT secrets outside local development. Never store secrets
 in source control.
 
+### AI Service
+
+The Python FastAPI AI service provides:
+
+**Endpoints:**
+- `POST /analyze-scan` - Medical image analysis (X-ray/MRI/CT)
+- `POST /predict` - Clinical OA risk prediction
+- `POST /inference` - Gait-based risk assessment
+- `GET /health` - Service health check
+
+**Features:**
+- Multi-class risk prediction (Healthy, Low Risk, High Risk)
+- KL grade estimation for medical images
+- Joint space, osteophytes, and cartilage assessment
+- Image-level biomarker extraction
+- Hospital-grade 203-feature model support
+
 ## Development commands
 
 Run these from the relevant project directory:
@@ -160,15 +196,44 @@ flutter test
 # Backend
 cd backend
 npm test
+
+# AI Service
+cd ai_service
+python -m pytest
+
+# Medical Image Testing
+cd ai_service/backend
+python test_analyze_scan.py
+python test_real_xray.py
+python test_multiple_scans.py
+
+# Model Testing
+python test_model.py
+python test_accuracy.py
+python test_edge_cases.py
 ```
 
 ## Localization
 
-Translations for 12 supported languages live in `app/assets/translations/` as JSON files. To add or update a language:
+Translations for **18 supported languages** live in `app/assets/translations/` as JSON files. The app now supports major Northeast Indian languages:
+
+**Supported Languages:**
+- English, Hindi, Assamese, Bengali, Gujarati, Kannada, Malayalam, Marathi, Odia, Punjabi, Tamil, Telugu
+- **Northeast Regional:** Bodo, Garo, Khasi, Kokborok, Manipuri, Mizo
+
+To add or update a language:
 
 1. Add or modify the JSON file such as `app/assets/translations/as.json`.
 2. Follow the key-value structure present in `en.json`.
-3. Add the locale to the supported locales in the app configuration.
+3. Add the locale to the supported locales in `app/lib/main.dart`.
+4. Update the language selection screen in `app/lib/screens/shared/language_selection_screen.dart`.
+
+**Automatic Translation:**
+Use the provided translation script for automatic language generation:
+```bash
+cd app/assets/translations
+python translate_langs.py
+```
 
 ## Troubleshooting
 
@@ -192,6 +257,44 @@ on a physical device and verify the required permissions.
 Check that MongoDB, the backend, and the AI service are running. Then verify
 the API URL, CORS origins, authentication secrets, and network connectivity.
 
+## Recent Updates (September 2026)
+
+### 🌍 Enhanced Multilingual Support
+- Added 6 new Northeast Indian languages: Bodo, Garo, Khasi, Kokborok, Manipuri, Mizo
+- Automatic translation script for language generation
+- Updated language selection UI with regional language support
+
+### 🏥 Medical Image Analysis
+- New AI endpoint for X-ray, MRI, and CT scan analysis
+- KL grade estimation and image-level biomarkers
+- Joint space, osteophytes, and cartilage assessment
+- Pixel-level image analysis with fallback implementations
+
+### 🤖 AI Service Improvements
+- Multi-class risk prediction (Healthy, Low Risk, High Risk)
+- Enhanced inference service with hospital-grade features
+- Clinical OA risk prediction endpoint
+- Improved confidence scoring and factor attribution
+
+### 🔧 Sync Service Bug Fixes
+- **Critical fix:** Prevented data loss by marking failed items instead of deleting
+- Patient_id mapping fix for MongoDB ObjectId compatibility
+- Data recovery for permanently-failed sync items
+- Automatic recovery of unsynced patients and screenings
+- Enhanced error handling and retry mechanisms
+
+### 📱 App Enhancements
+- Updated TFLite service with 203-feature model (matching hospital standards)
+- Medical image service for scan upload and analysis
+- Enhanced share_plus dependency for better file sharing
+- Improved sync queue management and monitoring
+
+### 🧪 Testing Infrastructure
+- Comprehensive model testing scripts
+- Edge case testing for various scan scenarios
+- Real X-ray analysis testing capability
+- Automated accuracy testing and model comparison
+
 ## Future improvements
 
 - Wearable sensor integration
@@ -199,6 +302,8 @@ the API URL, CORS origins, authentication secrets, and network connectivity.
 - Telemedicine consultation support
 - Voice input and educational video content
 - Medication reminders
+- Real-time video consultation
+- Advanced 3D imaging analysis
 
 ## Contributing
 
@@ -215,10 +320,13 @@ OsteoSense (JointSaathi) is purpose-built to address the challenges of Osteoarth
 - **Joint movement analysis & Gait assessment:** Utilizes a custom, low-cost BLE wearable sensor (ESP32-based) connected to the mobile app for automated and highly precise gait and joint movement tracking.
 - **Pain and mobility screening:** Features a comprehensive, digitized symptom questionnaire allowing healthcare workers to capture patient-reported pain levels and mobility issues.
 - **Sensor-based assessment:** Incorporates dual-layer assessment—BLE wearable sensors and on-device machine learning (TFLite)—to evaluate risk without the immediate need for expensive medical imaging.
+- **Medical image analysis:** New AI-powered analysis of X-ray, MRI, and CT scans with KL grade estimation and joint biomarker assessment for enhanced accuracy.
 
 ### b. AI/ML Techniques for Patient Data Analysis
-- Integrates an on-device TensorFlow Lite model for immediate offline risk prediction.
+- Integrates an on-device TensorFlow Lite model for immediate offline risk prediction with **203 hospital-grade features**.
 - Employs a scalable Python FastAPI AI microservice for advanced predictive modeling and high-risk case identification when network connectivity is available.
+- **Medical image analysis** for X-ray, MRI, and CT scans with KL grade estimation and joint biomarker assessment.
+- **Multi-class risk prediction** (Healthy, Low Risk, High Risk) with enhanced confidence scoring.
 
 ### c. Support Screening in Primary Healthcare Centres
 - Designed as a mobile-first, portable application that healthcare workers can easily carry to rural health camps, PHCs, and community outreach programs without requiring bulky equipment.
@@ -231,10 +339,11 @@ OsteoSense (JointSaathi) is purpose-built to address the challenges of Osteoarth
 - **Report Generation:** Automatically compiles screening data into shareable PDF reports that can be shared with specialists or handed to the patient.
 
 ### f. Multilingual and Easy-to-use Interfaces for NER
-- Offers localized UI support for **12 Indian languages**, specifically including **Assamese** and **Bengali**, which are crucial for grassroots deployment in the North Eastern Region. The interface is simplified to require minimal digital literacy from rural healthcare workers.
+- Offers localized UI support for **18 Indian languages**, specifically including **Assamese, Bengali, Bodo, Garo, Khasi, Kokborok, Manipuri, and Mizo**, which are crucial for grassroots deployment in the North Eastern Region. The interface is simplified to require minimal digital literacy from rural healthcare workers.
 
 ### g. Low-connectivity Environments & Offline Sync
 - Built with an **Offline-First** architecture. Healthcare workers can complete the entire screening and assessment workflow entirely offline in remote areas. The app seamlessly synchronizes data with the cloud once internet connectivity is restored.
+- **Enhanced sync service** with data loss prevention, automatic recovery of failed sync items, and MongoDB ObjectId compatibility for patient-screening relationships.
 
 ### h. Awareness and Preventive Guidance
 - Automatically provides personalized, AI-driven recommendations based on the screening results, focusing on joint care, physical activity, nutrition, and lifestyle management to encourage preventive healthcare.
@@ -248,3 +357,18 @@ India.
 
 - Email: support@jointsaathi.com
 - Helpline: 1800-XXX-XXXX
+
+## Version History
+
+### v2.0 (September 2026)
+- **Major Update:** Medical image analysis integration
+- **Enhanced AI:** Multi-class risk prediction with hospital-grade features
+- **New Languages:** Bodo, Garo, Khasi, Kokborok, Manipuri, Mizo support
+- **Critical Fixes:** Sync service data loss prevention and recovery
+- **Testing:** Comprehensive medical image and model testing infrastructure
+
+### v1.0 (Initial Release)
+- Basic OA risk screening with gait analysis
+- 12 language support
+- Offline-first architecture
+- BLE wearable integration
