@@ -21,7 +21,9 @@ jobs:
 
       - name: Install dependencies
         working-directory: ./app
-        run: flutter pub get
+        run: |
+          mkdir -p build/ios/SourcePackages
+          flutter pub get
 
       - name: Patch Podfile for Firebase
         working-directory: ./app
