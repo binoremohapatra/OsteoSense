@@ -23,6 +23,13 @@ jobs:
         working-directory: ./app
         run: flutter pub get
 
+      - name: Patch Podfile for Firebase
+        working-directory: ./app
+        run: |
+          rm -f ios/Podfile
+          flutter build ios --config-only
+          sed -i -e 's/use_frameworks!/use_frameworks! :linkage => :static/' ios/Podfile
+
       - name: Build iOS Simulator App
         working-directory: ./app
         run: flutter build ios --simulator --no-codesign
