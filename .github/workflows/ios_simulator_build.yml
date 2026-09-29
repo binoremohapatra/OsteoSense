@@ -26,6 +26,16 @@ jobs:
       - name: Patch Podfile for Firebase
         working-directory: ./app
         run: |
+          cat << 'EOF' > wipe_spm.rb
+          require 'xcodeproj'
+          project = Xcodeproj::Project.open('ios/Runner.xcodeproj')
+          project.root_object.package_references.clear
+          project.targets.each do |target|
+            target.package_product_dependencies.clear
+          end
+          project.save
+          EOF
+          ruby wipe_spm.rb
           rm -f ios/Podfile
           flutter config --no-enable-swift-package-manager
           flutter build ios --config-only --simulator --no-codesign || true
