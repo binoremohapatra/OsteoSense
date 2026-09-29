@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -140,12 +140,13 @@ class _MedicalHistoryScreenState extends State<MedicalHistoryScreen> {
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-          child: SwitchListTile(
+          child: Material(color: Colors.transparent, child: SwitchListTile(
             title: Text(title, style: AppTypography.bodyLarge),
             value: value,
             onChanged: onChanged,
             activeColor: AppColors.primary,
-          ),
+                            ),
+                          ),
         ),
       ),
     );

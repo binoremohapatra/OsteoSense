@@ -1,5 +1,4 @@
-﻿import 'dart:async';
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -9,8 +8,6 @@ import '../../theme/app_typography.dart';
 import '../../widgets/common/index.dart';
 import '../../services/ble_wearable_source.dart';
 import '../../services/gait_sensor_pipeline.dart';
-import 'package:provider/provider.dart';
-import '../../providers/ble_device_provider.dart';
 import '../../models/signal_test_models.dart';
 
 class BLEDeviceSelectorScreen extends StatefulWidget {
@@ -28,12 +25,6 @@ class _BLEDeviceSelectorScreenState extends State<BLEDeviceSelectorScreen> {
   static const String _targetServiceUuid = '4fafc201-1fb5-459e-8fcc-c5c9c331914b';
   static const String _targetDeviceName = 'JointSaathi';
 
-  // BUG FIX: Save subscriptions so we can cancel before re-subscribing.
-  // Without this, every _startScan() call adds a NEW listener to BLE streams
-  // causing race conditions that made the device list appear empty on 2nd scan.
-  StreamSubscription? _scanResultsSubscription;
-  StreamSubscription? _isScanningSubscription;
-
   @override
   void initState() {
     super.initState();
@@ -42,38 +33,19 @@ class _BLEDeviceSelectorScreenState extends State<BLEDeviceSelectorScreen> {
 
   @override
   void dispose() {
-    _scanResultsSubscription?.cancel();
-    _isScanningSubscription?.cancel();
     _stopScan();
     super.dispose();
   }
 
   Future<void> _startScan() async {
-    // Cancel old listeners before creating new ones.
-    // Without this, every tap on Refresh adds ANOTHER listener to the same
-    // BLE stream. Multiple listeners then call setState with _scanResults.clear()
-    // and addAll in competing order, causing the list to stay empty on 2nd scan.
-    await _scanResultsSubscription?.cancel();
-    await _isScanningSubscription?.cancel();
-    _scanResultsSubscription = null;
-    _isScanningSubscription = null;
-
-    if (mounted) {
-      setState(() {
-        _isScanning = true;
-        _scanResults.clear();
-      });
-    }
+    setState(() {
+      _isScanning = true;
+      _scanResults.clear();
+    });
 
     try {
-      // Stop any ongoing scan first to ensure a clean BLE stack state
-      if (FlutterBluePlus.isScanningNow) {
-        await FlutterBluePlus.stopScan();
-        await Future.delayed(const Duration(milliseconds: 300));
-      }
-
-      // Listen BEFORE starting the scan - save subscription references
-      _scanResultsSubscription = FlutterBluePlus.scanResults.listen((results) {
+      // Listen BEFORE starting the scan
+      FlutterBluePlus.scanResults.listen((results) {
         if (mounted) {
           setState(() {
             _scanResults.clear();
@@ -91,7 +63,7 @@ class _BLEDeviceSelectorScreenState extends State<BLEDeviceSelectorScreen> {
       });
 
       // Also listen to the isScanning stream so UI updates when timeout hits
-      _isScanningSubscription = FlutterBluePlus.isScanning.listen((isScanning) {
+      FlutterBluePlus.isScanning.listen((isScanning) {
         if (mounted) {
           setState(() => _isScanning = isScanning);
         }
@@ -126,31 +98,35 @@ class _BLEDeviceSelectorScreenState extends State<BLEDeviceSelectorScreen> {
 
   Future<void> _connectToDevice(BluetoothDevice device) async {
     setState(() => _isConnecting = true);
+
     try {
-      // Use global BleDeviceProvider so connection persists across all screens
-      final bleProvider = Provider.of<BleDeviceProvider>(context, listen: false);
-      final success = await bleProvider.connectToDevice(device);
-      if (success && mounted) {
+      // Create BLE wearable source
+      final bleSource = BLEWearableSensorSource(device: device);
+
+      // Initialize and test connection
+      await bleSource.initialize();
+
+      if (mounted) {
         setState(() => _connectedDevice = device);
-        final name = device.platformName.isNotEmpty ? device.platformName : 'JointSaathi';
+        
+        // Update the gait sensor pipeline to use this hardware source
+        final pipeline = GaitSensorPipeline();
+        pipeline.setHardwareSource(bleSource);
+        pipeline.setSourceType(SignalSourceType.hardware);
+
+        // Show success and go back
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Connected to $name'),
+            content: Text('âœ… Connected to ${device.platformName.isNotEmpty ? device.platformName : "JointSaathi"}!'),
             backgroundColor: Colors.green,
             duration: const Duration(seconds: 2),
           ),
         );
         await Future.delayed(const Duration(seconds: 1));
-        Navigator.pop(context, name);
-      } else if (!success && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('failed_to_connect'.tr()),
-            backgroundColor: AppColors.error,
-          ),
-        );
+        Navigator.pop(context, device.platformName.isNotEmpty ? device.platformName : "JointSaathi");
       }
     } catch (e) {
+      print('Error connecting to device: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -160,7 +136,9 @@ class _BLEDeviceSelectorScreenState extends State<BLEDeviceSelectorScreen> {
         );
       }
     } finally {
-      if (mounted) setState(() => _isConnecting = false);
+      if (mounted) {
+        setState(() => _isConnecting = false);
+      }
     }
   }
 
@@ -271,7 +249,7 @@ class _BLEDeviceSelectorScreenState extends State<BLEDeviceSelectorScreen> {
             ? result.advertisementData.advName
             : 'JointSaathi Device');
     final rssi = result.rssi;
-    final signalStrength = rssi > -60 ? '🟢 Strong' : (rssi > -80 ? '🟡 Good' : '🔴 Weak');
+    final signalStrength = rssi > -60 ? 'ðŸŸ¢ Strong' : (rssi > -80 ? 'ðŸŸ¡ Good' : 'ðŸ”´ Weak');
 
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
@@ -385,3 +363,4 @@ class _BLEDeviceSelectorScreenState extends State<BLEDeviceSelectorScreen> {
     );
   }
 }
+

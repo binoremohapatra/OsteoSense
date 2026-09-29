@@ -1,7 +1,8 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'dart:ui';
 import 'package:go_router/go_router.dart';
 import 'package:lottie/lottie.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -10,6 +11,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 import '../../providers/patient_provider.dart';
 import '../../services/sensor_service.dart';
+import '../../providers/ble_device_provider.dart';
 import '../../services/gait_sensor_pipeline.dart';
 import '../../models/signal_test_models.dart';
 import '../../theme/app_colors.dart';
@@ -44,42 +46,9 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
   SignalSourceType _sourceType = SignalSourceType.simulated;
   SimulationParameters _simParams = SimulationParameters();
 
-  // BLE connection state
+  // Local mirror of BleDeviceProvider's connected device name (for UI display)
+  // Updated automatically via Consumer<BleDeviceProvider> in build()
   String? _connectedDeviceName;
-  int? _batteryPercentage;
-  StreamSubscription<int>? _batterySubscription;
-  bool _modelReady = false;
-  bool _sensorsOK = false;
-  StreamSubscription<Map<String, bool>>? _statusSubscription;
-
-  void _subscribeToBattery() {
-    final hardwareSource = _sensorPipeline.hardwareSource;
-    if (hardwareSource != null && hardwareSource.batteryStream != null) {
-      _batterySubscription?.cancel();
-      _batterySubscription = hardwareSource.batteryStream!.listen((percentage) {
-        if (mounted) {
-          setState(() {
-            _batteryPercentage = percentage;
-          });
-        }
-      });
-    }
-  }
-
-  void _subscribeToStatus() {
-    final hardwareSource = _sensorPipeline.hardwareSource;
-    if (hardwareSource != null && hardwareSource.deviceStatusStream != null) {
-      _statusSubscription?.cancel();
-      _statusSubscription = hardwareSource.deviceStatusStream!.listen((status) {
-        if (mounted) {
-          setState(() {
-            _modelReady = status['modelReady'] ?? false;
-            _sensorsOK = status['sensorsOK'] ?? false;
-          });
-        }
-      });
-    }
-  }
 
   @override
   void initState() {
@@ -100,20 +69,23 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
     _timer?.cancel();
     _sensorService.dispose();
     _sensorPipeline.dispose();
-    _batterySubscription?.cancel();
-    _statusSubscription?.cancel();
     super.dispose();
   }
   
   void _initializeSensorPipeline() {
-    // Check if pipeline already has a hardware source set (from previous BLE connection)
-    if (_sensorPipeline.sourceType == SignalSourceType.hardware && _connectedDeviceName == null) {
-      // If pipeline is in hardware mode but we don't have device name, reset to simulated
-      _sourceType = SignalSourceType.simulated;
-    } else if (_sensorPipeline.sourceType == SignalSourceType.hardware && _connectedDeviceName != null) {
-      // If pipeline is in hardware mode and we have device name, sync UI state
+    // Sync with global BleDeviceProvider - if device is connected, use hardware mode
+    final bleProvider = BleDeviceProvider();
+    if (bleProvider.isConnected) {
       _sourceType = SignalSourceType.hardware;
-      _subscribeToBattery();
+      _connectedDeviceName = bleProvider.connectedDeviceName;
+      // Ensure pipeline is in hardware mode with the connected source
+      if (bleProvider.bleSource != null) {
+        _sensorPipeline.setHardwareSource(bleProvider.bleSource);
+        _sensorPipeline.setSourceType(SignalSourceType.hardware);
+      }
+    } else {
+      _sourceType = SignalSourceType.simulated;
+      _connectedDeviceName = null;
     }
 
     _sensorPipeline.setSourceType(_sourceType);
@@ -204,28 +176,21 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
     context.push('/screening/processing');
   }
 
-  /// Opens the BLE device selector. On success, stores the device name
-  /// so the UI switches from "Connect Device" button to a green "Connected" chip.
+  /// Opens the BLE device selector screen. On success, the global BleDeviceProvider
+  /// holds the connection and we sync local UI state from it.
   Future<void> _openBLESelector() async {
     final result = await Navigator.push<String>(
       context,
       MaterialPageRoute(builder: (_) => const BLEDeviceSelectorScreen()),
     );
     if (result != null && mounted) {
+      // BleDeviceProvider already holds the connection - just sync UI state
+      final bleProvider = Provider.of<BleDeviceProvider>(context, listen: false);
       setState(() {
-        _connectedDeviceName = result;
-        // Auto-switch to Hardware mode when device connects
+        _connectedDeviceName = bleProvider.connectedDeviceName ?? result;
         _sourceType = SignalSourceType.hardware;
         _sensorPipeline.setSourceType(SignalSourceType.hardware);
       });
-      _subscribeToBattery();
-      _subscribeToStatus();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Connected to $result'),
-          backgroundColor: AppColors.success,
-        ),
-      );
     }
   }
 
@@ -314,7 +279,20 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
       );
     }
 
-    return Scaffold(
+    return Consumer<BleDeviceProvider>(
+      builder: (context, bleProvider, _) {
+        // Sync local UI state with global provider
+        final providerDeviceName = bleProvider.connectedDeviceName;
+        if (providerDeviceName != null && _connectedDeviceName != providerDeviceName) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) setState(() {
+              _connectedDeviceName = providerDeviceName;
+              _sourceType = SignalSourceType.hardware;
+            });
+          });
+        }
+
+        return Scaffold(
       backgroundColor: AppColors.background,
       appBar: CustomAppBar(
         title: 'gait_assessment_test'.tr(),
@@ -518,8 +496,16 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
           ),
         ),
           ),
+          // ── Floating device status chip ──────────────────────────────
+          Positioned(
+            bottom: 24,
+            right: 24,
+            child: _BleStatusBanner(bleProvider: bleProvider, onConnect: _openBLESelector),
+          ),
         ],
       ),
+    );
+      },
     );
   }
 
@@ -718,9 +704,13 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
   }
 
   Widget _buildDeviceStatusCard() {
+    final bleProvider = BleDeviceProvider();
     final isSimulated = _sourceType == SignalSourceType.simulated;
-    final isConnected = isSimulated || _sensorPipeline.hasAccelerometer;
+    final isConnected = isSimulated || bleProvider.isConnected;
     final actuallySimulated = isSimulated && _isRecording;
+    final batteryPct = bleProvider.batteryPercentage;
+    final modelReady = bleProvider.modelReady;
+    final sensorsOK = bleProvider.sensorsOK;
 
     return GlassCard(
       child: Column(
@@ -767,12 +757,12 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
           _buildStatusRow('connection'.tr(), isConnected ? 'connected'.tr() : 'disconnected'.tr()),
           _buildStatusRow('data_source'.tr(), isSimulated ? 'simulated'.tr() : 'hardware'.tr()),
           _buildStatusRow('sampling'.tr(), _isRecording ? 'active'.tr() : 'stopped'.tr()),
-          if (!isSimulated && _batteryPercentage != null)
-            _buildStatusRow('Battery', '$_batteryPercentage%'),
+          if (!isSimulated && batteryPct != null)
+              _buildStatusRow('Battery', '$batteryPct%'),
           if (!isSimulated)
-            _buildStatusRow('Model Ready', _modelReady ? 'Yes (Local)' : 'No'),
+              _buildStatusRow('Model Ready', modelReady ? 'Yes (Local)' : 'No'),
           if (!isSimulated)
-            _buildStatusRow('Sensors OK', _sensorsOK ? 'Yes' : 'No'),
+              _buildStatusRow('Sensors OK', sensorsOK ? 'Yes' : 'No'),
         ],
       ),
     );
@@ -1447,6 +1437,133 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
           textAlign: TextAlign.center,
         ),
       ],
+    );
+  }
+}
+// ─── Floating BLE Device Status Chip ─────────────────────────────────────────
+// Shows at the bottom right corner of GaitTestScreen.
+// Green when connected, amber when connecting, grey with connect button when off.
+class _BleStatusBanner extends StatelessWidget {
+  final BleDeviceProvider bleProvider;
+  final VoidCallback onConnect;
+
+  const _BleStatusBanner({
+    super.key,
+    required this.bleProvider,
+    required this.onConnect,
+  });
+
+  void _showDisconnectDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Disconnect Device?'),
+        content: const Text('Are you sure you want to disconnect from the hardware device?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              bleProvider.disconnect();
+            },
+            child: const Text('Disconnect', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isConnected = bleProvider.isConnected;
+    final isConnecting = bleProvider.isConnecting;
+
+    // Glassmorphic Colors
+    final Color bg = isConnected
+        ? const Color(0xFF1B5E20).withValues(alpha: 0.3)
+        : isConnecting
+            ? const Color(0xFFE65100).withValues(alpha: 0.3)
+            : const Color(0xFF212121).withValues(alpha: 0.3);
+
+    final Color border = isConnected
+        ? const Color(0xFF4CAF50).withValues(alpha: 0.5)
+        : isConnecting
+            ? const Color(0xFFFF9800).withValues(alpha: 0.5)
+            : Colors.white.withValues(alpha: 0.2);
+
+    final Color fg = isConnected ? const Color(0xFFC8E6C9) : Colors.white;
+
+    return Material(
+      color: Colors.transparent,
+      child: GestureDetector(
+        onTap: isConnected ? () => _showDisconnectDialog(context) : (isConnecting ? null : onConnect),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20), // Pill shape
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 12.0, sigmaY: 12.0),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOut,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: bg,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: border, width: 0.5),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min, // Keep it ultra compact
+                children: [
+                  if (isConnecting)
+                    const SizedBox(
+                      width: 10,
+                      height: 10,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 1.5,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  else
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      width: 6,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: isConnected ? Colors.greenAccent : Colors.white54,
+                        boxShadow: isConnected
+                            ? [
+                                BoxShadow(
+                                  color: Colors.greenAccent.withValues(alpha: 0.6),
+                                  blurRadius: 4,
+                                  spreadRadius: 1,
+                                )
+                              ]
+                            : null,
+                      ),
+                    ),
+                  const SizedBox(width: 6),
+                  Text(
+                    isConnected
+                        ? 'Connected'
+                        : isConnecting
+                            ? 'Connecting'
+                            : 'Connect',
+                    style: TextStyle(
+                      color: fg,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

@@ -1,4 +1,4 @@
-import 'package:sqflite/sqflite.dart';
+﻿import 'package:sqflite/sqflite.dart';
 import 'package:sqflite/sqlite_api.dart';
 import 'package:path/path.dart';
 import 'dart:async';
@@ -24,9 +24,10 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 10,
+      version: 11,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
+      onOpen: _onOpen,
     );
   }
 
@@ -540,6 +541,47 @@ class DatabaseHelper {
           )
         ''');
       } catch (_) {}
+    }
+  }
+
+  // ─── onOpen: Safety net for any schema gaps ────────────────────────────────
+  // This runs every time the DB is opened (after onCreate/onUpgrade).
+  // It ensures ALL required columns exist regardless of which upgrade path ran.
+  Future<void> _onOpen(Database db) async {
+    final screeningColumns = {
+      'pain_frequency': 'ALTER TABLE screenings ADD COLUMN pain_frequency TEXT',
+      'activity_limitation': 'ALTER TABLE screenings ADD COLUMN activity_limitation TEXT',
+      'medication_use': 'ALTER TABLE screenings ADD COLUMN medication_use INTEGER DEFAULT 0',
+      'symptom_duration': 'ALTER TABLE screenings ADD COLUMN symptom_duration TEXT',
+      'pain_characteristics': 'ALTER TABLE screenings ADD COLUMN pain_characteristics TEXT',
+      'stiffness_triggers': 'ALTER TABLE screenings ADD COLUMN stiffness_triggers TEXT',
+      'other_symptoms': 'ALTER TABLE screenings ADD COLUMN other_symptoms TEXT',
+      'functional_difficulty': 'ALTER TABLE screenings ADD COLUMN functional_difficulty TEXT',
+      'gait_variability': 'ALTER TABLE screenings ADD COLUMN gait_variability REAL DEFAULT 0.0',
+      'gait_asymmetry': 'ALTER TABLE screenings ADD COLUMN gait_asymmetry REAL DEFAULT 0.0',
+      'gait_smoothness': 'ALTER TABLE screenings ADD COLUMN gait_smoothness REAL DEFAULT 0.0',
+      'postural_stability': 'ALTER TABLE screenings ADD COLUMN postural_stability REAL DEFAULT 0.0',
+      'ml_uncertainty': 'ALTER TABLE screenings ADD COLUMN ml_uncertainty REAL DEFAULT 0.0',
+      'advanced_features_vector': 'ALTER TABLE screenings ADD COLUMN advanced_features_vector TEXT',
+      'joint_id': 'ALTER TABLE screenings ADD COLUMN joint_id TEXT',
+      'side': 'ALTER TABLE screenings ADD COLUMN side TEXT',
+      'symptoms_map': 'ALTER TABLE screenings ADD COLUMN symptoms_map TEXT',
+      'functional_map': 'ALTER TABLE screenings ADD COLUMN functional_map TEXT',
+      'mri_kl_grade': 'ALTER TABLE screenings ADD COLUMN mri_kl_grade INTEGER',
+    };
+
+    // Get existing columns in screenings table
+    final tableInfo = await db.rawQuery('PRAGMA table_info(screenings)');
+    final existingCols = tableInfo.map((row) => row['name'] as String).toSet();
+
+    for (final entry in screeningColumns.entries) {
+      if (!existingCols.contains(entry.key)) {
+        try {
+          await db.execute(entry.value);
+        } catch (_) {
+          // ignore if column already exists or other benign errors
+        }
+      }
     }
   }
 

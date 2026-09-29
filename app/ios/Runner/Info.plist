@@ -60,6 +60,10 @@
 		<string>This app uses location services for Bluetooth scanning and to record patient location data.</string>
 		<key>NSPhotoLibraryUsageDescription</key>
 		<string>This app needs access to photo library to save and share screening reports.</string>
+		<key>NSCameraUsageDescription</key>
+		<string>This app needs access to camera to take photos of joints for visual assessment.</string>
+		<key>NSMicrophoneUsageDescription</key>
+		<string>This app needs access to microphone to record videos for gait analysis.</string>
 		<key>Included Permissions</key>
 		<array>
 			<string>motion</string>

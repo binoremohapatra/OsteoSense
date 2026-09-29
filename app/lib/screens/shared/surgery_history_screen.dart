@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -85,11 +85,12 @@ class _SurgeryHistoryScreenState extends State<SurgeryHistoryScreen> {
                         ),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-                          child: SwitchListTile(
+                          child: Material(color: Colors.transparent, child: SwitchListTile(
                             title: Text('have_you_had_surgery_on_this_joint'.tr(), style: AppTypography.bodyLarge),
                             value: _hasHadSurgery,
                             onChanged: (val) => setState(() => _hasHadSurgery = val),
                             activeColor: AppColors.primary,
+                            ),
                           ),
                         ),
                       ),
@@ -121,12 +122,13 @@ class _SurgeryHistoryScreenState extends State<SurgeryHistoryScreen> {
                           ),
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-                            child: SwitchListTile(
+                            child: Material(color: Colors.transparent, child: SwitchListTile(
                               title: Text('are_there_implants_hardware'.tr(), style: AppTypography.bodyLarge),
                               value: _implantPresent,
                               onChanged: (val) => setState(() => _implantPresent = val),
                               activeColor: AppColors.primary,
                             ),
+                          ),
                           ),
                         ),
                       ),

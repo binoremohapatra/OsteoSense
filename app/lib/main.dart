@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -8,6 +8,7 @@ import 'providers/auth_provider.dart';
 import 'providers/patient_provider.dart';
 import 'providers/screening_provider.dart';
 import 'providers/settings_provider.dart';
+import 'providers/ble_device_provider.dart';
 import 'services/firebase_messaging_service.dart';
 import 'services/notification_service.dart';
 import 'services/notification_scheduler.dart';
@@ -90,6 +91,7 @@ class JointSaathiApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => BleDeviceProvider()),
         ChangeNotifierProvider(create: (_) => PatientProvider()),
         ChangeNotifierProvider(create: (_) => ScreeningProvider()),
         ChangeNotifierProvider.value(value: settingsProvider),
