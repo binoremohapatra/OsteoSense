@@ -27,7 +27,7 @@ jobs:
         working-directory: ./app
         run: |
           rm -f ios/Podfile
-          flutter build ios --config-only
+          flutter build ios --config-only --simulator --no-codesign || true
           sed -i -e 's/use_frameworks!/use_frameworks! :linkage => :static/' ios/Podfile
 
       - name: Build iOS Simulator App
