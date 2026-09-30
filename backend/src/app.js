@@ -18,6 +18,8 @@ const authRoutes = require("./routes/authRoutes");
 const patientRoutes = require("./routes/patientRoutes");
 const screeningRoutes = require("./routes/screeningRoutes");
 const analyticsRoutes = require("./routes/analyticsRoutes");
+const globalAnalyticsRoutes = require("./routes/globalAnalyticsRoutes");
+const villageAssignmentRoutes = require("./routes/villageAssignmentRoutes");
 const syncRoutes = require("./routes/syncRoutes");
 const preventiveCareRoutes = require("./routes/preventiveCareRoutes");
 
@@ -27,29 +29,24 @@ const app = express();
 app.set("trust proxy", 1);
 
 // Security headers
-app.use(helmet());
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+  })
+);
 
-// CORS - explicit allowed origins from env (comma-separated list supported)
-
-//uncomment this code to allow access to only allowed origins
-
-// app.use(
-//   cors({
-//     origin: (origin, callback) => {
-//       // Allow non-browser tools (curl/Postman/mobile app native fetch) with no Origin header.
-//       if (!origin || env.CORS_ORIGINS.includes(origin)) {
-//         return callback(null, true);
-//       }
-//       return callback(new Error(`CORS: origin ${origin} not allowed`));
-//     },
-//     credentials: true,
-//   })
-// );
-
+// CORS - origins defined in CORS_ORIGINS env var (comma-separated)
 app.use(
   cors({
-    origin: "*",
-  }),
+    origin: (origin, callback) => {
+      // Allow non-browser tools (curl/Postman/mobile app native fetch) with no Origin header.
+      if (!origin || env.CORS_ORIGINS.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error(`CORS: origin ${origin} not allowed`));
+    },
+    credentials: true,
+  })
 );
 
 // Body parsing
@@ -82,13 +79,17 @@ app.get("/health", (_req, res) => {
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 const userRoutes = require("./routes/userRoutes");
+const adminRoutes = require("./routes/adminRoutes");
 
 // ... (in the routes section)
+app.use("/api/v1/admin", adminRoutes);
 app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/patients", patientRoutes);
 app.use("/api/v1/screenings", screeningRoutes);
 app.use("/api/v1/analytics", analyticsRoutes);
+app.use("/api/v1/global-analytics", globalAnalyticsRoutes);
+app.use("/api/v1/village-assignments", villageAssignmentRoutes);
 app.use("/api/v1/sync", syncRoutes);
 app.use("/api/v1/preventive-care", preventiveCareRoutes);
 

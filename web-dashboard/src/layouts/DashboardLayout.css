@@ -1,0 +1,146 @@
+/* ─── Sidebar shell ─────────────────────────────────────── */
+.shell { display:flex; min-height:100vh; background:var(--background); }
+
+/* Deep green sidebar */
+.shell__sidebar {
+  width:252px; flex-shrink:0;
+  background: linear-gradient(180deg, #2D4A35 0%, #1F3429 55%, #162B21 100%);
+  border-right: none;
+  display:flex; flex-direction:column; padding:20px 14px;
+  position:sticky; top:0; height:100vh;
+  box-shadow: 4px 0 24px rgba(0,0,0,.18);
+}
+
+/* Brand / logo */
+.shell__brand { display:flex; align-items:center; gap:10px; padding:5px 9px 25px; }
+.shell__brand-mark {
+  width:34px; height:34px; border-radius:50%; overflow:hidden;
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  background: rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.2);
+}
+.shell__brand-name { font:800 17px var(--font-display); letter-spacing:-.02em; color:#fff; }
+
+/* Nav items */
+.shell__nav { display:flex; flex-direction:column; gap:3px; flex:1; }
+.shell__nav-item {
+  position:relative; display:flex; align-items:center; gap:11px;
+  padding:10px 12px; border-radius:8px;
+  font-size:13.5px; font-weight:500;
+  color: rgba(255,255,255,.65);
+  transition:background .16s ease, color .16s ease;
+}
+.shell__nav-item:hover {
+  background: rgba(255,255,255,.1);
+  color: #fff;
+}
+.shell__nav-item--active {
+  background: rgba(255,255,255,.15);
+  color: #fff;
+  font-weight: 700;
+}
+.shell__nav-item--active::before {
+  content:''; position:absolute; left:0; top:8px; bottom:8px;
+  width:3px; border-radius:0 4px 4px 0;
+  background: #7DC98F; /* bright mint accent stripe */
+}
+
+/* Sidebar footer */
+.shell__sidebar-footer {
+  border-top:1px solid rgba(255,255,255,.12);
+  padding-top:14px; display:flex; flex-direction:column; gap:9px;
+}
+.shell__user { display:flex; align-items:center; gap:10px; padding:5px 8px; min-width:0; }
+.shell__avatar {
+  width:35px; height:35px; border-radius:50%;
+  background: rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.25);
+  color:#fff; display:flex; align-items:center; justify-content:center;
+  font-size:12px; font-weight:700; flex-shrink:0;
+}
+.shell__user-info { display:flex; flex-direction:column; min-width:0; }
+.shell__user-name { font-size:12.5px; font-weight:700; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.shell__user-role { font-size:11px; color:rgba(255,255,255,.5); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.shell__logout {
+  display:flex; align-items:center; gap:9px; padding:9px 11px;
+  border-radius:8px; background:transparent;
+  border:1px solid rgba(255,255,255,.18);
+  color: rgba(255,255,255,.65); font-size:12.5px; font-weight:600;
+}
+.shell__logout:hover { background:rgba(220,90,90,.2); color:#ff9999; border-color:transparent; }
+
+/* ─── Main content area ─────────────────────────────────── */
+.shell__main { flex:1; min-width:0; padding:0 38px 60px; }
+.shell__topbar {
+  height:72px; border-bottom:1px solid var(--border);
+  display:flex; align-items:center; justify-content:space-between;
+  margin:0 -38px 30px; padding:0 38px;
+  background:rgba(250,250,250,.96);
+}
+.shell__topbar div:first-child{display:flex;flex-direction:column;gap:2px}
+.shell__crumb{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--text-tertiary);font-weight:800}
+.shell__topbar strong{font:700 14px var(--font-display)}
+.shell__topbar-user{font-size:12px;color:var(--text-secondary);display:flex;align-items:center;gap:7px}
+.shell__status-dot{width:7px;height:7px;border-radius:50%;background:var(--risk-low)}
+
+/* Mobile hidden by default */
+.shell__mobilebar{display:none}
+.shell__menu-btn{display:none}
+.shell__close-btn{display:none}
+.shell__scrim{display:none}
+
+/* Page header */
+.page-head { display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:25px;flex-wrap:wrap }
+.page-head h1{font-size:25px;font-weight:800;letter-spacing:-.03em}
+.page-head p{color:var(--text-secondary);font-size:13.5px;margin-top:5px}
+
+/* ─── Mobile responsive ─────────────────────────────────── */
+@media(max-width:900px){
+  .shell{display:block}
+  .shell__sidebar{
+    width:270px;max-width:82vw;height:100vh;position:fixed;top:0;left:0;
+    border-right:none;padding:20px 14px;
+    display:flex;z-index:60;
+    transform:translateX(-100%);
+    transition:transform .28s cubic-bezier(.22,1,.36,1);
+  }
+  .shell__sidebar--open{transform:translateX(0);box-shadow:4px 0 32px rgba(0,0,0,.3);}
+  .shell__brand{position:relative}
+  .shell__close-btn{
+    display:inline-flex;align-items:center;justify-content:center;
+    margin-left:auto;width:30px;height:30px;border-radius:8px;
+    border:1px solid rgba(255,255,255,.2);background:transparent;color:rgba(255,255,255,.7);
+  }
+  .shell__close-btn:hover{background:rgba(255,255,255,.12);color:#fff}
+  .shell__scrim{display:block;position:fixed;inset:0;background:rgba(9,20,20,.45);backdrop-filter:blur(2px);z-index:55;animation:scrim-in .2s ease both}
+  .shell__menu-btn{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:9px;border:1px solid var(--border);background:transparent;color:var(--text-primary);transition:background .15s ease}
+  .shell__menu-btn:hover{background:var(--surface-variant)}
+  .shell__mobilebar{height:62px;display:flex;align-items:center;gap:12px;padding:0 17px;background:rgba(255,255,255,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:20}
+  .shell__mobilebar .shell__brand{padding:0}
+  .shell__mobile-title{font:700 12px var(--font-display);color:var(--text-secondary);margin-left:auto}
+  .shell__main{padding:0 18px 40px}
+  .shell__topbar{display:none}
+}
+
+.shell__brand-logo { width:26px; height:26px; object-fit:contain; display:block; }
+@keyframes scrim-in{from{opacity:0}to{opacity:1}}
+@media(max-width:640px){.shell__mobilebar .shell__brand-name{font-size:15px}.page-head{margin-bottom:20px}.page-head h1{font-size:22px}}
+
+/* ─── Dashboard motion ──────────────────────────────────── */
+.shell__brand-mark { transition:transform .2s ease, box-shadow .2s ease; }
+.shell__brand:hover .shell__brand-mark { transform:rotate(-4deg) scale(1.04); box-shadow:0 6px 15px rgba(0,0,0,.2); }
+.shell__nav-item { transition:background .18s ease, color .18s ease, transform .18s ease; }
+.shell__nav-item:hover { transform:translateX(2px); }
+.shell__nav-item--active { animation:nav-active-in .3s ease both; }
+.shell__main > * { animation:dashboard-page-in .45s cubic-bezier(.22,1,.36,1) both; }
+.shell__topbar { animation:topbar-in .45s ease both; }
+.shell__status-dot { animation:status-pulse 2.5s ease-in-out infinite; }
+.shell__avatar { transition:transform .2s ease; }
+.shell__user:hover .shell__avatar { transform:scale(1.05); }
+
+@keyframes dashboard-page-in { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+@keyframes topbar-in { from { opacity:0; transform:translateY(-5px); } to { opacity:1; transform:none; } }
+@keyframes nav-active-in { from { background:transparent; } to { background:rgba(255,255,255,.15); } }
+@keyframes status-pulse { 0%,100% { box-shadow:0 0 0 0 rgba(122,201,143,0); } 50% { box-shadow:0 0 0 4px rgba(122,201,143,.15); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .shell__nav-item--active, .shell__main > *, .shell__topbar, .shell__status-dot { animation:none; }
+}

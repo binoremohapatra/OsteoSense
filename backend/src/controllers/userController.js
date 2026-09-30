@@ -61,4 +61,20 @@ const changePassword = asyncHandler(async (req, res) => {
   res.status(200).json({ success: true, message: 'Password changed successfully' });
 });
 
-module.exports = { updateProfile, changePassword };
+/**
+ * GET /api/v1/users/health-workers
+ * Get all health workers (users with role='agent')
+ */
+const getHealthWorkers = asyncHandler(async (req, res) => {
+  const healthWorkers = await User.find({
+    role: 'agent',
+    isActive: true,
+  }).select('fullName phoneNumber location healthCenterId');
+
+  res.status(200).json({
+    success: true,
+    data: healthWorkers,
+  });
+});
+
+module.exports = { updateProfile, changePassword, getHealthWorkers };
