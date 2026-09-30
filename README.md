@@ -191,6 +191,40 @@ npm install
 npm start
 ```
 
+#### Create admin user
+
+To create an admin user for accessing all patients and screenings:
+
+```bash
+cd backend
+npm run seed:admin
+```
+
+This creates an admin user with:
+- Phone: 9999999999
+- Password: admin123
+- Role: admin
+
+**Important:** Change the admin password after first login in production.
+
+### 4. Run the web dashboard
+
+The web dashboard is the admin interface for viewing all patients and screenings.
+
+```bash
+cd web-dashboard
+npm install
+npm run dev
+```
+
+Create `web-dashboard/.env` with:
+
+```
+VITE_API_BASE_URL=http://localhost:5000/api/v1
+```
+
+Login to the web dashboard with admin credentials to view all patients and screenings in the system.
+
 ### 4. Run the AI service
 
 ```bash
