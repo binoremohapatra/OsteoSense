@@ -85,4 +85,44 @@ router.put('/profile', userController.updateProfile);
  */
 router.post('/change-password', userController.changePassword);
 
+/**
+ * @swagger
+ * /users/health-workers:
+ *   get:
+ *     summary: Get all health workers
+ *     description: >
+ *       Returns all users with role='agent' and isActive=true.
+ *       Used for village assignment and other admin functions.
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of health workers
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                       fullName:
+ *                         type: string
+ *                       phoneNumber:
+ *                         type: string
+ *                       location:
+ *                         type: string
+ *                       healthCenterId:
+ *                         type: string
+ */
+router.get('/health-workers', userController.getHealthWorkers);
+
 module.exports = router;

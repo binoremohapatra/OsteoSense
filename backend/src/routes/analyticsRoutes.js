@@ -40,7 +40,7 @@ router.get('/overview', analyticsController.getOverview);
  *     parameters:
  *       - in: query
  *         name: period
- *         schema: { type: string, enum: [7d, 30d, 90d], default: 30d }
+ *         schema: { type: string, enum: [7d, 30d, 90d, 365d], default: 30d }
  *     responses:
  *       200:
  *         description: Array of { date, count }
@@ -89,7 +89,7 @@ router.get('/locations', analyticsController.getLocations);
  *     parameters:
  *       - in: query
  *         name: period
- *         schema: { type: string, enum: [7d, 30d, 90d], default: 30d }
+ *         schema: { type: string, enum: [7d, 30d, 90d, 365d], default: 30d }
  *     responses:
  *       200:
  *         description: Array of { date, count }

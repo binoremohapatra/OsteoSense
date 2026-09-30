@@ -1,0 +1,168 @@
+@import '@fontsource/manrope/500.css';
+@import '@fontsource/manrope/600.css';
+@import '@fontsource/manrope/700.css';
+@import '@fontsource/manrope/800.css';
+@import '@fontsource/inter/400.css';
+@import '@fontsource/inter/500.css';
+@import '@fontsource/inter/600.css';
+
+:root {
+  /* Primary — Deep Teal (signal color, not decoration) */
+  --primary: #4F6757;
+  --primary-light: #6B8A72;
+  --primary-dark: #34483D;
+  --primary-surface: #EBF0EC;
+
+  /* Accent — Warm Coral */
+  --accent: #D3A0A0;
+  --accent-light: #EDD0D0;
+  --accent-dark: #B87070;
+
+  /* Backgrounds */
+  --background: #F7F5F0;
+  --surface: #FFFFFF;
+  --surface-variant: #F3F1EC;
+
+  /* Text */
+  --text-primary: #2F302E;
+  --text-secondary: #6F716C;
+  --text-tertiary: #92938E;
+  --text-hint: #B8BAB5;
+  --text-on-primary: #FFFFFF;
+
+  /* Gray scale */
+  --gray-50: #F7F5F0;
+  --gray-100: #F3F1EC;
+  --gray-200: #E5E2DB;
+  --gray-300: #CCCAC4;
+  --gray-400: #AAACA7;
+  --gray-500: #8A8C87;
+  --gray-600: #545650;
+  --gray-700: #3A3B37;
+  --gray-800: #3A3B37;
+  --gray-900: #2F302E;
+
+  /* Risk levels */
+  --risk-low: #7A9E82;
+  --risk-low-dark: #5A7D62;
+  --risk-low-surface: #ECF3EC;
+
+  --risk-medium: #C4A252;
+  --risk-medium-dark: #A88A3A;
+  --risk-medium-surface: #F8F2E4;
+
+  --risk-high: #B87070;
+  --risk-high-dark: #9A5555;
+  --risk-high-surface: #F5EBEB;
+
+  /* Status */
+  --success: #7A9E82;
+  --warning: #C4A252;
+  --error: #B87070;
+  --info: #7A94A8;
+
+  /* Borders — the primary depth technique: 1px hairlines, not heavy shadow */
+  --border: #E5E2DB;
+  --divider: #EAE7E0;
+
+  /* Shadows — reserved for genuinely floating elements only */
+  --shadow-sm: 0 1px 2px rgba(10, 10, 10, 0.04);
+  --shadow-md: 0 8px 24px rgba(10, 10, 10, 0.08);
+  --shadow-lg: 0 16px 48px rgba(10, 10, 10, 0.14);
+
+  /* Type */
+  --font-display: 'Manrope', 'Segoe UI', sans-serif;
+  --font-body: 'Inter', 'Segoe UI', sans-serif;
+
+  /* Radii */
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 18px;
+  --r-full: 999px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--background);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  margin: 0;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
+p { margin: 0; }
+
+a { color: inherit; text-decoration: none; }
+
+button {
+  font-family: var(--font-body);
+  cursor: pointer;
+}
+
+input, select, textarea {
+  font-family: var(--font-body);
+}
+
+:focus-visible {
+  outline: 2px solid var(--primary-light);
+  outline-offset: 2px;
+  transition: outline-offset .12s ease;
+}
+
+/* Slim, on-brand scrollbars app-wide (Firefox + WebKit) */
+* { scrollbar-width: thin; scrollbar-color: var(--gray-300) transparent; }
+*::-webkit-scrollbar { width: 9px; height: 9px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb { background: var(--gray-300); border-radius: var(--r-full); border: 2px solid transparent; background-clip: content-box; }
+*::-webkit-scrollbar-thumb:hover { background: var(--gray-400); background-clip: content-box; }
+
+::selection {
+  background: var(--primary-surface);
+  color: var(--primary-dark);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Motion system — restrained, clinical, and accessibility-aware */
+@keyframes page-enter { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes soft-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+@keyframes shimmer { from { background-position: 150% 0; } to { background-position: -150% 0; } }
+
+#root { min-height: 100vh; }
+.btn { position: relative; overflow: hidden; }
+.btn::after { content:''; position:absolute; inset:0; background:linear-gradient(110deg,transparent 35%,rgba(255,255,255,.15) 50%,transparent 65%); background-size:220% 100%; opacity:0; transition:opacity .2s ease; pointer-events:none; }
+.btn:not(:disabled):hover::after { opacity:1; animation:shimmer .8s ease; }
+.card, .stat-card, .feature-card, .mini-dashboard, .table-wrap { transition: transform .22s ease, border-color .22s ease, box-shadow .22s ease; }
+.card:hover { border-color:#d5ded8; }
+.modal-overlay { animation:modal-backdrop-in .2s ease both; }
+.modal-card { animation:modal-card-in .32s cubic-bezier(.2,.9,.3,1.1) both; transform-origin: center 20%; }
+@keyframes modal-backdrop-in { from { opacity:0; } to { opacity:1; } }
+@keyframes modal-card-in { from { opacity:0; transform: translateY(14px) scale(.97); } to { opacity:1; transform:none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .modal-overlay, .modal-card { animation:none !important; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth__visual::before, .auth__visual::after, .auth__metric, .auth__brand-mark { animation: none !important; }
+}

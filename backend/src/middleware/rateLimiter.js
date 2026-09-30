@@ -29,11 +29,11 @@ const authLimiter = rateLimit({
 
 /**
  * General-purpose limiter applied globally to the rest of the API:
- * 100 requests per 15 minutes per IP.
+ * Increased limits for development: 10000 requests per 15 minutes per IP.
  */
 const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: 10000,
   standardHeaders: true,
   legacyHeaders: false,
   skip: skipInTest,

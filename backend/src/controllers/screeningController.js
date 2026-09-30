@@ -86,9 +86,14 @@ const createScreening = asyncHandler(async (req, res) => {
  * GET /api/v1/screenings
  */
 const listScreenings = asyncHandler(async (req, res) => {
-  const { page, limit, riskLevel, startDate, endDate, patientId } = req.query;
+  const { page, limit, riskLevel, startDate, endDate, patientId, allScreenings } = req.query;
 
-  const filter = { agentId: req.user._id };
+  const filter = {};
+  // Use allScreenings flag to determine if we should show all screenings or just the logged-in user's screenings
+  // Admin users can always see all screenings
+  if (allScreenings !== 'true' && allScreenings !== true && req.user.role !== 'admin') {
+    filter.agentId = req.user._id;
+  }
   if (riskLevel) filter.riskLevel = riskLevel;
   if (patientId) filter.patientId = patientId;
   if (startDate || endDate) {

@@ -5,6 +5,7 @@ const Patient = require('../models/Patient');
 const Screening = require('../models/Screening');
 const ApiError = require('../utils/ApiError');
 const asyncHandler = require('../utils/asyncHandler');
+const assignmentService = require('../services/assignmentService');
 
 function escapeRegex(text) {
   return text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
@@ -14,9 +15,19 @@ function escapeRegex(text) {
  * POST /api/v1/patients
  */
 const createPatient = asyncHandler(async (req, res) => {
+  // Auto-assign health worker based on village if assignment exists
+  let assignedHealthWorkerId = req.user._id;
+  
+  if (req.body.village) {
+    const autoAssignedId = await assignmentService.assignHealthWorkerByVillage(req.body.village);
+    if (autoAssignedId) {
+      assignedHealthWorkerId = autoAssignedId;
+    }
+  }
+
   const patient = await Patient.create({
     ...req.body,
-    agentId: req.user._id,
+    agentId: assignedHealthWorkerId,
   });
 
   const isoCreated = patient.createdAt ? new Date(patient.createdAt).toISOString() : new Date().toISOString();
@@ -56,7 +67,13 @@ const createPatient = asyncHandler(async (req, res) => {
 const listPatients = asyncHandler(async (req, res) => {
   const { page, limit, village, riskLevel } = req.query;
 
-  const match = { agentId: req.user._id, isDeleted: false };
+  const match = { isDeleted: false };
+  // Use allPatients flag to determine if we should show all patients or just the logged-in user's patients
+  // Admin users can always see all patients
+  const allPatients = req.query.allPatients === 'true' || req.query.allPatients === true || req.user.role === 'admin';
+  if (!allPatients) {
+    match.agentId = req.user._id;
+  }
   if (village) match.village = village;
 
   const basePipeline = [
@@ -160,14 +177,21 @@ const searchPatients = asyncHandler(async (req, res) => {
   const { q } = req.query;
   const escaped = escapeRegex(q);
   const regex = new RegExp(escaped, 'i');
+  
+  // Use allPatients flag to determine if we should search all patients or just the logged-in user's patients
+  // Admin users can always search all patients
+  const allPatients = req.query.allPatients === 'true' || req.query.allPatients === true || req.user.role === 'admin';
+  const match = {
+    isDeleted: false,
+    $or: [{ name: regex }, { village: regex }],
+  };
+  if (!allPatients) {
+    match.agentId = req.user._id;
+  }
 
   const pipeline = [
     {
-      $match: {
-        agentId: req.user._id,
-        isDeleted: false,
-        $or: [{ name: regex }, { village: regex }],
-      },
+      $match: match,
     },
     { $sort: { createdAt: -1 } },
     { $limit: 20 },
@@ -211,7 +235,15 @@ const getPatientById = asyncHandler(async (req, res) => {
     throw ApiError.notFound('Patient not found');
   }
 
-  const patient = await Patient.findOne({ _id: id, agentId: req.user._id, isDeleted: false });
+  // Use allPatients flag to determine if we can access any patient or just the logged-in user's patients
+  // Admin users can always access any patient
+  const allPatients = req.query.allPatients === 'true' || req.query.allPatients === true || req.user.role === 'admin';
+  const match = { _id: id, isDeleted: false };
+  if (!allPatients) {
+    match.agentId = req.user._id;
+  }
+
+  const patient = await Patient.findOne(match);
   if (!patient) {
     throw ApiError.notFound('Patient not found');
   }

@@ -55,11 +55,11 @@ const getTrends = asyncHandler(async (req, res) => {
 
   const match = period.match(/^(\d+)d$/);
   if (!match) {
-    throw ApiError.badRequest('period must be one of: 7d, 30d, 90d');
+    throw ApiError.badRequest('period must be one of: 7d, 30d, 90d, 365d');
   }
   const days = parseInt(match[1], 10);
-  if (![7, 30, 90].includes(days)) {
-    throw ApiError.badRequest('period must be one of: 7d, 30d, 90d');
+  if (![7, 30, 90, 365].includes(days)) {
+    throw ApiError.badRequest('period must be one of: 7d, 30d, 90d, 365d');
   }
 
   const startDate = new Date();
