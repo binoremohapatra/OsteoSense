@@ -20,6 +20,8 @@ async function processSyncItem(item, agentId, localIdMap = new Map()) {
         village: data.village || undefined,
         address: data.address || undefined,
         occupation: data.occupation || undefined,
+        height: data.height_cm || data.heightCm || data.height || undefined,
+        weight: data.weight_kg || data.weightKg || data.weight || undefined,
         agentId,
       });
 
@@ -140,6 +142,8 @@ async function syncAppBatch(patients = [], screenings = [], agentId) {
           village: p.village || undefined,
           address: p.address || undefined,
           occupation: p.occupation || undefined,
+          height: p.height_cm || p.heightCm || p.height || undefined,
+          weight: p.weight_kg || p.weightKg || p.weight || undefined,
           agentId,
         };
 
@@ -164,6 +168,8 @@ async function syncAppBatch(patients = [], screenings = [], agentId) {
           village: p.village,
           address: p.address,
           occupation: p.occupation,
+          height: p.height_cm ?? p.heightCm ?? p.height,
+          weight: p.weight_kg ?? p.weightKg ?? p.weight,
         };
         Object.keys(updateData).forEach((k) => updateData[k] === undefined && delete updateData[k]);
 
@@ -260,6 +266,49 @@ async function syncAppBatch(patients = [], screenings = [], agentId) {
         screeningResults.push({
           localId,
           serverId: createdScreening._id.toString(),
+          success: true,
+        });
+      } else if (action === 'update') {
+        const screeningId = s.server_id || s.serverId || s._id || s.id;
+        if (!screeningId || !mongoose.Types.ObjectId.isValid(screeningId)) {
+          throw new Error('Valid screening ID is required for update');
+        }
+
+        const updateData = {};
+        if (s.pain_level !== undefined || s.painLevel !== undefined) updateData.painLevel = Number(s.pain_level ?? s.painLevel);
+        if (s.stiffness_duration !== undefined || s.stiffnessDuration !== undefined) updateData.stiffnessDuration = s.stiffness_duration ?? s.stiffnessDuration;
+        if (s.swelling !== undefined) updateData.swelling = s.swelling === 1 || s.swelling === '1' || s.swelling === true;
+        if (s.past_injury !== undefined || s.pastInjury !== undefined) updateData.pastInjury = s.past_injury ?? s.pastInjury;
+        
+        let gaitFeatures;
+        const rawGait = s.gait_data ?? s.gaitData ?? s.gaitFeatures;
+        if (rawGait !== undefined) {
+          if (typeof rawGait === 'string') {
+            try {
+              const parsed = JSON.parse(rawGait);
+              gaitFeatures = Array.isArray(parsed) ? parsed : [];
+            } catch (_) {
+              try {
+                gaitFeatures = rawGait.replace(/[\[\]]/g, '').split(',').map((v) => parseFloat(v.trim())).filter((v) => !isNaN(v));
+              } catch (e) {}
+            }
+          } else if (Array.isArray(rawGait)) {
+            gaitFeatures = rawGait;
+          }
+          if (gaitFeatures) updateData.gaitData = gaitFeatures;
+        }
+
+        const updatedScreening = await Screening.findOneAndUpdate(
+          { _id: screeningId, agentId },
+          { $set: updateData },
+          { new: true, runValidators: true }
+        );
+
+        if (!updatedScreening) throw new Error('Screening not found or not owned by this agent');
+
+        screeningResults.push({
+          localId,
+          serverId: updatedScreening._id.toString(),
           success: true,
         });
       } else {

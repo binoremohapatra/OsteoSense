@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:go_router/go_router.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../../models/screening.dart';
 import '../../providers/patient_provider.dart';
 import '../../providers/screening_provider.dart';
@@ -27,7 +29,9 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
   @override
   void initState() {
     super.initState();
-    _loadData();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadData();
+    });
   }
 
   Future<void> _loadData() async {
@@ -47,8 +51,13 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: CustomAppBar(
-        title: patient?.name ?? 'Patient Profile',
+        title: 'patient_details'.tr(),
         centerTitle: false,
+        showBackButton: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new),
+          onPressed: () => context.go('/agent/patients'),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.edit_rounded, color: AppColors.primary),
@@ -84,7 +93,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
                   ),
                   const SizedBox(height: AppSpacing.md),
                   Text(
-                    'Loading patient profile...',
+                    'loading_patient_profile'.tr(),
                     style: AppTypography.bodyMedium.copyWith(
                       color: AppColors.textSecondary,
                     ),
@@ -104,14 +113,14 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
                       ),
                       const SizedBox(height: AppSpacing.lg),
                       Text(
-                        'Patient Not Found',
+                        'patient_not_found'.tr(),
                         style: AppTypography.headlineSmall.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       const SizedBox(height: AppSpacing.sm),
                       CustomButton(
-                        text: 'Go Back',
+                        text: 'go_back'.tr(),
                         onPressed: () => Navigator.pop(context),
                         variant: ButtonVariant.primary,
                         size: ButtonSize.medium,
@@ -135,12 +144,12 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
                             child: Column(
                               children: [
                                 Text(
-                                  'Current Risk Level',
+                                  'current_risk_level'.tr(),
                                   style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.bold),
                                 ),
                                 const SizedBox(height: AppSpacing.lg),
                                 RiskGauge(
-                                  score: (screeningProvider.screenings.first.confidence ?? 0) / 100.0,
+                                  score: screeningProvider.screenings.first.confidence ?? 0.0,
                                   size: 240,
                                 ),
                               ],
@@ -151,7 +160,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
 
                         // Patient details using MetricCards
                         Text(
-                          'Patient Metrics',
+                          'patient_metrics'.tr(),
                           style: AppTypography.titleMedium.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -164,7 +173,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
 
                         // Screening history
                         Text(
-                          'Screening Timeline',
+                          'screening_timeline'.tr(),
                           style: AppTypography.titleMedium.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -208,7 +217,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
                   children: [
                     const PulsingDot(color: Colors.green),
                     const SizedBox(width: AppSpacing.xs),
-                    Text('Active', style: AppTypography.bodySmall.copyWith(
+                    Text('active'.tr(), style: AppTypography.bodySmall.copyWith(
                       color: Colors.green, fontWeight: FontWeight.w600,
                     )),
                   ],
@@ -217,7 +226,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
                 Row(
                   children: [
                     Text(
-                      '${patient.age} years • ${patient.gender}',
+                      '${patient.age} ${'years'.tr()} • ${patient.gender}',
                       style: AppTypography.bodyMedium.copyWith(
                         color: AppColors.textSecondary,
                       ),
@@ -262,26 +271,26 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
       physics: const NeverScrollableScrollPhysics(),
       crossAxisSpacing: AppSpacing.md,
       mainAxisSpacing: AppSpacing.md,
-      childAspectRatio: 1.8,
+      childAspectRatio: 1.5, // Increased height to prevent bottom overflow
       children: [
         MetricCard(
-          title: 'Age',
+          title: 'age'.tr(),
           value: '${patient.age}',
           icon: Icons.cake_rounded,
         ),
         MetricCard(
-          title: 'Gender',
+          title: 'gender'.tr(),
           value: patient.gender.substring(0, 1).toUpperCase() + patient.gender.substring(1),
           icon: Icons.person_rounded,
         ),
-        const MetricCard(
-          title: 'Height',
-          value: '--', // Not available in current model
+        MetricCard(
+          title: 'height'.tr(),
+          value: patient.heightCm != null ? '${patient.heightCm!.toStringAsFixed(0)} ${'cm'.tr()}' : '--',
           icon: Icons.height_rounded,
         ),
-        const MetricCard(
-          title: 'Weight',
-          value: '--', // Not available in current model
+        MetricCard(
+          title: 'weight'.tr(),
+          value: patient.weightKg != null ? '${patient.weightKg!.toStringAsFixed(1)} ${'kg'.tr()}' : '--',
           icon: Icons.monitor_weight_rounded,
         ),
       ],
@@ -303,7 +312,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
             ),
             const SizedBox(height: AppSpacing.md),
             Text(
-              'No Screenings Yet',
+              'no_screenings_yet'.tr(),
               style: AppTypography.bodyMedium.copyWith(
                 color: AppColors.textSecondary,
               ),
@@ -328,16 +337,24 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
     final riskColor = AppColors.getRiskColor(screening.riskLevel ?? 'low');
     final isLast = index == 0; // Most recent first
 
-    return CustomCard(
-      variant: screening.riskLevel == 'high'
-          ? CardVariant.riskHigh
-          : screening.riskLevel == 'medium'
-              ? CardVariant.riskMedium
-              : CardVariant.riskLow,
-      padding: const EdgeInsets.all(AppSpacing.cardPaddingMd),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+    return GestureDetector(
+      onTap: () {
+        final patientProvider = Provider.of<PatientProvider>(context, listen: false);
+        context.push('/screening/report', extra: {
+          'screening': screening,
+          'patient': patientProvider.selectedPatient,
+        });
+      },
+      child: CustomCard(
+        variant: screening.riskLevel == 'high'
+            ? CardVariant.riskHigh
+            : screening.riskLevel == 'medium'
+                ? CardVariant.riskMedium
+                : CardVariant.riskLow,
+        padding: const EdgeInsets.all(AppSpacing.cardPaddingMd),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
           // Timeline dot
           Stack(
             alignment: Alignment.center,
@@ -392,7 +409,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
                         borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
                       ),
                       child: Text(
-                        '${(screening.confidence ?? 0).toInt()}%',
+                        '${((screening.confidence ?? 0.0) * 100).toInt()}%',
                         style: AppTypography.labelSmall.copyWith(
                           color: riskColor,
                           fontWeight: FontWeight.bold,
@@ -402,18 +419,39 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
                   ],
                 ),
                 const SizedBox(height: AppSpacing.xs),
-                Text(
-                  'Risk Level: ${(screening.riskLevel ?? 'low').toUpperCase()}',
-                  style: AppTypography.bodySmall.copyWith(
-                    color: riskColor,
-                    fontWeight: FontWeight.w600,
-                  ),
+                Row(
+                  children: [
+                    Text(
+                      '${'risk_level_colon'.tr()} ${(screening.riskLevel ?? 'low').toUpperCase()}',
+                      style: AppTypography.bodySmall.copyWith(
+                        color: riskColor,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    if (screening.jointId != null) ...[
+                      const SizedBox(width: AppSpacing.sm),
+                      Text(
+                        '•',
+                        style: AppTypography.bodySmall.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Text(
+                        screening.jointId!.toUpperCase(),
+                        style: AppTypography.bodySmall.copyWith(
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
                 if (screening.contributingFactors != null &&
                     screening.contributingFactors!.isNotEmpty) ...[
                   const SizedBox(height: AppSpacing.sm),
                   Text(
-                    'Factors: ${screening.contributingFactors}',
+                    '${'factors_colon'.tr()} ${screening.contributingFactors!.replaceAll(',', ', ')}',
                     style: AppTypography.bodySmall.copyWith(
                       color: AppColors.textSecondary,
                     ),
@@ -433,7 +471,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
           ),
         ],
       ),
-    ).animate().slideX(
+    )).animate().slideX(
       begin: -0.2,
       end: 0,
       duration: 300.ms,

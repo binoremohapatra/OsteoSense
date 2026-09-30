@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -45,15 +46,23 @@ class ApiService {
         return handler.next(response);
       },
       onError: (DioException e, handler) async {
-        if (e.response?.statusCode == 401) {
+        if (e.response?.statusCode == 401 && !e.requestOptions.path.contains('/auth/')) {
           // Token expired or invalid. Attempt refresh.
           final refreshed = await _refreshToken();
           if (refreshed) {
             // Retry the original request
             try {
+              final prefs = await SharedPreferences.getInstance();
+              final newToken = prefs.getString('auth_token');
+              
+              final headers = Map<String, dynamic>.from(e.requestOptions.headers);
+              if (newToken != null) {
+                headers['Authorization'] = 'Bearer $newToken';
+              }
+
               final opts = Options(
                 method: e.requestOptions.method,
-                headers: e.requestOptions.headers,
+                headers: headers,
               );
               final response = await _dio.request(
                 e.requestOptions.path,
@@ -92,13 +101,22 @@ class ApiService {
       if (refreshToken == null) return false;
 
       // Note: Do not use the main _dio instance here to avoid infinite loops if this fails with 401
-      final refreshDio = Dio(BaseOptions(baseUrl: AppConstants.baseUrl));
+      final refreshDio = Dio(BaseOptions(
+        baseUrl: AppConstants.baseUrl,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      ));
       final response = await refreshDio.post('/auth/refresh', data: {
         'refreshToken': refreshToken,
       });
 
       if (response.statusCode == 200 && response.data['token'] != null) {
         await prefs.setString('auth_token', response.data['token']);
+        if (response.data['refreshToken'] != null) {
+          await prefs.setString('refresh_token', response.data['refreshToken']);
+        }
         return true;
       }
       return false;
@@ -111,9 +129,9 @@ class ApiService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('auth_token');
     await prefs.remove('refresh_token');
-    await prefs.remove(AppConstants.keyUserId);
-    // Ideally, we'd also dispatch an event to log the user out of the UI,
-    // but the AuthProvider will handle fetching the current user and reacting to missing tokens.
+    // We intentionally do NOT remove the user ID here.
+    // This allows the app to seamlessly fall back to offline mode using the
+    // local database, rather than forcefully logging the user out.
   }
 
   // --- Auth Endpoints ---
@@ -139,9 +157,33 @@ class ApiService {
     }
   }
 
+  Future<Map<String, dynamic>> resetPassword(String phone, String newPassword) async {
+    try {
+      final response = await _dio.post('/auth/reset-password', data: {
+        'phoneNumber': phone,
+        'newPassword': newPassword,
+      });
+      return response.data;
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
   Future<Map<String, dynamic>> getCurrentUser() async {
     try {
       final response = await _dio.get('/auth/me');
+      return response.data;
+    } on DioException catch (e) {
+      // If 401, the token is missing or invalid - this is expected for offline/demo mode
+      if (e.response?.statusCode == 401) {
+        throw ApiException('No valid authentication token. Please login.', statusCode: 401);
+      }
+      throw _handleError(e);
+    }
+  }
+  Future<Map<String, dynamic>> updateProfile(Map<String, dynamic> data) async {
+    try {
+      final response = await _dio.put('/users/profile', data: data);
       return response.data;
     } on DioException catch (e) {
       throw _handleError(e);
@@ -188,6 +230,19 @@ class ApiService {
     try {
       final response = await _dio.post('/screenings', data: data);
       return response.data; // Server AI response
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  Future<List<dynamic>> getScreenings() async {
+    try {
+      final response = await _dio.get('/screenings');
+      final body = response.data;
+      if (body is Map && body.containsKey('data')) {
+        return body['data'] as List<dynamic>;
+      }
+      return response.data as List<dynamic>;
     } on DioException catch (e) {
       throw _handleError(e);
     }
@@ -374,18 +429,70 @@ class ApiService {
     }
   }
 
+  Future<Map<String, dynamic>> submitWearableDataToAI({
+    required String deviceId,
+    required List<double> gyro,
+    required List<double> piezo,
+    required List<double> emg,
+    int painLevel = 0,
+    String stiffnessDuration = '0',
+    bool swelling = false,
+    bool pastInjury = false,
+  }) async {
+    try {
+      final aiDio = Dio(BaseOptions(
+        baseUrl: AppConstants.aiBaseUrl,
+        connectTimeout: const Duration(seconds: 30),
+      ));
+      final response = await aiDio.post('/sessions', data: {
+        'device_id': deviceId,
+        'gyro': gyro,
+        'piezo': piezo,
+        'emg': emg,
+        'painLevel': painLevel,
+        'stiffnessDuration': stiffnessDuration,
+        'swelling': swelling,
+        'pastInjury': pastInjury,
+      });
+      return response.data; 
+    } catch (e) {
+      if (e is DioException) {
+        throw _handleError(e);
+      }
+      throw ApiException('Failed to reach AI Backend: $e');
+    }
+  }
+
   Exception _handleError(DioException e) {
     if (e.type == DioExceptionType.connectionTimeout || 
         e.type == DioExceptionType.receiveTimeout ||
         e.type == DioExceptionType.connectionError) {
       return ApiException('Network connection failed. Please check your internet.', statusCode: e.response?.statusCode);
     }
-    
     if (e.response != null) {
-      final data = e.response?.data;
-      String message = 'An error occurred';
-      if (data is Map<String, dynamic> && data.containsKey('error')) {
-        message = data['error'];
+      var data = e.response?.data;
+      String message = 'API Error: ${e.response?.statusCode}';
+      
+      // If data is a string, try parsing it as JSON
+      if (data is String) {
+        try {
+          data = jsonDecode(data);
+        } catch (_) {}
+      }
+
+      if (data is Map) {
+        if (data.containsKey('errors') && data['errors'] is List && data['errors'].isNotEmpty) {
+          final firstError = data['errors'][0];
+          if (firstError is Map && firstError.containsKey('message')) {
+            message = firstError['message'].toString();
+          } else {
+            message = data['message']?.toString() ?? message;
+          }
+        } else if (data.containsKey('error')) {
+          message = data['error'].toString();
+        } else if (data.containsKey('message')) {
+          message = data['message'].toString();
+        }
       }
       return ApiException(message, statusCode: e.response?.statusCode, data: data);
     }

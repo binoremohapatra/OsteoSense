@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../../providers/settings_provider.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_spacing.dart';
@@ -31,7 +32,7 @@ class LanguageSelectionScreen extends StatelessWidget {
         elevation: 0,
       ),
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(AppSpacing.screenPaddingLg),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -62,7 +63,7 @@ class LanguageSelectionScreen extends StatelessWidget {
               const SizedBox(height: AppSpacing.xl),
               // Title
               Text(
-                'Select Language',
+                'select_language'.tr(),
                 style: AppTypography.headlineLarge,
                 textAlign: TextAlign.center,
               )
@@ -72,7 +73,7 @@ class LanguageSelectionScreen extends StatelessWidget {
               const SizedBox(height: AppSpacing.sm),
               // Subtitle
               Text(
-                'Choose your preferred language',
+                'choose_language'.tr(),
                 style: AppTypography.bodyMedium.copyWith(
                   color: AppColors.textSecondary,
                 ),
@@ -96,9 +97,137 @@ class LanguageSelectionScreen extends StatelessWidget {
                 'हिंदी',
                 'hi',
                 Icons.translate,
+                50,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              _buildLanguageOption(
+                context,
+                'বাংলা',
+                'bn',
+                Icons.translate,
+                100,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              _buildLanguageOption(
+                context,
+                'অসমীয়া',
+                'as',
+                Icons.translate,
+                150,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              _buildLanguageOption(
+                context,
+                'ગુજરાતી',
+                'gu',
+                Icons.translate,
                 200,
               ),
-              const Spacer(),
+              const SizedBox(height: AppSpacing.md),
+              _buildLanguageOption(
+                context,
+                'ಕನ್ನಡ',
+                'kn',
+                Icons.translate,
+                250,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              _buildLanguageOption(
+                context,
+                'മലയാളം',
+                'ml',
+                Icons.translate,
+                300,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              _buildLanguageOption(
+                context,
+                'मराठी',
+                'mr',
+                Icons.translate,
+                350,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              _buildLanguageOption(
+                context,
+                'ଓଡ଼ିଆ',
+                'or',
+                Icons.translate,
+                400,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              _buildLanguageOption(
+                context,
+                'ਪੰਜਾਬੀ',
+                'pa',
+                Icons.translate,
+                450,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              _buildLanguageOption(
+                context,
+                'தமிழ்',
+                'ta',
+                Icons.translate,
+                500,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              _buildLanguageOption(
+                context,
+                'తెలుగు',
+                'te',
+                Icons.translate,
+                550,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              _buildLanguageOption(
+                context,
+                'Bodo',
+                'bodo',
+                Icons.translate,
+                600,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              _buildLanguageOption(
+                context,
+                'Garo',
+                'garo',
+                Icons.translate,
+                650,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              _buildLanguageOption(
+                context,
+                'Khasi',
+                'khasi',
+                Icons.translate,
+                700,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              _buildLanguageOption(
+                context,
+                'Kokborok',
+                'kokborok',
+                Icons.translate,
+                750,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              _buildLanguageOption(
+                context,
+                'Manipuri',
+                'manipuri',
+                Icons.translate,
+                800,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              _buildLanguageOption(
+                context,
+                'Mizo',
+                'mizo',
+                Icons.translate,
+                850,
+              ),
+              const SizedBox(height: AppSpacing.xxl),
             ],
           ),
         ),
@@ -120,8 +249,16 @@ class LanguageSelectionScreen extends StatelessWidget {
         final settingsProvider = Provider.of<SettingsProvider>(context, listen: false);
         await settingsProvider.setLanguage(languageCode);
         
+        // Change app locale
         if (context.mounted) {
-          context.go('/role');
+          await context.setLocale(Locale(languageCode));
+          
+          // Go back or navigate to next screen
+          if (context.canPop()) {
+            context.pop();
+          } else {
+            context.go('/role');
+          }
         }
       },
       child: Row(

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../../flutter_flow/flutter_flow_util.dart';
 import '../../providers/auth_provider.dart';
 import '../../models/user.dart';
@@ -68,30 +69,17 @@ class _LoginScreenState extends State<LoginScreen> {
       }
       if (!mounted) return;
       if (success) {
-        // Ensure role is set after successful auth
+        // Ensure role is persisted
         await auth.saveUserRole();
-        context.go('/agent/home');
+        // Navigate to the correct home based on the resolved role
+        final role = auth.userRole ?? 'agent';
+        context.go(role == 'user' ? '/user/home' : '/agent/home');
       } else {
         setState(() => _errorMsg = auth.errorMessage ?? 'Authentication failed');
       }
     } catch (e) {
       if (mounted) setState(() => _errorMsg = e.toString());
     } finally {
-      if (mounted) setState(() => _loading = false);
-    }
-  }
-
-  Future<void> _demoLogin() async {
-    final auth = context.read<AuthProvider>();
-    setState(() { _loading = true; _errorMsg = null; });
-    try {
-      // Use offline/demo login if available
-      await auth.demoLogin(widget.role);
-      if (!mounted) return;
-      if (auth.isAuthenticated) {
-        context.go('/agent/home');
-      }
-    } catch (_) {} finally {
       if (mounted) setState(() => _loading = false);
     }
   }
@@ -181,15 +169,19 @@ class _LoginScreenState extends State<LoginScreen> {
                               ],
                             ),
                             alignment: Alignment.center,
-                            child: Icon(
-                              Icons.health_and_safety_rounded,
-                              color: ff.primary,
-                              size: 42,
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(24),
+                              child: Image.asset(
+                                'assets/icons/app_icon.png',
+                                width: 80,
+                                height: 80,
+                                fit: BoxFit.cover,
+                              ),
                             ),
                           ),
                           const SizedBox(height: 16),
                           Text(
-                            'JointSaathi',
+                            'app_name'.tr(),
                             textAlign: TextAlign.center,
                             style: GoogleFonts.dmSans(
                               fontSize: 28,
@@ -200,7 +192,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'AI-Assisted Osteoarthritis Screening',
+                            'ai_assisted_screening'.tr(),
                             textAlign: TextAlign.center,
                             style: GoogleFonts.dmSans(
                               fontSize: 14,
@@ -223,16 +215,16 @@ class _LoginScreenState extends State<LoginScreen> {
                               borderRadius: BorderRadius.circular(24),
                             ),
                             child: Padding(
-                              padding: const EdgeInsets.all(6),
+                              padding: const EdgeInsets.all(4),
                               child: Row(
                                 children: [
                                   _Tab(
-                                    label: 'Login',
+                                    label: 'login'.tr(),
                                     active: _isLogin,
                                     onTap: () => setState(() => _isLogin = true),
                                   ),
                                   _Tab(
-                                    label: 'Register',
+                                    label: 'register'.tr(),
                                     active: !_isLogin,
                                     onTap: () => setState(() => _isLogin = false),
                                   ),
@@ -248,24 +240,24 @@ class _LoginScreenState extends State<LoginScreen> {
                       if (!_isLogin) ...[
                         _OutlinedField(
                           controller: _nameCtrl,
-                          label: 'Full Name',
-                          hint: 'Dr. Your Name',
+                          label: 'name'.tr(),
+                          hint: 'name_hint'.tr(),
                           icon: Icons.person_outline_rounded,
                         ),
                         const SizedBox(height: 16),
                       ],
                       _OutlinedField(
                         controller: _emailCtrl,
-                        label: 'Phone Number',
-                        hint: 'Enter 10-digit mobile number',
+                        label: 'phone'.tr(),
+                        hint: 'phone_hint'.tr(),
                         icon: Icons.phone_outlined,
                         keyboardType: TextInputType.phone,
                       ),
                       const SizedBox(height: 16),
                       _OutlinedField(
                         controller: _passwordCtrl,
-                        label: 'Password',
-                        hint: '••••••••',
+                        label: 'password'.tr(),
+                        hint: 'password_hint'.tr(),
                         icon: Icons.lock_outline_rounded,
                         obscureText: _obscurePassword,
                         trailing: IconButton(
@@ -285,15 +277,17 @@ class _LoginScreenState extends State<LoginScreen> {
                         const SizedBox(height: 8),
                         Align(
                           alignment: Alignment.centerRight,
-                          child: GestureDetector(
-                            onTap: () {},
-                            child: Text(
-                              'Forgot Password?',
-                              style: GoogleFonts.dmSans(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: ff.primary,
-                                height: 1.3,
+                          child: Padding(
+                            padding: const EdgeInsets.only(top: 8, bottom: 24),
+                            child: GestureDetector(
+                              onTap: () => context.push('/forgot-password'),
+                              child: Text(
+                                'forgot_password'.tr(),
+                                style: GoogleFonts.dmSans(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                  color: ff.secondaryText,
+                                ),
                               ),
                             ),
                           ),
@@ -325,7 +319,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                       // ── Sign In button ────────────────────────────────
                       FFButton(
-                        content: _isLogin ? 'Sign In to Dashboard' : 'Create Account',
+                        content: _isLogin ? 'sign_in_dashboard'.tr() : 'sign_up'.tr(),
                         variant: 'primary',
                         size: 'large',
                         fullWidth: true,
@@ -336,22 +330,6 @@ class _LoginScreenState extends State<LoginScreen> {
                           size: 20,
                         ),
                         onTap: _submit,
-                      ),
-                      const SizedBox(height: 12),
-
-                      // ── Demo Login button ─────────────────────────────
-                      FFButton(
-                        content: 'Demo Login (No Account Required)',
-                        variant: 'secondary',
-                        size: 'medium',
-                        fullWidth: true,
-                        loading: _loading,
-                        icon: Icon(
-                          Icons.play_arrow_rounded,
-                          color: ff.primary,
-                          size: 18,
-                        ),
-                        onTap: _demoLogin,
                       ),
                       const SizedBox(height: 16),
 
@@ -364,7 +342,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             padding:
                                 const EdgeInsets.symmetric(horizontal: 16),
                             child: Text(
-                              'OR',
+                              'or'.tr(),
                               style: GoogleFonts.dmSans(
                                 fontSize: 11,
                                 color: ff.onSurface,
@@ -383,7 +361,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           Expanded(
                             child: _SocialTile(
                               icon: Icons.g_mobiledata_rounded,
-                              label: 'Google',
+                              label: 'google'.tr(),
                               onTap: () {},
                             ),
                           ),
@@ -391,7 +369,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           Expanded(
                             child: _SocialTile(
                               icon: Icons.apple_rounded,
-                              label: 'Apple',
+                              label: 'apple'.tr(),
                               onTap: () {},
                             ),
                           ),
@@ -419,7 +397,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'Offline Access Enabled',
+                                      'offline_access_description'.tr(),
                                       style: GoogleFonts.dmSans(
                                         fontSize: 14,
                                         fontWeight: FontWeight.bold,
@@ -429,7 +407,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     ),
                                     const SizedBox(height: 2),
                                     Text(
-                                      'You can log in with cached credentials when offline.',
+                                      'offline_access_description'.tr(),
                                       maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
                                       style: GoogleFonts.dmSans(
@@ -451,7 +429,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       Column(
                         children: [
                           Text(
-                            'By signing in, you agree to our',
+                            'terms_agreement'.tr(),
                             textAlign: TextAlign.center,
                             style: GoogleFonts.dmSans(
                               fontSize: 11,
@@ -464,7 +442,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             spacing: 4,
                             children: [
                               Text(
-                                'Privacy Policy',
+                                'privacy_policy'.tr(),
                                 style: GoogleFonts.dmSans(
                                   fontSize: 11,
                                   color: ff.primary,
@@ -475,7 +453,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   style: GoogleFonts.dmSans(
                                       fontSize: 11, color: ff.secondaryText)),
                               Text(
-                                'Terms of Service',
+                                'terms_of_service'.tr(),
                                 style: GoogleFonts.dmSans(
                                   fontSize: 11,
                                   color: ff.primary,
@@ -522,7 +500,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          'Server Online',
+                          'server_online'.tr(),
                           style: GoogleFonts.dmSans(
                             fontSize: 11,
                             fontWeight: FontWeight.w500,
@@ -567,7 +545,7 @@ class _Tab extends StatelessWidget {
           child: Text(
             label,
             style: GoogleFonts.dmSans(
-              fontSize: 16,
+              fontSize: 18,
               fontWeight: active ? FontWeight.bold : FontWeight.normal,
               color: active ? Colors.white : ff.secondaryText,
             ),

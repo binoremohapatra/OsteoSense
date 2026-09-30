@@ -10,6 +10,11 @@ class PatientProvider with ChangeNotifier {
   String? _errorMessage;
   final Map<String, dynamic> _screeningData = {};
 
+  // Sync guard — prevents concurrent/repeated API calls
+  bool _isSyncing = false;
+  DateTime? _lastSyncTime;
+  DateTime? _rateLimitedUntil; // set when server returns 429
+
   List<Patient> get patients => _patients;
   Patient? get selectedPatient => _selectedPatient;
   int? get selectedPatientId => _selectedPatient?.id;
@@ -20,56 +25,110 @@ class PatientProvider with ChangeNotifier {
   Future<void> loadPatients() async {
     _isLoading = true;
     _errorMessage = null;
-    notifyListeners();
+    // Schedule notifyListeners safely — never during build
+    Future.microtask(notifyListeners);
 
     try {
-      try {
-        // Try API first
-        final patientsData = await ApiService().getPatients();
-        _patients = patientsData.map((data) {
-          // Normalize backend (camelCase Mongoose) response to local DB snake_case shape
-          // so Patient.fromMap can handle both.
-          final pData = Map<String, dynamic>.from(data as Map);
-          // Backend toJSON transform: _id → id; we need server_id
-          pData['server_id'] = pData['id'] ?? pData['_id'];
-          // Mongoose timestamps are camelCase; Patient.fromMap expects snake_case
-          if (pData['createdAt'] != null) {
-            pData['created_at'] = pData['createdAt'].toString();
-          }
-          if (pData['updatedAt'] != null) {
-            pData['updated_at'] = pData['updatedAt'].toString();
-          }
-          // Ensure required fields for fromMap (local id = 0 since not in local DB yet)
-          pData['id'] ??= 0;
-          pData['synced'] = 1;
-          return Patient.fromMap(pData);
-        }).toList();
+      // STEP 1: Load local DB instantly — no API wait
+      final db = DatabaseHelper();
+      final localData = await db.query(
+        'patients',
+        where: 'deleted = ?',
+        whereArgs: [0],
+        orderBy: 'created_at DESC',
+      );
+      _patients = localData.map((data) => Patient.fromMap(data)).toList();
+      _isLoading = false;
+      Future.microtask(notifyListeners); // Show patients immediately
 
-        // Optional: Update local DB cache with fresh data here
-        // This would require matching by serverId or localId to avoid duplicates
-
-      } catch (apiError) {
-        // Fallback to local DB on any API error (including 401 auth errors)
-        if (kDebugMode) {
-          debugPrint('API call failed, falling back to local DB: $apiError');
-        }
-        final db = DatabaseHelper();
-        final patientsData = await db.query(
-          'patients',
-          where: 'deleted = ?',
-          whereArgs: [0],
-          orderBy: 'created_at DESC',
-        );
-        _patients = patientsData.map((data) => Patient.fromMap(data)).toList();
-      }
+      // STEP 2: Background API sync — throttled, non-blocking
+      _maybeSync(db);
     } catch (e) {
       _errorMessage = e.toString();
       if (kDebugMode) {
         debugPrint('Error loading patients: $e');
       }
-    } finally {
       _isLoading = false;
-      notifyListeners();
+      Future.microtask(notifyListeners);
+    }
+  }
+
+  /// Syncs with server only if: not already syncing, not rate-limited,
+  /// and at least 60 seconds since last sync.
+  void _maybeSync(DatabaseHelper db) {
+    final now = DateTime.now();
+
+    // 429 rate limit active — wait it out
+    if (_rateLimitedUntil != null && now.isBefore(_rateLimitedUntil!)) {
+      if (kDebugMode) {
+        debugPrint('[PatientProvider] Sync skipped — rate limited until $_rateLimitedUntil');
+      }
+      return;
+    }
+
+    // Already syncing — skip
+    if (_isSyncing) return;
+
+    // Too soon since last sync (min 60 seconds between syncs)
+    if (_lastSyncTime != null &&
+        now.difference(_lastSyncTime!).inSeconds < 60) {
+      return;
+    }
+
+    _syncWithApiInBackground(db);
+  }
+
+  /// Syncs patients from server in background without blocking the UI.
+  Future<void> _syncWithApiInBackground(DatabaseHelper db) async {
+    _isSyncing = true;
+    try {
+      final patientsData = await ApiService()
+          .getPatients()
+          .timeout(const Duration(seconds: 10));
+
+      _lastSyncTime = DateTime.now();
+      _rateLimitedUntil = null; // Clear any previous rate limit
+
+      final mappedPatients = <Map<String, dynamic>>[];
+      for (var data in patientsData) {
+        final pData = Map<String, dynamic>.from(data as Map);
+        pData['server_id'] = pData['id'] ?? pData['_id'];
+        if (pData['createdAt'] != null) {
+          pData['created_at'] = pData['createdAt'].toString();
+        }
+        if (pData['updatedAt'] != null) {
+          pData['updated_at'] = pData['updatedAt'].toString();
+        }
+        pData['synced'] = 1;
+        mappedPatients.add(pData);
+      }
+
+      await db.bulkUpsertPatients(mappedPatients);
+
+      // Reload merged list (server + unsynced local)
+      final allData = await db.query(
+        'patients',
+        where: 'deleted = ?',
+        whereArgs: [0],
+        orderBy: 'created_at DESC',
+      );
+      _patients = allData.map((data) => Patient.fromMap(data)).toList();
+      Future.microtask(notifyListeners);
+    } catch (apiError) {
+      _lastSyncTime = DateTime.now(); // Still update so we don't retry instantly
+      // Check if it's a 429 — parse retry-after if possible
+      final errStr = apiError.toString();
+      if (errStr.contains('429')) {
+        // Default: wait 5 minutes before next attempt
+        _rateLimitedUntil = DateTime.now().add(const Duration(minutes: 5));
+        if (kDebugMode) {
+          debugPrint('[PatientProvider] Rate limited (429). Next sync after $_rateLimitedUntil');
+        }
+      } else if (kDebugMode) {
+        debugPrint('[PatientProvider] Background sync skipped: $apiError');
+      }
+    } finally {
+      _isSyncing = false;
     }
   }
 
@@ -140,56 +199,78 @@ class PatientProvider with ChangeNotifier {
   Future<bool> addPatient(Patient patient) async {
     _isLoading = true;
     _errorMessage = null;
-    notifyListeners();
+    Future.microtask(notifyListeners);
 
     try {
       final db = DatabaseHelper();
       
-      // Save locally first to get an ID
+      // STEP 1: Save locally FIRST — instant, no API wait
       final id = await db.insert('patients', patient.toMap());
       var newPatient = patient.copyWith(id: id);
       
-      try {
-        // Try API sync immediately
-        final apiData = {
-          'localId': id,
-          'fullName': newPatient.name,
-          'age': newPatient.age,
-          'gender': newPatient.gender,
-          'contact': newPatient.contact,
-          'village': newPatient.village,
-          'address': newPatient.address,
-          'occupation': newPatient.occupation,
-        };
-        
-        final response = await ApiService().createPatient(apiData);
-        
-        // Update local record with server ID and mark synced
-        final serverId = response['patient']['_id'];
-        newPatient = newPatient.copyWith(serverId: serverId, synced: true);
-        
-        await db.update(
-          'patients',
-          {'server_id': serverId, 'synced': 1},
-          where: 'id = ?',
-          whereArgs: [id],
-        );
-      } catch (apiError) {
-        // Failed to sync immediately, add to sync queue
-        await db.addToSyncQueue('patients', id, 'insert', newPatient.toMap());
-      }
-      
+      // Show patient in list immediately
       _patients.insert(0, newPatient);
       _selectedPatient = newPatient;
-      
       _isLoading = false;
-      notifyListeners();
+      Future.microtask(notifyListeners); // Refresh list right away
+
+      // STEP 2: Sync to API in background (non-blocking)
+      _syncNewPatientToApi(db, id, newPatient);
+
       return true;
     } catch (e) {
       _errorMessage = e.toString();
       _isLoading = false;
-      notifyListeners();
+      Future.microtask(notifyListeners);
       return false;
+    }
+  }
+
+  /// Pushes a newly added patient to the server without blocking the UI.
+  Future<void> _syncNewPatientToApi(DatabaseHelper db, int localId, Patient patient) async {
+    try {
+      final apiData = {
+        'localId': localId,
+        'name': patient.name,
+        'fullName': patient.name,
+        'age': patient.age,
+        'gender': patient.gender,
+        'contact': patient.contact,
+        'village': patient.village,
+        'address': patient.address,
+        'occupation': patient.occupation,
+        'height_cm': patient.heightCm,
+        'weight_kg': patient.weightKg,
+        'height': patient.heightCm,
+        'weight': patient.weightKg,
+      };
+      
+      final response = await ApiService().createPatient(apiData);
+      final serverId = response['patient']['_id'];
+      
+      // Update local record with server ID
+      await db.update(
+        'patients',
+        {'server_id': serverId, 'synced': 1},
+        where: 'id = ?',
+        whereArgs: [localId],
+      );
+
+      // Update in-memory record too
+      final idx = _patients.indexWhere((p) => p.id == localId);
+      if (idx != -1) {
+        _patients[idx] = patient.copyWith(serverId: serverId, synced: true);
+        if (_selectedPatient?.id == localId) {
+          _selectedPatient = _patients[idx];
+        }
+        Future.microtask(notifyListeners);
+      }
+    } catch (apiError) {
+      // Failed — queue for later sync
+      await db.addToSyncQueue('patients', localId, 'insert', patient.toMap());
+      if (kDebugMode) {
+        debugPrint('[PatientProvider] addPatient API sync queued: $apiError');
+      }
     }
   }
 
@@ -215,6 +296,7 @@ class PatientProvider with ChangeNotifier {
         // Try API sync immediately if we have a serverId
         if (patient.serverId != null) {
           final apiData = {
+            'name': patient.name,
             'fullName': patient.name,
             'age': patient.age,
             'gender': patient.gender,
@@ -222,6 +304,10 @@ class PatientProvider with ChangeNotifier {
             'village': patient.village,
             'address': patient.address,
             'occupation': patient.occupation,
+            'height_cm': patient.heightCm,
+            'weight_kg': patient.weightKg,
+            'height': patient.heightCm,
+            'weight': patient.weightKg,
           };
           
           // Call updatePatient API using the mongo _id

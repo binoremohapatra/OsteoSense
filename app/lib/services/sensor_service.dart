@@ -258,6 +258,12 @@ class SensorService {
       features['regularity_score'] ?? 0.0,
     ]);
 
+    // Pad with zeros to match the expected 44 features of the new ML model
+    // The first 22 are basic phone sensor features, the rest are filled with zeros for simulator fallback
+    while (featureVector.length < 44) {
+      featureVector.add(0.0);
+    }
+
     return featureVector;
   }
 

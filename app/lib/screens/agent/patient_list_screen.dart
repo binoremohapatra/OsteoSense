@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../../providers/patient_provider.dart';
+import '../../models/patient.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_spacing.dart';
 import '../../theme/app_typography.dart';
@@ -11,9 +13,6 @@ import '../../widgets/common/index.dart';
 import '../../widgets/premium/inputs/premium_inputs.dart';
 import '../../widgets/premium/loading/premium_loading.dart';
 import '../../widgets/premium/cards/premium_cards.dart';
-import 'add_patient_screen.dart';
-import 'patient_profile_screen.dart';
-import '../../widgets/common/open_container_card.dart';
 
 class PatientListScreen extends StatefulWidget {
   const PatientListScreen({super.key});
@@ -28,6 +27,36 @@ class _PatientListScreenState extends State<PatientListScreen> {
   bool _showFilters = false;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        Provider.of<PatientProvider>(context, listen: false).loadPatients();
+      }
+    });
+  }
+
+  // Refresh list when returning from add-patient screen
+  void _navigateToAddPatient() {
+    context.push('/agent/add-patient').then((_) {
+      if (mounted) {
+        // Re-read from local DB — new patient should already be in provider
+        // (addPatient inserts to memory immediately), but force a full
+        // reload to catch any edge cases where navigation timing differs.
+        Provider.of<PatientProvider>(context, listen: false).loadPatients();
+      }
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // NOTE: Do NOT call loadPatients() here — didChangeDependencies fires
+    // on every rebuild/dependency change, causing API spam (429 errors).
+    // loadPatients already handles throttling internally.
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
@@ -40,7 +69,7 @@ class _PatientListScreenState extends State<PatientListScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: CustomAppBar(
-        title: 'Patients',
+        title: 'patients'.tr(),
         centerTitle: false,
         showBackButton: true,
         leading: IconButton(
@@ -80,14 +109,14 @@ class _PatientListScreenState extends State<PatientListScreen> {
             padding: const EdgeInsets.fromLTRB(AppSpacing.screenPaddingLg, AppSpacing.screenPaddingLg, AppSpacing.screenPaddingLg, 0),
             child: SearchField(
               controller: _searchController,
-              hint: 'Search patients by name or village',
+              hint: 'search_patients_hint'.tr(),
               onChanged: (value) {
                 setState(() {});
-                if (value.isEmpty) {
-                  patientProvider.loadPatients();
-                } else {
+                // Search locally — no API call on every keystroke
+                if (value.isNotEmpty) {
                   patientProvider.searchPatients(value);
                 }
+                // When cleared, patients already in memory — no reload needed
               },
             ).animate().fadeIn(duration: 400.ms),
           ),
@@ -99,13 +128,13 @@ class _PatientListScreenState extends State<PatientListScreen> {
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPaddingLg),
               child: Row(
                 children: [
-                  _buildFilterChip('All', 'all', _filterRisk == 'all'),
+                  _buildFilterChip('filter_all'.tr(), 'all', _filterRisk == 'all'),
                   const SizedBox(width: AppSpacing.md),
-                  _buildFilterChip('Low Risk', 'low', _filterRisk == 'low'),
+                  _buildFilterChip('filter_low_risk'.tr(), 'low', _filterRisk == 'low'),
                   const SizedBox(width: AppSpacing.md),
-                  _buildFilterChip('Medium Risk', 'medium', _filterRisk == 'medium'),
+                  _buildFilterChip('filter_medium_risk'.tr(), 'medium', _filterRisk == 'medium'),
                   const SizedBox(width: AppSpacing.md),
-                  _buildFilterChip('High Risk', 'high', _filterRisk == 'high'),
+                  _buildFilterChip('filter_high_risk'.tr(), 'high', _filterRisk == 'high'),
                 ],
               ),
             ).animate().fadeIn(duration: 300.ms).slideY(
@@ -205,14 +234,14 @@ class _PatientListScreenState extends State<PatientListScreen> {
           ),
           const SizedBox(height: AppSpacing.lg),
           Text(
-            'No Patients Yet',
+            'no_patients_yet_title'.tr(),
             style: AppTypography.headlineSmall.copyWith(
               fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
-            'Tap the + button to add your first patient',
+            'tap_add_patient_hint'.tr(),
             style: AppTypography.bodyMedium.copyWith(
               color: AppColors.textSecondary,
             ),
@@ -222,8 +251,8 @@ class _PatientListScreenState extends State<PatientListScreen> {
           SizedBox(
             width: 180,
             child: CustomButton(
-              text: 'Add Patient',
-              onPressed: () => context.go('/agent/add-patient'),
+              text: 'add_patient'.tr(),
+              onPressed: _navigateToAddPatient,
               variant: ButtonVariant.primary,
               size: ButtonSize.small,
               icon: const Icon(Icons.add),
@@ -260,22 +289,32 @@ class _PatientListScreenState extends State<PatientListScreen> {
     );
   }
 
-  Widget _buildPatientCard(patient) {
-    String riskLevel = 'low';
-    if (patient.lastScreening != null) {
-      riskLevel = patient.lastScreening!.riskLevel ?? 'low';
-    }
+  Widget _buildPatientCard(Patient patient) {
+    const String riskLevel = 'low'; // Screenings are fetched separately; default to low
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: GestureDetector(
         onTap: () => context.go('/agent/patient/${patient.id}'),
         child: PatientCard(
           name: patient.name,
-          subtitle: patient.village != null ? '${patient.age} yrs • ${patient.gender}\n${patient.village}' : '${patient.age} yrs • ${patient.gender}',
+          subtitle: patient.village != null ? '${patient.age} ${'yrs'.tr()} • ${_getGenderTranslation(patient.gender)}\n${patient.village}' : '${patient.age} ${'yrs'.tr()} • ${_getGenderTranslation(patient.gender)}',
           riskLevel: riskLevel,
           onTap: () => context.go('/agent/patient/${patient.id}'),
         ),
       ),
     );
+  }
+
+  String _getGenderTranslation(String gender) {
+    switch (gender.toLowerCase()) {
+      case 'male':
+        return 'male_short'.tr();
+      case 'female':
+        return 'female_short'.tr();
+      case 'other':
+        return 'other_short'.tr();
+      default:
+        return gender;
+    }
   }
 }

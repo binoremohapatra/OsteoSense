@@ -2,12 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:easy_localization/easy_localization.dart';
+import 'dart:io';
 import '../../providers/settings_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/screening_provider.dart';
+import '../../services/database_helper.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_spacing.dart';
 import '../../theme/app_typography.dart';
 import '../../widgets/common/index.dart';
+import '../shared/terms_of_service_screen.dart';
+import '../shared/privacy_policy_screen.dart';
+import '../shared/app_version_screen.dart';
+import '../shared/storage_usage_screen.dart';
+import '../shared/notifications_settings_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -19,126 +30,166 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
-    final settingsProvider = Provider.of<SettingsProvider>(context);
-
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: const CustomAppBar(
-        title: 'Settings',
-        centerTitle: false,
-        showBackButton: false,
-      ),
-      body: Stack(
-        children: [
-          Positioned.fill(
-            child: IgnorePointer(
-              child: Opacity(
-                opacity: 0.25,
-                child: Image.asset(
-                  'assets/images/03_dashboard.gif',
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+    return Consumer<SettingsProvider>(
+      builder: (context, settingsProvider, child) {
+        return Scaffold(
+          backgroundColor: AppColors.background,
+          appBar: CustomAppBar(
+            title: 'settings'.tr(),
+            centerTitle: false,
+            showBackButton: false,
+          ),
+          body: Stack(
+            children: [
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: Opacity(
+                    opacity: 0.25,
+                    child: Image.asset(
+                      'assets/images/03_dashboard.gif',
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                    ),
+                  ),
                 ),
               ),
-            ),
-          ),
           SingleChildScrollView(
         padding: const EdgeInsets.all(AppSpacing.screenPaddingLg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // App Settings Section
-            _buildSectionHeader('App Settings')
+            _buildSectionHeader('app_settings'.tr())
                 .animate()
                 .fadeIn(duration: 300.ms),
             const SizedBox(height: AppSpacing.md),
             _buildSettingGroup([
               _buildSettingItem(
-                icon: Icons.language,
-                title: 'Language',
-                subtitle: 'English',
-                onTap: () => _showLanguageDialog(context, settingsProvider),
-              ),
-              _buildDivider(),
-              _buildToggleSetting(
                 icon: Icons.notifications_active,
-                title: 'Notifications',
-                value: settingsProvider.notificationsEnabled,
-                onChanged: (value) {
-                  settingsProvider.setNotificationsEnabled(value);
-                },
+                title: 'notifications_title'.tr(),
+                subtitle: settingsProvider.notificationsEnabled ? 'enabled'.tr() : 'disabled'.tr(),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const NotificationsSettingsScreen()),
+                ),
               ),
             ]).animate().fadeIn(duration: 300.ms, delay: 100.ms),
             const SizedBox(height: AppSpacing.xl),
 
             // Sync & Data Section
-            _buildSectionHeader('Sync & Data')
+            _buildSectionHeader('sync_data'.tr())
                 .animate()
                 .fadeIn(duration: 300.ms, delay: 150.ms),
             const SizedBox(height: AppSpacing.md),
-            _buildSettingGroup([
-              _buildToggleSetting(
-                icon: Icons.cloud_sync,
-                title: 'Auto-Sync',
-                value: settingsProvider.autoSyncEnabled,
-                onChanged: (value) {
-                  settingsProvider.setAutoSyncEnabled(value);
-                },
-              ),
+            Consumer<SettingsProvider>(
+              builder: (context, settingsProvider, child) {
+                return _buildSettingGroup([
+                  _buildToggleSetting(
+                    icon: Icons.cloud_sync,
+                    title: 'auto_sync'.tr(),
+                    value: settingsProvider.autoSyncEnabled,
+                    onChanged: (value) {
+                      settingsProvider.setAutoSyncEnabled(value);
+                    },
+                  ),
               _buildDivider(),
               _buildSettingItem(
                 icon: Icons.storage,
-                title: 'Storage Usage',
+                title: 'storage_usage'.tr(),
                 subtitle: '${(5.2).toStringAsFixed(1)} MB',
-                onTap: () {},
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const StorageUsageScreen()),
+                ),
+              ),
+              _buildDivider(),
+              _buildSettingItem(
+                icon: Icons.language,
+                title: 'language'.tr(),
+                subtitle: settingsProvider.language.toUpperCase(),
+                onTap: () => _showLanguageDialog(context, settingsProvider),
               ),
               _buildDivider(),
               _buildSettingItem(
                 icon: Icons.delete_outline,
-                title: 'Clear Cache',
-                subtitle: 'Remove temporary files',
+                title: 'clear_cache'.tr(),
+                subtitle: 'clear_cache_subtitle'.tr(),
                 onTap: () => _showClearCacheDialog(context),
               ),
-            ]).animate().fadeIn(duration: 300.ms, delay: 200.ms),
+                ]);
+              },
+            ).animate().fadeIn(duration: 300.ms, delay: 200.ms),
             const SizedBox(height: AppSpacing.xl),
 
             // About Section
-            _buildSectionHeader('About')
+            _buildSectionHeader('about'.tr())
                 .animate()
                 .fadeIn(duration: 300.ms, delay: 250.ms),
             const SizedBox(height: AppSpacing.md),
             _buildSettingGroup([
               _buildSettingItem(
                 icon: Icons.info,
-                title: 'App Version',
+                title: 'app_version'.tr(),
                 subtitle: '1.0.0',
-                onTap: () {},
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const AppVersionScreen()),
+                ),
               ),
               _buildDivider(),
               _buildSettingItem(
                 icon: Icons.description,
-                title: 'Terms of Service',
-                onTap: () {},
+                title: 'terms_of_service'.tr(),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const TermsOfServiceScreen()),
+                ),
               ),
               _buildDivider(),
               _buildSettingItem(
                 icon: Icons.privacy_tip,
-                title: 'Privacy Policy',
-                onTap: () {},
+                title: 'privacy_policy'.tr(),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const PrivacyPolicyScreen()),
+                ),
               ),
             ]).animate().fadeIn(duration: 300.ms, delay: 300.ms),
             const SizedBox(height: AppSpacing.xl),
-
-            // Danger Zone
-            _buildSectionHeader('Danger Zone', isDanger: true)
+            
+            // Developer Options
+            _buildSectionHeader('Developer Options', isDanger: false)
                 .animate()
                 .fadeIn(duration: 300.ms, delay: 350.ms),
             const SizedBox(height: AppSpacing.md),
             _buildSettingGroup([
               _buildSettingItem(
+                icon: Icons.data_object,
+                title: 'Export Telemetry Data (CSV)',
+                subtitle: 'Exports all patients:  Gait Features, Pain, Swelling, KL Grade',
+                onTap: () => _exportDataToCsv(context),
+              ),
+            ]).animate().fadeIn(duration: 300.ms, delay: 400.ms),
+            const SizedBox(height: AppSpacing.xl),
+
+            // Danger Zone
+            _buildSectionHeader('danger_zone'.tr(), isDanger: true)
+                .animate()
+                .fadeIn(duration: 300.ms, delay: 350.ms),
+            const SizedBox(height: AppSpacing.md),
+            _buildSettingGroup([
+              _buildSettingItem(
+                icon: Icons.refresh,
+                title: 'reset_database'.tr(),
+                subtitle: 'reset_database_subtitle'.tr(),
+                isDanger: true,
+                onTap: () => _showResetDatabaseDialog(context),
+              ),
+              _buildDivider(),
+              _buildSettingItem(
                 icon: Icons.logout,
-                title: 'Logout',
-                subtitle: 'Sign out of your account',
+                title: 'logout'.tr(),
+                subtitle: 'logout_subtitle'.tr(),
                 isDanger: true,
                 onTap: () => _showLogoutDialog(context),
               ),
@@ -149,6 +200,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.1, end: 0, duration: 400.ms),
         ],
       ),
+    );
+      },
     );
   }
 
@@ -241,6 +294,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+
+
+  Widget _buildDivider() {
+    return const Padding(
+      padding: EdgeInsets.symmetric(horizontal: AppSpacing.cardPaddingMd),
+      child: Divider(
+        color: AppColors.softBorder,
+        height: 1,
+      ),
+    );
+  }
+
   Widget _buildToggleSetting({
     required IconData icon,
     required String title,
@@ -286,15 +351,47 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
   }
-
-  Widget _buildDivider() {
-    return const Padding(
-      padding: EdgeInsets.symmetric(horizontal: AppSpacing.cardPaddingMd),
-      child: Divider(
-        color: AppColors.softBorder,
-        height: 1,
-      ),
-    );
+  
+  void _exportDataToCsv(BuildContext context) async {
+    try {
+      final provider = context.read<ScreeningProvider>();
+      final screenings = provider.screenings;
+      
+      if (screenings.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No patient data to export!')),
+        );
+        return;
+      }
+      
+      String csv = "PatientID,Date,RiskLevel,Pain,KLGrade,PastSurgery,Swelling,GaitSensorData (203 Features...)\n";
+      
+      for (final s in screenings) {
+        final arr = s.advancedFeaturesVector;
+        csv += "${s.patientId},${s.screeningDate.toIso8601String()},${s.riskLevel ?? 'Unknown'},${s.painLevel ?? 0},${s.mriKlGrade ?? 0},${s.pastInjury?.contains('surgery') == true ? 1 : 0},${s.swelling == true ? 1 : 0},[${arr ?? ''}]\n";
+      }
+      
+      final directory = await getApplicationDocumentsDirectory();
+      final path = "${directory.path}/osteo_telemetry_export_${DateTime.now().millisecondsSinceEpoch}.csv";
+      final file = File(path);
+      await file.writeAsString(csv);
+      
+      // Also print to console so developer can copy it instantly
+      debugPrint("\n\n--- DEVELOPER TELEMETRY CSV EXPORT ---");
+      debugPrint(csv);
+      debugPrint("--------------------------------------\n\n");
+      
+      if (context.mounted) {
+        // Trigger native share sheet so user can send via WhatsApp, Email, etc.
+        await Share.shareXFiles([XFile(path)], text: 'OsteoSense Patient Telemetry Data');
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Export failed: $e'), backgroundColor: AppColors.error),
+        );
+      }
+    }
   }
 
   void _showLanguageDialog(BuildContext context, SettingsProvider provider) {
@@ -302,16 +399,38 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: Text(
-          'Select Language',
+          'select_language'.tr(),
           style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.bold),
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildLanguageOption('English', 'en', provider),
-            const SizedBox(height: AppSpacing.md),
-            _buildLanguageOption('हिंदी (Hindi)', 'hi', provider),
-          ],
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildLanguageOption('English', 'en', provider),
+              const SizedBox(height: AppSpacing.sm),
+              _buildLanguageOption('हिंदी', 'hi', provider),
+              const SizedBox(height: AppSpacing.sm),
+              _buildLanguageOption('বাংলা', 'bn', provider),
+              const SizedBox(height: AppSpacing.sm),
+              _buildLanguageOption('অসমীয়া', 'as', provider),
+              const SizedBox(height: AppSpacing.sm),
+              _buildLanguageOption('ગુજરાતી', 'gu', provider),
+              const SizedBox(height: AppSpacing.sm),
+              _buildLanguageOption('ಕನ್ನಡ', 'kn', provider),
+              const SizedBox(height: AppSpacing.sm),
+              _buildLanguageOption('മലയാളം', 'ml', provider),
+              const SizedBox(height: AppSpacing.sm),
+              _buildLanguageOption('मराठी', 'mr', provider),
+              const SizedBox(height: AppSpacing.sm),
+              _buildLanguageOption('ଓଡ଼ିଆ', 'or', provider),
+              const SizedBox(height: AppSpacing.sm),
+              _buildLanguageOption('ਪੰਜਾਬੀ', 'pa', provider),
+              const SizedBox(height: AppSpacing.sm),
+              _buildLanguageOption('தமிழ்', 'ta', provider),
+              const SizedBox(height: AppSpacing.sm),
+              _buildLanguageOption('తెలుగు', 'te', provider),
+            ],
+          ),
         ),
       ),
     );
@@ -321,9 +440,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () {
-          provider.setLanguage(code);
+        onTap: () async {
+          // Save language preference
+          await provider.setLanguage(code);
+          
+          // Change app locale
+          await context.setLocale(Locale(code));
+          
           Navigator.pop(context);
+          
+          // Show confirmation
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Language changed to $label'),
+                duration: const Duration(seconds: 2),
+              ),
+            );
+          }
         },
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.md),
@@ -336,32 +470,124 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  Future<void> _clearCache(BuildContext context) async {
+    try {
+      // Get temporary directory
+      final tempDir = await getTemporaryDirectory();
+      
+      // Delete all files in temp directory
+      if (await tempDir.exists()) {
+        final List<FileSystemEntity> entities = tempDir.listSync();
+        for (FileSystemEntity entity in entities) {
+          if (entity is File) {
+            await entity.delete();
+          } else if (entity is Directory) {
+            await entity.delete(recursive: true);
+          }
+        }
+      }
+      
+      // Show success message
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('cache_cleared_successfully'.tr()),
+            backgroundColor: AppColors.riskLow,
+          ),
+        );
+      }
+    } catch (e) {
+      // Show error message
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('failed_to_clear_cache'.tr(namedArgs: {'e': '$e'})),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
+
   void _showClearCacheDialog(BuildContext context) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: Text(
-          'Clear Cache?',
+          'clear_cache_question'.tr(),
           style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.bold),
         ),
         content: Text(
-          'This will remove temporary files. Continue?',
+          'clear_cache_warning'.tr(),
           style: AppTypography.bodyMedium,
         ),
         actions: [
           CustomButton(
-            text: 'Cancel',
+            text: 'cancel'.tr(),
             onPressed: () => Navigator.pop(context),
             variant: ButtonVariant.secondary,
             size: ButtonSize.small,
           ),
           CustomButton(
-            text: 'Clear',
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Cache cleared')),
-              );
+            text: 'clear'.tr(),
+            onPressed: () async {
               Navigator.pop(context);
+              await _clearCache(context);
+            },
+            variant: ButtonVariant.danger,
+            size: ButtonSize.small,
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showResetDatabaseDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          'reset_database_question'.tr(),
+          style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.bold),
+        ),
+        content: Text(
+          'reset_database_warning'.tr(),
+          style: AppTypography.bodyMedium,
+        ),
+        actions: [
+          CustomButton(
+            text: 'cancel'.tr(),
+            onPressed: () => Navigator.pop(context),
+            variant: ButtonVariant.secondary,
+            size: ButtonSize.small,
+          ),
+          CustomButton(
+            text: 'reset'.tr(),
+            onPressed: () async {
+              Navigator.pop(context);
+              try {
+                final db = DatabaseHelper();
+                await db.resetDatabase();
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('database_reset_success_msg'.tr()),
+                      backgroundColor: AppColors.riskLow,
+                    ),
+                  );
+                  // Navigate to splash screen to reinitialize
+                  context.go('/splash');
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('failed_to_reset_database'.tr(namedArgs: {'e': '$e'})),
+                      backgroundColor: AppColors.error,
+                    ),
+                  );
+                }
+              }
             },
             variant: ButtonVariant.danger,
             size: ButtonSize.small,
@@ -376,31 +602,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: Text(
-          'Logout?',
+          'logout_question'.tr(),
           style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.bold),
         ),
         content: Text(
-          'You will be signed out of your account.',
+          'logout_warning'.tr(),
           style: AppTypography.bodyMedium,
         ),
         actions: [
           CustomButton(
-            text: 'Cancel',
+            text: 'cancel'.tr(),
             onPressed: () => Navigator.pop(context),
             variant: ButtonVariant.secondary,
             size: ButtonSize.small,
           ),
           CustomButton(
-            text: 'Logout',
+            text: 'logout_button'.tr(),
             onPressed: () async {
+              final nav = Navigator.of(context);
               final authProvider = Provider.of<AuthProvider>(context, listen: false);
+              nav.pop(); // close dialog first
               await authProvider.logout();
-              Navigator.pop(context);
-              Future.microtask(() {
-                if (context.mounted) {
-                  context.go('/role');
-                }
-              });
+              if (context.mounted) {
+                context.go('/role');
+              }
             },
             variant: ButtonVariant.danger,
             size: ButtonSize.small,

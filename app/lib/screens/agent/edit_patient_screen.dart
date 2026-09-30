@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../../providers/patient_provider.dart';
 import '../../models/patient.dart';
 import '../../theme/app_colors.dart';
@@ -43,6 +44,8 @@ class _EditPatientScreenState extends State<EditPatientScreen> {
       _addressController = TextEditingController(text: p.address ?? '');
       _occupationController = TextEditingController(text: p.occupation ?? '');
       _gender = p.gender;
+      _weightController = TextEditingController(text: p.weightKg?.toString() ?? '');
+      _heightController = TextEditingController(text: p.heightCm?.toString() ?? '');
     } else {
       _nameController = TextEditingController();
       _ageController = TextEditingController();
@@ -51,9 +54,9 @@ class _EditPatientScreenState extends State<EditPatientScreen> {
       _addressController = TextEditingController();
       _occupationController = TextEditingController();
       _gender = 'male';
+      _weightController = TextEditingController();
+      _heightController = TextEditingController();
     }
-    _heightController = TextEditingController();
-    _weightController = TextEditingController();
   }
 
   @override
@@ -83,6 +86,8 @@ class _EditPatientScreenState extends State<EditPatientScreen> {
       village: _villageController.text.trim().isEmpty ? null : _villageController.text.trim(),
       address: _addressController.text.trim().isEmpty ? null : _addressController.text.trim(),
       occupation: _occupationController.text.trim().isEmpty ? null : _occupationController.text.trim(),
+      weightKg: double.tryParse(_weightController.text.trim()),
+      heightCm: double.tryParse(_heightController.text.trim()),
       updatedAt: DateTime.now(),
       synced: false,
     );
@@ -94,10 +99,10 @@ class _EditPatientScreenState extends State<EditPatientScreen> {
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Row(children: [
-            Icon(Icons.check_circle_rounded, color: Colors.white, size: 18),
-            SizedBox(width: 8),
-            Text('Patient updated successfully'),
+          content: Row(children: [
+            const Icon(Icons.check_circle_rounded, color: Colors.white, size: 18),
+            const SizedBox(width: 8),
+            Text('patient_updated_successfully'.tr()),
           ]),
           backgroundColor: AppColors.riskLow,
           behavior: SnackBarBehavior.floating,
@@ -183,7 +188,7 @@ class _EditPatientScreenState extends State<EditPatientScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Gender', style: AppTypography.caption.copyWith(color: AppColors.textSecondary, fontWeight: FontWeight.w500)),
+                      Text('gender'.tr(), style: AppTypography.caption.copyWith(color: AppColors.textSecondary, fontWeight: FontWeight.w500)),
                       const SizedBox(height: AppSpacing.xs),
                       ComboBox<String>(
                         items: const ['male', 'female', 'other'],

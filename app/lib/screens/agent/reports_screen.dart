@@ -3,6 +3,10 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/services.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:easy_localization/easy_localization.dart';
+import 'dart:io';
 import '../../providers/patient_provider.dart';
 import '../../services/analytics_service.dart';
 import '../../theme/app_colors.dart';
@@ -231,7 +235,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Analytics',
+                  'analytics_title'.tr(),
                   style: AppTypography.headlineSmall.copyWith(
                     color: AppColors.textPrimary,
                     fontWeight: FontWeight.w800,
@@ -241,7 +245,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Analytics for rural health monitoring',
+                  'analytics_subtitle'.tr(),
                   style: AppTypography.bodySmall.copyWith(
                     color: AppColors.textSecondary,
                     fontSize: 13,
@@ -286,9 +290,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
       children: [
         Expanded(
           child: _AnalyticsStatCard(
-            label: 'Total Patients',
+            label: 'total_patients'.tr(),
             value: totalPatients > 0 ? '$totalPatients' : '0',
-            subtitle: '$weeklyScreenings screenings this week',
+            subtitle: '$weeklyScreenings ' + 'screenings_this_week'.tr(),
             icon: Icons.people_alt_rounded,
             iconColor: AppColors.primary,
             iconBg: AppColors.primarySurface,
@@ -297,9 +301,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
         const SizedBox(width: AppSpacing.sm),
         Expanded(
           child: _AnalyticsStatCard(
-            label: 'High Risk',
+            label: 'high_risk'.tr(),
             value: highRiskCount > 0 ? '$highRiskCount' : '0',
-            subtitle: '${totalPatients > 0 ? ((highRiskCount / totalPatients) * 100).toStringAsFixed(1) : '0.0'}% of total',
+            subtitle: '${totalPatients > 0 ? ((highRiskCount / totalPatients) * 100).toStringAsFixed(1) : '0.0'}% ' + 'of_total'.tr(),
             icon: Icons.warning_amber_rounded,
             iconColor: AppColors.dustyRose,
             iconBg: AppColors.dustyRoseSurface,
@@ -330,22 +334,24 @@ class _ReportsScreenState extends State<ReportsScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Risk Distribution',
-                    style: AppTypography.titleSmall.copyWith(
-                      color: AppColors.textPrimary,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 17,
-                    )),
-                  const SizedBox(height: 3),
-                  Text('Current screening cohort',
-                    style: AppTypography.bodySmall.copyWith(
-                      color: AppColors.textSecondary,
-                      fontSize: 12,
-                    )),
-                ],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('risk_distribution'.tr(),
+                      style: AppTypography.titleSmall.copyWith(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 17,
+                      )),
+                    const SizedBox(height: 3),
+                    Text('current_screening_cohort'.tr(),
+                      style: AppTypography.bodySmall.copyWith(
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                      )),
+                  ],
+                ),
               ),
               Icon(Icons.donut_large_rounded, color: AppColors.textMuted, size: 20),
             ],
@@ -362,7 +368,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   ),
                   SizedBox(height: AppSpacing.sm),
                   Text(
-                    'No risk data available',
+                    'no_risk_data_available'.tr(),
                     style: AppTypography.bodySmall.copyWith(
                       color: AppColors.textTertiary,
                     ),
@@ -406,11 +412,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                _LegendDot(color: AppColors.chartForest, label: 'Low Risk'),
+                _LegendDot(color: AppColors.chartForest, label: 'low_risk'.tr()),
                 const SizedBox(width: AppSpacing.md),
-                _LegendDot(color: AppColors.chartSage, label: 'Moderate'),
+                _LegendDot(color: AppColors.chartSage, label: 'moderate'.tr()),
                 const SizedBox(width: AppSpacing.md),
-                _LegendDot(color: AppColors.chartDustyRose, label: 'High Risk'),
+                _LegendDot(color: AppColors.chartDustyRose, label: 'high_risk'.tr()),
               ],
             ),
         ],
@@ -452,21 +458,23 @@ class _ReportsScreenState extends State<ReportsScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Screening Trends',
-                    style: AppTypography.titleSmall.copyWith(
-                      color: AppColors.textPrimary,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 17,
-                    )),
-                  const SizedBox(height: 3),
-                  Text('Weekly assessments performed',
-                    style: AppTypography.bodySmall.copyWith(
-                      color: AppColors.textSecondary, fontSize: 12,
-                    )),
-                ],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('screening_trends'.tr(),
+                      style: AppTypography.titleSmall.copyWith(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 17,
+                      )),
+                    const SizedBox(height: 3),
+                    Text('weekly_assessments_performed'.tr(),
+                      style: AppTypography.bodySmall.copyWith(
+                        color: AppColors.textSecondary, fontSize: 12,
+                      )),
+                  ],
+                ),
               ),
               // Week / Month segmented control
               Container(
@@ -479,7 +487,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     _TrendToggle(
-                      label: 'Week',
+                      label: 'week'.tr(),
                       selected: _trendTab == 0,
                       onTap: () {
                         setState(() => _trendTab = 0);
@@ -487,7 +495,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                       },
                     ),
                     _TrendToggle(
-                      label: 'Month',
+                      label: 'month'.tr(),
                       selected: _trendTab == 1,
                       onTap: () {
                         setState(() => _trendTab = 1);
@@ -511,7 +519,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   ),
                   SizedBox(height: AppSpacing.sm),
                   Text(
-                    'No screening trends data',
+                    'no_screening_trends_data'.tr(),
                     style: AppTypography.bodySmall.copyWith(
                       color: AppColors.textTertiary,
                     ),
@@ -541,7 +549,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     bottomTitles: AxisTitles(
                       sideTitles: SideTitles(
                         showTitles: true,
-                        interval: 1,
+                        interval: _trendTab == 0 ? 1 : 5,
                         getTitlesWidget: (v, meta) {
                           final idx = v.toInt();
                           if (idx < 0 || idx >= finalLabels.length) return const SizedBox.shrink();
@@ -607,20 +615,26 @@ class _ReportsScreenState extends State<ReportsScreen> {
     final knee = _jointAffection?['knee'] ?? 0;
     final hip = _jointAffection?['hip'] ?? 0;
     final ankle = _jointAffection?['ankle'] ?? 0;
+    final shoulder = _jointAffection?['shoulder'] ?? 0;
+    final elbow = _jointAffection?['elbow'] ?? 0;
+    final wrist = _jointAffection?['wrist'] ?? 0;
     final other = _jointAffection?['other'] ?? 0;
-    final jointTotal = knee + hip + ankle + other;
+    final jointTotal = knee + hip + ankle + shoulder + elbow + wrist + other;
 
     // Use real data only - no demo values
     final displayKnee = knee;
     final displayHip = hip;
     final displayAnkle = ankle;
+    final displayShoulder = shoulder;
+    final displayElbow = elbow;
+    final displayWrist = wrist;
     final displayOther = other;
 
     return _JointSaathiCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Joint Affection',
+          Text('joint_affection'.tr(),
             style: AppTypography.titleSmall.copyWith(
               color: AppColors.textPrimary,
               fontWeight: FontWeight.w700,
@@ -638,7 +652,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   ),
                   SizedBox(height: AppSpacing.sm),
                   Text(
-                    'No joint affection data',
+                    'no_joint_affection_data'.tr(),
                     style: AppTypography.bodySmall.copyWith(
                       color: AppColors.textTertiary,
                     ),
@@ -652,22 +666,41 @@ class _ReportsScreenState extends State<ReportsScreen> {
               child: PieChart(
                 PieChartData(
                   sections: [
-                    PieChartSectionData(
-                      value: displayKnee.toDouble(), color: AppColors.chartForest,
-                      radius: 52, title: '',
-                    ),
-                    PieChartSectionData(
-                      value: displayHip.toDouble(), color: AppColors.chartSage,
-                      radius: 52, title: '',
-                    ),
-                    PieChartSectionData(
-                      value: displayAnkle.toDouble(), color: AppColors.chartDustyRose,
-                      radius: 52, title: '',
-                    ),
-                    PieChartSectionData(
-                      value: displayOther.toDouble(), color: AppColors.chartBeige,
-                      radius: 52, title: '',
-                    ),
+                    if (displayKnee > 0)
+                      PieChartSectionData(
+                        value: displayKnee.toDouble(), color: AppColors.chartForest,
+                        radius: 52, title: '',
+                      ),
+                    if (displayHip > 0)
+                      PieChartSectionData(
+                        value: displayHip.toDouble(), color: AppColors.chartSage,
+                        radius: 52, title: '',
+                      ),
+                    if (displayAnkle > 0)
+                      PieChartSectionData(
+                        value: displayAnkle.toDouble(), color: AppColors.chartDustyRose,
+                        radius: 52, title: '',
+                      ),
+                    if (displayShoulder > 0)
+                      PieChartSectionData(
+                        value: displayShoulder.toDouble(), color: Colors.blue,
+                        radius: 52, title: '',
+                      ),
+                    if (displayElbow > 0)
+                      PieChartSectionData(
+                        value: displayElbow.toDouble(), color: Colors.purple,
+                        radius: 52, title: '',
+                      ),
+                    if (displayWrist > 0)
+                      PieChartSectionData(
+                        value: displayWrist.toDouble(), color: Colors.orange,
+                        radius: 52, title: '',
+                      ),
+                    if (displayOther > 0)
+                      PieChartSectionData(
+                        value: displayOther.toDouble(), color: AppColors.chartBeige,
+                        radius: 52, title: '',
+                      ),
                   ],
                   centerSpaceRadius: 44,
                   sectionsSpace: 3,
@@ -676,16 +709,18 @@ class _ReportsScreenState extends State<ReportsScreen> {
           ),
           const SizedBox(height: AppSpacing.md),
           if (jointTotal > 0)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+            Wrap(
+              alignment: WrapAlignment.center,
+              spacing: AppSpacing.sm,
+              runSpacing: AppSpacing.xs,
               children: [
-                _LegendDot(color: AppColors.chartForest, label: 'Knee'),
-                const SizedBox(width: AppSpacing.md),
-                _LegendDot(color: AppColors.chartSage, label: 'Hip'),
-                const SizedBox(width: AppSpacing.md),
-                _LegendDot(color: AppColors.chartDustyRose, label: 'Ankle'),
-                const SizedBox(width: AppSpacing.md),
-                _LegendDot(color: AppColors.chartBeige, label: 'Other'),
+                if (displayKnee > 0) _LegendDot(color: AppColors.chartForest, label: 'Knee'),
+                if (displayHip > 0) _LegendDot(color: AppColors.chartSage, label: 'Hip'),
+                if (displayAnkle > 0) _LegendDot(color: AppColors.chartDustyRose, label: 'Ankle'),
+                if (displayShoulder > 0) _LegendDot(color: Colors.blue, label: 'Shoulder'),
+                if (displayElbow > 0) _LegendDot(color: Colors.purple, label: 'Elbow'),
+                if (displayWrist > 0) _LegendDot(color: Colors.orange, label: 'Wrist'),
+                if (displayOther > 0) _LegendDot(color: AppColors.chartBeige, label: 'Other'),
               ],
             ),
         ],
@@ -724,7 +759,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('AI Population Insight',
+                Text('ai_population_insight'.tr(),
                   style: AppTypography.labelMedium.copyWith(
                     color: AppColors.textPrimary,
                     fontWeight: FontWeight.w700,
@@ -755,14 +790,52 @@ class _ReportsScreenState extends State<ReportsScreen> {
       onTap: () async {
         HapticFeedback.selectionClick();
         final csvData = await _analyticsService.exportAnalytics(format: 'csv');
-        // TODO: Implement file download/sharing functionality
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(csvData.contains('Error') ? 'Export failed' : 'Export ready (implementation needed)'),
-              duration: const Duration(seconds: 2),
-            ),
-          );
+
+        if (csvData.contains('Error') || csvData == 'No data to export') {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Export failed - no data available'),
+                duration: Duration(seconds: 2),
+              ),
+            );
+          }
+          return;
+        }
+
+        try {
+          // Get temporary directory
+          final directory = await getTemporaryDirectory();
+          final timestamp = DateTime.now().millisecondsSinceEpoch;
+          final file = File('${directory.path}/joint_saathi_analytics_$timestamp.csv');
+
+          // Write CSV data to file
+          await file.writeAsString(csvData);
+
+          // Share the file
+          if (mounted) {
+            await Share.shareXFiles(
+              [XFile(file.path)],
+              subject: 'JointSaathi Analytics Report',
+              text: 'Attached is the detailed analytics report for OsteoSense screenings.',
+            );
+
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Report exported successfully'),
+                duration: Duration(seconds: 2),
+              ),
+            );
+          }
+        } catch (e) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Export failed: $e'),
+                duration: const Duration(seconds: 2),
+              ),
+            );
+          }
         }
       },
       child: Container(
@@ -779,7 +852,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
           children: [
             const Icon(Icons.download_outlined, color: AppColors.textSecondary, size: 18),
             const SizedBox(width: 8),
-            Text('Export Detailed Report',
+            Text('export_detailed_report'.tr(),
               style: AppTypography.button.copyWith(
                 color: AppColors.textSecondary,
                 fontSize: 14,

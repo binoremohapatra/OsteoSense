@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import '../../theme/app_colors.dart';
@@ -8,10 +9,10 @@ import '../../theme/app_motion.dart';
 import 'preventive_care_article_screen.dart';
 
 // ─── Local article data (until API integration) ──────────────────────────────
-const _exercisesArticles = [
+final _exercisesArticles = [
   _Article(
     id: 'ex1',
-    title: 'Quadriceps Strengthening',
+    title: 'quadriceps_strengthening'.tr(),
     summary: 'Simple exercises to strengthen the muscles around your knee',
     icon: Icons.fitness_center_rounded,
     readTime: '4 min',
@@ -32,7 +33,7 @@ Do these daily. Avoid pain — if any exercise causes sharp pain, stop immediate
   ),
   _Article(
     id: 'ex2',
-    title: 'Low-Impact Aerobics',
+    title: 'lowimpact_aerobics'.tr(),
     summary: 'Walking and water exercises safe for arthritic joints',
     icon: Icons.directions_walk_rounded,
     readTime: '3 min',
@@ -54,7 +55,7 @@ Do these daily. Avoid pain — if any exercise causes sharp pain, stop immediate
   ),
   _Article(
     id: 'ex3',
-    title: 'Range of Motion Exercises',
+    title: 'range_of_motion_exercises'.tr(),
     summary: 'Stretches to maintain joint flexibility and reduce stiffness',
     icon: Icons.self_improvement_rounded,
     readTime: '3 min',
@@ -76,10 +77,10 @@ Best done in the morning after applying gentle warmth to joints.
   ),
 ];
 
-const _dietArticles = [
+final _dietArticles = [
   _Article(
     id: 'diet1',
-    title: 'Anti-Inflammatory Foods',
+    title: 'antiinflammatory_foods'.tr(),
     summary: 'Foods that help reduce joint inflammation and pain',
     icon: Icons.restaurant_menu_rounded,
     readTime: '4 min',
@@ -100,7 +101,7 @@ const _dietArticles = [
   ),
   _Article(
     id: 'diet2',
-    title: 'Calcium & Vitamin D',
+    title: 'calcium_vitamin_d'.tr(),
     summary: 'Essential nutrients for bone and joint health',
     icon: Icons.water_drop_rounded,
     readTime: '3 min',
@@ -122,7 +123,7 @@ Note: Vitamin D enhances calcium absorption — both are needed together.''',
   ),
   _Article(
     id: 'diet3',
-    title: 'Weight Management Diet',
+    title: 'weight_management_diet'.tr(),
     summary: 'Every kilogram lost reduces knee joint load by 4 kg',
     icon: Icons.monitor_weight_outlined,
     readTime: '4 min',
@@ -148,10 +149,10 @@ Goal: Lose 5–10% of body weight if overweight. Even this much reduces knee pai
   ),
 ];
 
-const _lifestyleArticles = [
+final _lifestyleArticles = [
   _Article(
     id: 'life1',
-    title: 'Joint Protection Techniques',
+    title: 'joint_protection_techniques'.tr(),
     summary: 'Daily habits to protect joints and prevent further damage',
     icon: Icons.shield_outlined,
     readTime: '4 min',
@@ -177,7 +178,7 @@ const _lifestyleArticles = [
   ),
   _Article(
     id: 'life2',
-    title: 'Stress Management',
+    title: 'stress_management'.tr(),
     summary: 'How stress affects joint pain and how to manage it',
     icon: Icons.spa_rounded,
     readTime: '4 min',
@@ -204,7 +205,7 @@ const _lifestyleArticles = [
   ),
   _Article(
     id: 'life3',
-    title: 'Heat & Cold Therapy',
+    title: 'heat_cold_therapy'.tr(),
     summary: 'When to use heat vs cold for joint pain relief',
     icon: Icons.thermostat_rounded,
     readTime: '4 min',
@@ -253,7 +254,7 @@ class PreventiveCareCategoryScreen extends StatelessWidget {
     switch (categoryId) {
       case 'exercises':
         return (
-          title: 'Exercises',
+          title: 'exercises'.tr(),
           gradient: const LinearGradient(
             colors: [Color(0xFF4CAF50), Color(0xFF8BC34A)],
             begin: Alignment.topLeft,
@@ -263,7 +264,7 @@ class PreventiveCareCategoryScreen extends StatelessWidget {
         );
       case 'diet':
         return (
-          title: 'Diet & Nutrition',
+          title: 'diet_nutrition'.tr(),
           gradient: const LinearGradient(
             colors: [Color(0xFFFF784E), Color(0xFFFFB199)],
             begin: Alignment.topLeft,
@@ -273,7 +274,7 @@ class PreventiveCareCategoryScreen extends StatelessWidget {
         );
       default:
         return (
-          title: 'Lifestyle',
+          title: 'lifestyle'.tr(),
           gradient: const LinearGradient(
             colors: [Color(0xFF5B6EE8), Color(0xFF0D7377)],
             begin: Alignment.topLeft,

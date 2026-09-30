@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../../flutter_flow/flutter_flow_util.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/ff/ff_button.dart';
@@ -124,7 +125,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         Text(
-                          'Choose your language',
+                          'choose_language'.tr(),
                           style: GoogleFonts.dmSans(
                             fontSize: 18,
                             fontWeight: FontWeight.w600,
@@ -192,7 +193,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       const SizedBox(height: 16),
                       // Get Started button
                       FFButton(
-                        content: 'Get Started',
+                        content: 'get_started'.tr(),
                         variant: 'primary',
                         size: 'large',
                         fullWidth: true,
@@ -216,7 +217,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 20, vertical: 10),
                       child: Text(
-                        'Skip',
+                        'skip'.tr(),
                         style: GoogleFonts.dmSans(
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
@@ -286,7 +287,7 @@ class _OnboardingHeroSlide extends StatelessWidget {
                     borderRadius: BorderRadius.circular(9999),
                   ),
                   child: Text(
-                    'AI-Powered Screening',
+                    'ai_powered_screening'.tr(),
                     style: GoogleFonts.dmSans(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
@@ -300,7 +301,7 @@ class _OnboardingHeroSlide extends StatelessWidget {
           const SizedBox(height: 24),
           // Title
           Text(
-            'Early Detection for Joint Health',
+            'early_detection_joint_health'.tr(),
             textAlign: TextAlign.center,
             style: GoogleFonts.dmSans(
               fontSize: 26,
@@ -312,7 +313,7 @@ class _OnboardingHeroSlide extends StatelessWidget {
           const SizedBox(height: 12),
           // Description
           Text(
-            'AI-powered screening to identify osteoarthritis risk factors early in your clinical practice.',
+            'onboarding_description'.tr(),
             textAlign: TextAlign.center,
             style: GoogleFonts.dmSans(
               fontSize: 14,

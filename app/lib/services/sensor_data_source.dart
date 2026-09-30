@@ -9,6 +9,18 @@ abstract class SensorDataSource {
   /// Stream of gyroscope data (x, y, z)
   Stream<SensorData> get gyroscopeStream;
 
+  /// Stream of piezo (joint vibration) data - for ESP32 wearable
+  Stream<SensorData>? get piezoStream;
+
+  /// Stream of EMG (muscle activity) data - for ESP32 wearable
+  Stream<SensorData>? get emgStream;
+
+  /// Stream of battery percentage data - for ESP32 wearable
+  Stream<int>? get batteryStream;
+
+  /// Stream of device status (modelReady, sensorsOK) - for ESP32 wearable
+  Stream<Map<String, bool>>? get deviceStatusStream;
+
   /// Initialize the sensor data source
   Future<void> initialize();
 

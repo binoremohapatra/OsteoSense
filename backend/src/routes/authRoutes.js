@@ -10,6 +10,7 @@ const {
   loginSchema,
   refreshSchema,
   logoutSchema,
+  resetPasswordSchema,
 } = require('../schemas/authSchemas');
 
 const router = express.Router();
@@ -102,6 +103,30 @@ router.post('/register', authLimiter, validate(registerSchema), authController.r
  *         description: Invalid credentials
  */
 router.post('/login', authLimiter, validate(loginSchema), authController.login);
+
+/**
+ * @swagger
+ * /auth/reset-password:
+ *   post:
+ *     summary: Reset password with phone number and new password
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [phoneNumber, newPassword]
+ *             properties:
+ *               phoneNumber: { type: string, example: "9876543210" }
+ *               newPassword: { type: string, example: "NewSecurePass123" }
+ *     responses:
+ *       200:
+ *         description: Password reset successfully
+ *       404:
+ *         description: Account not found
+ */
+router.post('/reset-password', authLimiter, validate(resetPasswordSchema), authController.resetPassword);
 
 /**
  * @swagger

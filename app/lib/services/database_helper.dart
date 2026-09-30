@@ -1,4 +1,4 @@
-import 'package:sqflite/sqflite.dart';
+﻿import 'package:sqflite/sqflite.dart';
 import 'package:sqflite/sqlite_api.dart';
 import 'package:path/path.dart';
 import 'dart:async';
@@ -24,9 +24,10 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 4,
+      version: 11,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
+      onOpen: _onOpen,
     );
   }
 
@@ -57,6 +58,8 @@ class DatabaseHelper {
         village TEXT,
         address TEXT,
         occupation TEXT,
+        weight_kg REAL,
+        height_cm REAL,
         created_at TEXT DEFAULT CURRENT_TIMESTAMP,
         updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
         synced INTEGER DEFAULT 0,
@@ -72,11 +75,16 @@ class DatabaseHelper {
         patient_id INTEGER NOT NULL,
         user_id INTEGER NOT NULL,
         screening_date TEXT DEFAULT CURRENT_TIMESTAMP,
+        joint_id TEXT,
+        side TEXT,
         pain_level INTEGER,
         stiffness_duration TEXT,
         swelling INTEGER,
         past_injury TEXT,
+        mri_kl_grade INTEGER,
         gait_data TEXT,
+        symptoms_map TEXT,
+        functional_map TEXT,
         risk_level TEXT,
         confidence REAL,
         contributing_factors TEXT,
@@ -86,8 +94,82 @@ class DatabaseHelper {
         deleted INTEGER DEFAULT 0,
         created_at TEXT DEFAULT CURRENT_TIMESTAMP,
         updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        pain_frequency TEXT,
+        activity_limitation TEXT,
+        medication_use INTEGER DEFAULT 0,
+        symptom_duration TEXT,
+        pain_characteristics TEXT,
+        stiffness_triggers TEXT,
+        other_symptoms TEXT,
+        functional_difficulty TEXT,
+        gait_variability REAL DEFAULT 0.0,
+        gait_asymmetry REAL DEFAULT 0.0,
+        gait_smoothness REAL DEFAULT 0.0,
+        postural_stability REAL DEFAULT 0.0,
+        ml_uncertainty REAL DEFAULT 0.0,
+        advanced_features_vector TEXT,
         FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      )
+    ''');
+
+    // Medical History table
+    await db.execute('''
+      CREATE TABLE medical_history (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        patient_id INTEGER NOT NULL,
+        joint TEXT NOT NULL,
+        side TEXT NOT NULL,
+        previous_diagnosis INTEGER DEFAULT 0,
+        previous_joint_pain INTEGER DEFAULT 0,
+        chronic_joint_problems INTEGER DEFAULT 0,
+        previous_inflammation INTEGER DEFAULT 0,
+        previous_cartilage_problems INTEGER DEFAULT 0,
+        previous_ligament_problems INTEGER DEFAULT 0,
+        previous_fracture INTEGER DEFAULT 0,
+        has_past_injury INTEGER DEFAULT 0,
+        injury_type TEXT,
+        injury_date TEXT,
+        injury_mechanism TEXT,
+        injury_severity TEXT,
+        medical_treatment_required INTEGER DEFAULT 0,
+        immobilization_required INTEGER DEFAULT 0,
+        physiotherapy_performed INTEGER DEFAULT 0,
+        current_symptoms_after_injury TEXT,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE
+      )
+    ''');
+
+    // Surgery History table
+    await db.execute('''
+      CREATE TABLE surgery_history (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        patient_id INTEGER NOT NULL,
+        joint TEXT NOT NULL,
+        side TEXT NOT NULL,
+        surgery_type TEXT NOT NULL,
+        surgery_date TEXT,
+        reason TEXT,
+        hospital TEXT,
+        implant_present INTEGER DEFAULT 0,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE
+      )
+    ''');
+
+    // Medical Images table
+    await db.execute('''
+      CREATE TABLE medical_images (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        patient_id INTEGER NOT NULL,
+        joint TEXT NOT NULL,
+        side TEXT NOT NULL,
+        image_type TEXT NOT NULL,
+        file_path TEXT NOT NULL,
+        source TEXT NOT NULL,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE
       )
     ''');
 
@@ -112,6 +194,7 @@ class DatabaseHelper {
         action TEXT NOT NULL,
         data TEXT NOT NULL,
         created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
         retry_count INTEGER DEFAULT 0
       )
     ''');
@@ -198,6 +281,38 @@ class DatabaseHelper {
     }
 
     if (oldVersion < 4) {
+      // Add weight_kg and height_cm to patients table
+      try {
+        await db.execute('ALTER TABLE patients ADD COLUMN weight_kg REAL');
+      } catch (e) {
+        // Column might already exist, ignore error
+      }
+      try {
+        await db.execute('ALTER TABLE patients ADD COLUMN height_cm REAL');
+      } catch (e) {
+        // Column might already exist, ignore error
+      }
+    }
+
+    if (oldVersion < 5) {
+      // Add updated_at to sync_queue
+      try {
+        await db.execute('ALTER TABLE sync_queue ADD COLUMN updated_at TEXT DEFAULT CURRENT_TIMESTAMP');
+      } catch (e) {
+        // Column might already exist, ignore error
+      }
+    }
+
+    if (oldVersion < 7) {
+      // Add joint_id to screenings table
+      try {
+        await db.execute('ALTER TABLE screenings ADD COLUMN joint_id TEXT');
+      } catch (e) {
+        // Column might already exist, ignore error
+      }
+    }
+
+    if (oldVersion < 4) {
       // Add created_at and updated_at columns to screenings table if they don't exist
       try {
         await db.execute('ALTER TABLE screenings ADD COLUMN created_at TEXT DEFAULT CURRENT_TIMESTAMP');
@@ -208,6 +323,264 @@ class DatabaseHelper {
         await db.execute('ALTER TABLE screenings ADD COLUMN updated_at TEXT DEFAULT CURRENT_TIMESTAMP');
       } catch (e) {
         // Column might already exist, ignore error
+      }
+    }
+
+    if (oldVersion < 8) {
+      // Add mri_kl_grade to screenings table
+      try {
+        await db.execute('ALTER TABLE screenings ADD COLUMN mri_kl_grade INTEGER');
+      } catch (e) {
+        // Column might already exist, ignore error
+      }
+    }
+
+    if (oldVersion < 5) {
+      // Add updated_at column to sync_queue table if it doesn't exist
+      try {
+        await db.execute('ALTER TABLE sync_queue ADD COLUMN updated_at TEXT DEFAULT CURRENT_TIMESTAMP');
+      } catch (e) {
+        // Column might already exist, ignore error
+      }
+    }
+
+    if (oldVersion < 10) {
+      // Add advanced ML feature columns to screenings table
+      try {
+        await db.execute('ALTER TABLE screenings ADD COLUMN pain_frequency TEXT');
+      } catch (e) {
+        // Column might already exist, ignore error
+      }
+      try {
+        await db.execute('ALTER TABLE screenings ADD COLUMN activity_limitation TEXT');
+      } catch (e) {
+        // Column might already exist, ignore error
+      }
+      try {
+        await db.execute('ALTER TABLE screenings ADD COLUMN medication_use INTEGER DEFAULT 0');
+      } catch (e) {
+        // Column might already exist, ignore error
+      }
+      try {
+        await db.execute('ALTER TABLE screenings ADD COLUMN symptom_duration TEXT');
+      } catch (e) {
+        // Column might already exist, ignore error
+      }
+      try {
+        await db.execute('ALTER TABLE screenings ADD COLUMN pain_characteristics TEXT');
+      } catch (e) {
+        // Column might already exist, ignore error
+      }
+      try {
+        await db.execute('ALTER TABLE screenings ADD COLUMN stiffness_triggers TEXT');
+      } catch (e) {
+        // Column might already exist, ignore error
+      }
+      try {
+        await db.execute('ALTER TABLE screenings ADD COLUMN other_symptoms TEXT');
+      } catch (e) {
+        // Column might already exist, ignore error
+      }
+      try {
+        await db.execute('ALTER TABLE screenings ADD COLUMN functional_difficulty TEXT');
+      } catch (e) {
+        // Column might already exist, ignore error
+      }
+      try {
+        await db.execute('ALTER TABLE screenings ADD COLUMN gait_variability REAL DEFAULT 0.0');
+      } catch (e) {
+        // Column might already exist, ignore error
+      }
+      try {
+        await db.execute('ALTER TABLE screenings ADD COLUMN gait_asymmetry REAL DEFAULT 0.0');
+      } catch (e) {
+        // Column might already exist, ignore error
+      }
+      try {
+        await db.execute('ALTER TABLE screenings ADD COLUMN gait_smoothness REAL DEFAULT 0.0');
+      } catch (e) {
+        // Column might already exist, ignore error
+      }
+      try {
+        await db.execute('ALTER TABLE screenings ADD COLUMN postural_stability REAL DEFAULT 0.0');
+      } catch (e) {
+        // Column might already exist, ignore error
+      }
+      try {
+        await db.execute('ALTER TABLE screenings ADD COLUMN ml_uncertainty REAL DEFAULT 0.0');
+      } catch (e) {
+        // Column might already exist, ignore error
+      }
+      try {
+        await db.execute('ALTER TABLE screenings ADD COLUMN advanced_features_vector TEXT');
+      } catch (e) {
+        // Column might already exist, ignore error
+      }
+    }
+
+    if (oldVersion < 6) {
+      // Add weight_kg and height_cm columns to patients table if they don't exist
+      try {
+        await db.execute('ALTER TABLE patients ADD COLUMN weight_kg REAL');
+      } catch (e) {
+        // Column might already exist, ignore error
+      }
+      try {
+        await db.execute('ALTER TABLE patients ADD COLUMN height_cm REAL');
+      } catch (e) {
+        // Column might already exist, ignore error
+      }
+    }
+
+    if (oldVersion < 6) {
+      // Recreate sync_queue with the full schema to ensure all columns exist.
+      // Backup existing data first, then drop and recreate.
+      try {
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS sync_queue_backup AS SELECT * FROM sync_queue
+        ''');
+      } catch (e) {
+        // ignore if backup fails
+      }
+      try {
+        await db.execute('DROP TABLE IF EXISTS sync_queue');
+        await db.execute('''
+          CREATE TABLE sync_queue (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            table_name TEXT NOT NULL,
+            record_id INTEGER NOT NULL,
+            action TEXT NOT NULL,
+            data TEXT NOT NULL,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            retry_count INTEGER DEFAULT 0
+          )
+        ''');
+        // Restore backed-up rows (only columns that exist in old schema)
+        await db.execute('''
+          INSERT OR IGNORE INTO sync_queue (id, table_name, record_id, action, data, created_at, retry_count)
+          SELECT id, table_name, record_id, action, data, created_at, retry_count
+          FROM sync_queue_backup
+        ''');
+      } catch (e) {
+        // ignore errors during recreation
+      }
+      try {
+        await db.execute('DROP TABLE IF EXISTS sync_queue_backup');
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    if (oldVersion < 9) {
+      // Add columns to screenings table
+      try { await db.execute('ALTER TABLE screenings ADD COLUMN side TEXT'); } catch (_) {}
+      try { await db.execute('ALTER TABLE screenings ADD COLUMN symptoms_map TEXT'); } catch (_) {}
+      try { await db.execute('ALTER TABLE screenings ADD COLUMN functional_map TEXT'); } catch (_) {}
+      
+      // Create new tables
+      try {
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS medical_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            patient_id INTEGER NOT NULL,
+            joint TEXT NOT NULL,
+            side TEXT NOT NULL,
+            previous_diagnosis INTEGER DEFAULT 0,
+            previous_joint_pain INTEGER DEFAULT 0,
+            chronic_joint_problems INTEGER DEFAULT 0,
+            previous_inflammation INTEGER DEFAULT 0,
+            previous_cartilage_problems INTEGER DEFAULT 0,
+            previous_ligament_problems INTEGER DEFAULT 0,
+            previous_fracture INTEGER DEFAULT 0,
+            has_past_injury INTEGER DEFAULT 0,
+            injury_type TEXT,
+            injury_date TEXT,
+            injury_mechanism TEXT,
+            injury_severity TEXT,
+            medical_treatment_required INTEGER DEFAULT 0,
+            immobilization_required INTEGER DEFAULT 0,
+            physiotherapy_performed INTEGER DEFAULT 0,
+            current_symptoms_after_injury TEXT,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE
+          )
+        ''');
+      } catch (_) {}
+
+      try {
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS surgery_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            patient_id INTEGER NOT NULL,
+            joint TEXT NOT NULL,
+            side TEXT NOT NULL,
+            surgery_type TEXT NOT NULL,
+            surgery_date TEXT,
+            reason TEXT,
+            hospital TEXT,
+            implant_present INTEGER DEFAULT 0,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE
+          )
+        ''');
+      } catch (_) {}
+
+      try {
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS medical_images (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            patient_id INTEGER NOT NULL,
+            joint TEXT NOT NULL,
+            side TEXT NOT NULL,
+            image_type TEXT NOT NULL,
+            file_path TEXT NOT NULL,
+            source TEXT NOT NULL,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE
+          )
+        ''');
+      } catch (_) {}
+    }
+  }
+
+  // ─── onOpen: Safety net for any schema gaps ────────────────────────────────
+  // This runs every time the DB is opened (after onCreate/onUpgrade).
+  // It ensures ALL required columns exist regardless of which upgrade path ran.
+  Future<void> _onOpen(Database db) async {
+    final screeningColumns = {
+      'pain_frequency': 'ALTER TABLE screenings ADD COLUMN pain_frequency TEXT',
+      'activity_limitation': 'ALTER TABLE screenings ADD COLUMN activity_limitation TEXT',
+      'medication_use': 'ALTER TABLE screenings ADD COLUMN medication_use INTEGER DEFAULT 0',
+      'symptom_duration': 'ALTER TABLE screenings ADD COLUMN symptom_duration TEXT',
+      'pain_characteristics': 'ALTER TABLE screenings ADD COLUMN pain_characteristics TEXT',
+      'stiffness_triggers': 'ALTER TABLE screenings ADD COLUMN stiffness_triggers TEXT',
+      'other_symptoms': 'ALTER TABLE screenings ADD COLUMN other_symptoms TEXT',
+      'functional_difficulty': 'ALTER TABLE screenings ADD COLUMN functional_difficulty TEXT',
+      'gait_variability': 'ALTER TABLE screenings ADD COLUMN gait_variability REAL DEFAULT 0.0',
+      'gait_asymmetry': 'ALTER TABLE screenings ADD COLUMN gait_asymmetry REAL DEFAULT 0.0',
+      'gait_smoothness': 'ALTER TABLE screenings ADD COLUMN gait_smoothness REAL DEFAULT 0.0',
+      'postural_stability': 'ALTER TABLE screenings ADD COLUMN postural_stability REAL DEFAULT 0.0',
+      'ml_uncertainty': 'ALTER TABLE screenings ADD COLUMN ml_uncertainty REAL DEFAULT 0.0',
+      'advanced_features_vector': 'ALTER TABLE screenings ADD COLUMN advanced_features_vector TEXT',
+      'joint_id': 'ALTER TABLE screenings ADD COLUMN joint_id TEXT',
+      'side': 'ALTER TABLE screenings ADD COLUMN side TEXT',
+      'symptoms_map': 'ALTER TABLE screenings ADD COLUMN symptoms_map TEXT',
+      'functional_map': 'ALTER TABLE screenings ADD COLUMN functional_map TEXT',
+      'mri_kl_grade': 'ALTER TABLE screenings ADD COLUMN mri_kl_grade INTEGER',
+    };
+
+    // Get existing columns in screenings table
+    final tableInfo = await db.rawQuery('PRAGMA table_info(screenings)');
+    final existingCols = tableInfo.map((row) => row['name'] as String).toSet();
+
+    for (final entry in screeningColumns.entries) {
+      if (!existingCols.contains(entry.key)) {
+        try {
+          await db.execute(entry.value);
+        } catch (_) {
+          // ignore if column already exists or other benign errors
+        }
       }
     }
   }
@@ -272,6 +645,121 @@ class DatabaseHelper {
     return await db.delete(table, where: where, whereArgs: whereArgs);
   }
 
+  Future<List<Map<String, dynamic>>> bulkUpsertPatients(List<Map<String, dynamic>> patients) async {
+    final db = await database;
+    List<Map<String, dynamic>> finalPatients = [];
+
+    final validColumns = {
+      'id', 'server_id', 'name', 'age', 'gender', 'contact', 'village', 'address',
+      'occupation', 'weight_kg', 'height_cm', 'created_at', 'updated_at', 'synced', 'deleted'
+    };
+
+    await db.transaction((txn) async {
+      for (var pData in patients) {
+        final serverId = pData['server_id'];
+        final existing = await txn.query('patients', where: 'server_id = ?', whereArgs: [serverId]);
+
+        // Filter valid columns to prevent SQLite errors
+        var mapForDb = Map<String, dynamic>.from(pData);
+        mapForDb.removeWhere((key, value) => !validColumns.contains(key));
+        
+        for (var key in mapForDb.keys.toList()) {
+          var value = mapForDb[key];
+          if (value is bool) {
+            mapForDb[key] = value ? 1 : 0;
+          } else if (value is List || value is Map) {
+            mapForDb[key] = jsonEncode(value);
+          }
+        }
+
+        if (existing.isNotEmpty) {
+          final id = existing.first['id'];
+          pData['id'] = id;
+          mapForDb['id'] = id;
+          mapForDb['updated_at'] = DateTime.now().toIso8601String();
+          await txn.update('patients', mapForDb, where: 'id = ?', whereArgs: [id]);
+          finalPatients.add(pData);
+        } else {
+          pData['id'] = 0; 
+          mapForDb.remove('id');
+          if (!mapForDb.containsKey('created_at')) {
+            mapForDb['created_at'] = DateTime.now().toIso8601String();
+          }
+          if (!mapForDb.containsKey('updated_at')) {
+            mapForDb['updated_at'] = DateTime.now().toIso8601String();
+          }
+          final newId = await txn.insert('patients', mapForDb);
+          pData['id'] = newId;
+          finalPatients.add(pData);
+        }
+      }
+    });
+
+    return finalPatients;
+  }
+
+  Future<List<Map<String, dynamic>>> bulkUpsertScreenings(List<Map<String, dynamic>> screenings) async {
+    final db = await database;
+    List<Map<String, dynamic>> finalScreenings = [];
+
+    final validColumns = {
+      'id', 'server_id', 'patient_id', 'user_id', 'screening_date', 'joint_id', 'side',
+      'pain_level', 'stiffness_duration', 'swelling', 'past_injury', 'mri_kl_grade',
+      'gait_data', 'symptoms_map', 'functional_map', 'risk_level', 'confidence',
+      'contributing_factors', 'ai_reasoning', 'doctor_recommendations', 'synced', 'deleted',
+      'created_at', 'updated_at', 'pain_frequency', 'activity_limitation', 'medication_use',
+      'symptom_duration', 'pain_characteristics', 'stiffness_triggers', 'other_symptoms',
+      'functional_difficulty', 'gait_variability', 'gait_asymmetry', 'gait_smoothness',
+      'postural_stability', 'ml_uncertainty', 'advanced_features_vector'
+    };
+
+    await db.transaction((txn) async {
+      for (var sData in screenings) {
+        final serverId = sData['server_id'];
+        final existing = await txn.query('screenings', where: 'server_id = ?', whereArgs: [serverId]);
+
+        var mapForDb = Map<String, dynamic>.from(sData);
+        mapForDb.removeWhere((key, value) => !validColumns.contains(key));
+
+        for (var key in mapForDb.keys.toList()) {
+          var value = mapForDb[key];
+          if (value is bool) {
+            mapForDb[key] = value ? 1 : 0;
+          } else if (value is List || value is Map) {
+            mapForDb[key] = jsonEncode(value);
+          }
+        }
+
+        // Note: The patient_id should already be mapped to the local SQLite patient_id
+        // before passing to this function.
+
+        if (existing.isNotEmpty) {
+          final id = existing.first['id'];
+          sData['id'] = id;
+          mapForDb['id'] = id;
+          mapForDb['updated_at'] = DateTime.now().toIso8601String();
+          await txn.update('screenings', mapForDb, where: 'id = ?', whereArgs: [id]);
+          finalScreenings.add(sData);
+        } else {
+          sData['id'] = 0; 
+          mapForDb.remove('id');
+          if (!mapForDb.containsKey('created_at')) {
+            mapForDb['created_at'] = DateTime.now().toIso8601String();
+          }
+          if (!mapForDb.containsKey('updated_at')) {
+            mapForDb['updated_at'] = DateTime.now().toIso8601String();
+          }
+          final newId = await txn.insert('screenings', mapForDb);
+          sData['id'] = newId;
+          finalScreenings.add(sData);
+        }
+      }
+    });
+
+    return finalScreenings;
+  }
+
+
   // Specific operations for sync status
   Future<int> getUnsyncedCount(String table) async {
     final results = await query(
@@ -293,16 +781,36 @@ class DatabaseHelper {
 
   // Sync queue operations
   Future<int> addToSyncQueue(String tableName, int recordId, String action, Map<String, dynamic> data) async {
-    return await insert('sync_queue', {
+    final db = await database;
+    final now = DateTime.now().toIso8601String();
+    return await db.insert('sync_queue', {
       'table_name': tableName,
       'record_id': recordId,
       'action': action,
       'data': jsonEncode(data),
+      'created_at': now,
+      'updated_at': now,
     });
   }
 
   Future<List<Map<String, dynamic>>> getSyncQueue() async {
-    return await query('sync_queue', orderBy: 'created_at ASC');
+    // Exclude permanently-failed items (retry_count = -1).
+    // Those can be recovered separately via getFailedSyncQueue().
+    return await query(
+      'sync_queue',
+      where: 'retry_count != -1 OR retry_count IS NULL',
+      orderBy: 'created_at ASC',
+    );
+  }
+
+  /// Returns items that were permanently marked as failed (retry_count = -1).
+  /// Use this for data recovery or manual retry.
+  Future<List<Map<String, dynamic>>> getFailedSyncQueue() async {
+    return await query(
+      'sync_queue',
+      where: 'retry_count = -1',
+      orderBy: 'created_at ASC',
+    );
   }
 
   Future<void> removeFromSyncQueue(int id) async {
@@ -315,6 +823,24 @@ class DatabaseHelper {
     await db.delete('patients');
     await db.delete('screenings');
     await db.delete('sync_queue');
+  }
+
+  // Reset database completely (for development/testing)
+  Future<void> resetDatabase() async {
+    final dbPath = await getDatabasesPath();
+    final path = join(dbPath, 'joint_saathi.db');
+
+    // Close existing connection
+    if (_database != null) {
+      await _database!.close();
+      _database = null;
+    }
+
+    // Delete the database file
+    await deleteDatabase(path);
+
+    // Reinitialize
+    _database = await _initDatabase();
   }
 
   Future<void> close() async {
@@ -636,9 +1162,12 @@ class DatabaseHelper {
 
   Future<List<Map<String, dynamic>>> getPendingSyncItems() async {
     final db = await database;
+    // Exclude permanently-failed items (retry_count = -1) from normal sync.
+    // Previously hardcoded 3 \u2014 now uses the same threshold as sync_service.
+    // Note: AppConstants not imported here so we keep 3 in sync with AppConstants.maxRetryCount.
     return await db.query(
       'sync_queue',
-      where: 'retry_count < 3',
+      where: 'retry_count >= 0 AND retry_count < 3',
       orderBy: 'created_at ASC',
     );
   }

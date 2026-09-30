@@ -409,6 +409,10 @@ class _SignalTestDashboardState extends State<SignalTestDashboard> {
         stiffnessDuration: '30',
         swelling: false,
         pastInjury: null,
+        age: 50,
+        weightKg: 70.0,
+        heightCm: 170.0,
+        mriKlGrade: 0,
         gaitFeatures: featureVector,
       );
       

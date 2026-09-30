@@ -1,0 +1,12 @@
+{
+  "model_type": "advanced_2class_ensemble",
+  "n_classes": 2,
+  "class_names": [
+    "healthy",
+    "oa_risk"
+  ],
+  "n_features": 203,
+  "accuracy": 0.675,
+  "roc_auc": 1.0,
+  "n_models": 3
+}

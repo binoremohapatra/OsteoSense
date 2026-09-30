@@ -15,18 +15,30 @@ function escapeRegex(text) {
  * POST /api/v1/patients
  */
 const createPatient = asyncHandler(async (req, res) => {
+  // Field normalization from upstream
+  const data = { ...req.body };
+  if (!data.name && data.fullName) {
+    data.name = data.fullName;
+  }
+  if (data.height === undefined && data.height_cm !== undefined) {
+    data.height = data.height_cm;
+  }
+  if (data.weight === undefined && data.weight_kg !== undefined) {
+    data.weight = data.weight_kg;
+  }
+
   // Auto-assign health worker based on village if assignment exists
   let assignedHealthWorkerId = req.user._id;
   
-  if (req.body.village) {
-    const autoAssignedId = await assignmentService.assignHealthWorkerByVillage(req.body.village);
+  if (data.village) {
+    const autoAssignedId = await assignmentService.assignHealthWorkerByVillage(data.village);
     if (autoAssignedId) {
       assignedHealthWorkerId = autoAssignedId;
     }
   }
 
   const patient = await Patient.create({
-    ...req.body,
+    ...data,
     agentId: assignedHealthWorkerId,
   });
 
@@ -46,6 +58,10 @@ const createPatient = asyncHandler(async (req, res) => {
     village: patient.village || null,
     address: patient.address || null,
     occupation: patient.occupation || null,
+    height: patient.height || null,
+    weight: patient.weight || null,
+    height_cm: patient.height || null,
+    weight_kg: patient.weight || null,
     created_at: isoCreated,
     createdAt: isoCreated,
     updated_at: isoUpdated,
@@ -122,6 +138,10 @@ const listPatients = asyncHandler(async (req, res) => {
         village: doc.village || null,
         address: doc.address || null,
         occupation: doc.occupation || null,
+        height: doc.height || null,
+        weight: doc.weight || null,
+        height_cm: doc.height || null,
+        weight_kg: doc.weight || null,
         created_at: isoCreated,
         createdAt: isoCreated,
         updated_at: isoUpdated,
@@ -273,6 +293,12 @@ const updatePatient = asyncHandler(async (req, res) => {
   if (!updateData.name && updateData.fullName) {
     updateData.name = updateData.fullName;
   }
+  if (updateData.height === undefined && updateData.height_cm !== undefined) {
+    updateData.height = updateData.height_cm;
+  }
+  if (updateData.weight === undefined && updateData.weight_kg !== undefined) {
+    updateData.weight = updateData.weight_kg;
+  }
   delete updateData.agentId;
   delete updateData._id;
   delete updateData.id;
@@ -304,6 +330,10 @@ const updatePatient = asyncHandler(async (req, res) => {
     village: patient.village || null,
     address: patient.address || null,
     occupation: patient.occupation || null,
+    height: patient.height || null,
+    weight: patient.weight || null,
+    height_cm: patient.height || null,
+    weight_kg: patient.weight || null,
     created_at: isoCreated,
     createdAt: isoCreated,
     updated_at: isoUpdated,

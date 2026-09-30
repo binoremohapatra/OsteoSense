@@ -25,17 +25,33 @@ class AuthProvider with ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('auth_token');
       _userRole = prefs.getString('user_role');
+      final userId = prefs.getInt('current_user_id');
+      final isLoggedIn = prefs.getBool('is_logged_in') ?? false;
 
-      if (token != null) {
+      debugPrint('Loading current user - Token: ${token != null ? "EXISTS" : "NULL"}, Role: $_userRole, UserID: $userId, LoggedIn: $isLoggedIn');
+
+      // Fix invalid role values
+      if (_userRole != 'agent' && _userRole != 'user') {
+        debugPrint('Invalid role detected: $_userRole, defaulting to agent');
+        _userRole = 'agent';
+        await prefs.setString('user_role', 'agent');
+      }
+
+      if (!isLoggedIn) {
+        debugPrint('User not logged in according to preferences');
+        _currentUser = null;
+        _userRole = null;
+      } else if (token != null) {
         try {
           // Try API first
           final userData = await ApiService().getCurrentUser();
           _currentUser = User.fromMap(userData['data'] ?? userData);
-          final userId = _currentUser!.id;
-          if (userId != null) await prefs.setInt('current_user_id', userId);
+          final newUserId = _currentUser!.id;
+          if (newUserId != null) await prefs.setInt('current_user_id', newUserId);
+          debugPrint('User loaded from API successfully');
         } catch (e) {
-          // Fallback to local DB
-          final userId = prefs.getInt('current_user_id');
+          debugPrint('API auth failed, falling back to local DB: $e');
+          // Fallback to local DB - this handles 401 errors gracefully
           if (userId != null) {
             final db = DatabaseHelper();
             final users = await db.query(
@@ -45,12 +61,20 @@ class AuthProvider with ChangeNotifier {
             );
             if (users.isNotEmpty) {
               _currentUser = User.fromMap(users.first);
+              debugPrint('Loaded user from local DB fallback');
+            } else {
+              debugPrint('No user found in local DB with ID: $userId');
+              // Clear login flag if user not found
+              await prefs.setBool('is_logged_in', false);
             }
+          } else {
+            debugPrint('No user ID in preferences for DB fallback');
+            await prefs.setBool('is_logged_in', false);
           }
         }
       } else {
         // No token, check local fallback just in case it's a demo session
-        final userId = prefs.getInt('current_user_id');
+        debugPrint('No token found, checking local DB fallback');
         if (userId != null) {
           final db = DatabaseHelper();
           final users = await db.query(
@@ -60,10 +84,20 @@ class AuthProvider with ChangeNotifier {
           );
           if (users.isNotEmpty) {
             _currentUser = User.fromMap(users.first);
+            debugPrint('Loaded user from local DB (no token)');
+          } else {
+            debugPrint('No user found in local DB with ID: $userId');
+            await prefs.setBool('is_logged_in', false);
           }
+        } else {
+          debugPrint('No user ID in preferences');
+          await prefs.setBool('is_logged_in', false);
         }
       }
+
+      debugPrint('Final auth state - IsAuthenticated: $isAuthenticated, User: $_currentUser');
     } catch (e) {
+      debugPrint('Error loading current user: $e');
       _errorMessage = e.toString();
     } finally {
       _isLoading = false;
@@ -82,15 +116,44 @@ class AuthProvider with ChangeNotifier {
       final token = response['token'];
       final refreshToken = response['refreshToken'];
       final userData = response['user'];
-
-      _currentUser = User.fromMap(userData);
-      
+      _currentUser = User.fromMap(userData).copyWith(password: password);
+      final role = _currentUser!.healthCenterId != null ? 'agent' : 'user';
+      _userRole = role;
       final prefs = await SharedPreferences.getInstance();
-      if (token != null) await prefs.setString('auth_token', token);
-      if (refreshToken != null) await prefs.setString('refresh_token', refreshToken);
+      if (token != null) {
+        await prefs.setString('auth_token', token);
+        debugPrint('Token saved to preferences');
+      }
+      if (refreshToken != null) {
+        await prefs.setString('refresh_token', refreshToken);
+        debugPrint('Refresh token saved to preferences');
+      }
       await prefs.setInt('current_user_id', _currentUser!.id!);
-      await prefs.setString('user_role', _currentUser!.healthCenterId != null ? 'agent' : 'user');
-      
+      await prefs.setString('user_role', role);
+      await prefs.setBool('is_logged_in', true);
+      debugPrint('User ID: ${_currentUser!.id}, Role: $role saved to preferences');
+      debugPrint('Login flag set to true');
+
+      // Save locally as well for offline fallback
+      try {
+        final db = DatabaseHelper();
+        final existing = await db.query('users', where: 'phone_number = ?', whereArgs: [phoneNumber]);
+        if (existing.isEmpty) {
+          await db.insert('users', _currentUser!.toMap());
+        } else {
+          await db.update('users', _currentUser!.toMap(), where: 'phone_number = ?', whereArgs: [phoneNumber]);
+        }
+      } catch (dbErr) {
+        debugPrint('Failed to save user to local db: $dbErr');
+      }
+
+      // Verify saved data
+      final savedToken = prefs.getString('auth_token');
+      final savedUserId = prefs.getInt('current_user_id');
+      final savedRole = prefs.getString('user_role');
+      final savedLoginFlag = prefs.getBool('is_logged_in');
+      debugPrint('Verification - Token: ${savedToken != null ? "EXISTS" : "NULL"}, UserID: $savedUserId, Role: $savedRole, LoggedIn: $savedLoginFlag');
+
       _isLoading = false;
       notifyListeners();
       return true;
@@ -106,9 +169,14 @@ class AuthProvider with ChangeNotifier {
 
         if (users.isNotEmpty) {
           _currentUser = User.fromMap(users.first);
+          final role = _currentUser!.healthCenterId != null ? 'agent' : 'user';
+          _userRole = role; // Set in memory, not just prefs
           final prefs = await SharedPreferences.getInstance();
           await prefs.setInt('current_user_id', _currentUser!.id!);
-          await prefs.setString('user_role', _currentUser!.healthCenterId != null ? 'agent' : 'user');
+          await prefs.setString('user_role', role);
+          await prefs.setBool('is_logged_in', true);
+          debugPrint('Offline login - User ID: ${_currentUser!.id}, Role: $role saved to preferences');
+          debugPrint('Login flag set to true');
 
           _isLoading = false;
           notifyListeners();
@@ -140,7 +208,7 @@ class AuthProvider with ChangeNotifier {
       final refreshToken = response['refreshToken'];
       final userData = response['user'];
 
-      _currentUser = User.fromMap(userData);
+      _currentUser = User.fromMap(userData).copyWith(password: user.password);
       
       final prefs = await SharedPreferences.getInstance();
       if (token != null) await prefs.setString('auth_token', token);
@@ -196,37 +264,9 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  /// Quick demo login used by the hackathon build — creates a dummy user
-  /// in memory (no DB/backend required) and marks the user authenticated
-  /// with the given role, then persists the role/session locally.
-  Future<void> demoLogin(String role) async {
-    _isLoading = true;
-    notifyListeners();
-
-    _userRole = role;
-
-    _currentUser = User(
-      id: 1,
-      fullName: role == 'agent' ? 'Health Worker' : 'Demo User',
-      phoneNumber: '9999999999',
-      password: '',
-      healthCenterId: role == 'agent' ? 'HC-001' : null,
-      location: 'Your Location',
-    );
-
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setInt('current_user_id', _currentUser!.id!);
-      await prefs.setString('user_role', role);
-    } catch (e) {
-      _errorMessage = e.toString();
-    }
-
-    _isLoading = false;
-    notifyListeners();
-  }
 
   Future<void> logout() async {
+    debugPrint('Logging out user...');
     _currentUser = null;
     _userRole = null;
 
@@ -235,7 +275,9 @@ class AuthProvider with ChangeNotifier {
     await prefs.remove('user_role');
     await prefs.remove('auth_token');
     await prefs.remove('refresh_token');
+    await prefs.remove('is_logged_in');
 
+    debugPrint('Cleared all auth data from preferences');
     notifyListeners();
   }
 
@@ -277,6 +319,29 @@ class AuthProvider with ChangeNotifier {
 
   Future<void> saveUserRole() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('user_role', _userRole ?? 'agent');
+    // Resolve role: prefer in-memory, fall back to current user, then prefs
+    final role = _userRole ?? 
+        (_currentUser?.healthCenterId != null ? 'agent' : null) ??
+        prefs.getString('user_role') ?? 'agent';
+    _userRole = role; // Keep in-memory in sync
+    await prefs.setString('user_role', role);
+  }
+
+  Future<bool> resetPassword(String phone, String newPassword) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await ApiService().resetPassword(phone, newPassword);
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = e is ApiException ? e.message : e.toString();
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
   }
 }

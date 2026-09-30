@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
+import 'package:easy_localization/easy_localization.dart';
+import 'dart:convert';
 import '../../models/screening.dart';
 import '../../models/patient.dart';
 import '../../theme/app_colors.dart';
@@ -30,7 +32,7 @@ class DetailedReportScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: CustomAppBar(
-        title: 'Full Report',
+        title: 'full_report'.tr(),
         centerTitle: false,
         showBackButton: true,
         actions: [
@@ -78,7 +80,7 @@ class DetailedReportScreen extends StatelessWidget {
             const SizedBox(height: AppSpacing.xl),
 
             // ── Symptom answers
-            _buildSectionTitle('Symptom Questionnaire', Icons.assignment_outlined),
+            _buildSectionTitle('symptom_questionnaire'.tr(), Icons.assignment_outlined),
             const SizedBox(height: AppSpacing.md),
             _buildSymptomsCard()
                 .animate().fadeIn(duration: AppMotion.standard, delay: 160.ms),
@@ -87,24 +89,34 @@ class DetailedReportScreen extends StatelessWidget {
 
             // ── Gait data
             if (screening.gaitData != null) ...[
-              _buildSectionTitle('Gait Analysis', Icons.directions_walk_rounded),
+              _buildSectionTitle('gait_analysis'.tr(), Icons.directions_walk_rounded),
               const SizedBox(height: AppSpacing.md),
               _buildGaitCard()
                   .animate().fadeIn(duration: AppMotion.standard, delay: 240.ms),
               const SizedBox(height: AppSpacing.xl),
             ],
 
-            // ── Contributing factors
-            _buildSectionTitle('Contributing Factors', Icons.analytics_outlined),
-            const SizedBox(height: AppSpacing.md),
-            _buildFactorsCard(riskColor)
-                .animate().fadeIn(duration: AppMotion.standard, delay: 320.ms),
+            // ── Advanced ML features
+            if (screening.advancedFeaturesVector != null) ...[
+              _buildSectionTitle('advanced_ml_features'.tr(), Icons.psychology_outlined),
+              const SizedBox(height: AppSpacing.md),
+              _buildAdvancedMLCard()
+                  .animate().fadeIn(duration: AppMotion.standard, delay: 260.ms),
+              const SizedBox(height: AppSpacing.xl),
+            ],
 
-            const SizedBox(height: AppSpacing.xl),
+            // ── Contributing factors (only show if data is available from app)
+            if (screening.contributingFactors != null && screening.contributingFactors!.isNotEmpty) ...[
+              _buildSectionTitle('contributing_factors'.tr(), Icons.analytics_outlined),
+              const SizedBox(height: AppSpacing.md),
+              _buildFactorsCard(riskColor)
+                  .animate().fadeIn(duration: AppMotion.standard, delay: 320.ms),
+              const SizedBox(height: AppSpacing.xl),
+            ],
 
             // ── AI Reasoning
             if (screening.aiReasoning != null) ...[
-              _buildSectionTitle('AI Clinical Reasoning', Icons.psychology_outlined),
+              _buildSectionTitle('ai_clinical_reasoning'.tr(), Icons.psychology_outlined),
               const SizedBox(height: AppSpacing.md),
               _buildReasoningCard()
                   .animate().fadeIn(duration: AppMotion.standard, delay: 400.ms),
@@ -112,7 +124,7 @@ class DetailedReportScreen extends StatelessWidget {
             ],
 
             // ── Recommendations
-            _buildSectionTitle('Recommendations', Icons.lightbulb_outline),
+            _buildSectionTitle('recommendations'.tr(), Icons.lightbulb_outline),
             const SizedBox(height: AppSpacing.md),
             _buildRecommendationsCard(riskColor)
                 .animate().fadeIn(duration: AppMotion.standard, delay: 480.ms),
@@ -120,19 +132,13 @@ class DetailedReportScreen extends StatelessWidget {
             const SizedBox(height: AppSpacing.xxl),
 
             // ── Action buttons
-            Row(
-              children: [
-                Expanded(
-                  child: MagneticButton(
-                    text: 'Share PDF',
-                    onPressed: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => PdfPreviewScreen(screening: screening, patient: patient),
-                      ),
-                    ),
-                  ),
+            MagneticButton(
+              text: 'share_pdf'.tr(),
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => PdfPreviewScreen(screening: screening, patient: patient),
                 ),
-              ],
+              ),
             ).animate().fadeIn(duration: AppMotion.standard, delay: 540.ms),
 
             const SizedBox(height: AppSpacing.lg),
@@ -182,6 +188,26 @@ class DetailedReportScreen extends StatelessWidget {
                   '${patient.age} yrs • ${patient.gender.capitalize()} • ${patient.village ?? 'Location not set'}',
                   style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
                 ),
+                if (screening.jointId != null) ...[
+                  const SizedBox(height: 2),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.accessibility_new,
+                        size: 12,
+                        color: AppColors.primary,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        screening.jointId!.toUpperCase(),
+                        style: AppTypography.labelSmall.copyWith(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
                 if (patient.occupation != null) ...[
                   const SizedBox(height: 2),
                   Text(patient.occupation!, style: AppTypography.labelSmall.copyWith(color: AppColors.textTertiary)),
@@ -197,7 +223,7 @@ class DetailedReportScreen extends StatelessWidget {
               border: Border.all(color: riskColor.withValues(alpha: 0.4)),
             ),
             child: Text(
-              (screening.riskLevel ?? 'low').toUpperCase(),
+              '${(screening.riskLevel ?? 'low').replaceAll(RegExp(r'_?risk', caseSensitive: false), '').replaceAll('_', ' ').trim().toUpperCase()} RISK',
               style: AppTypography.labelSmall.copyWith(
                 color: riskColor,
                 fontWeight: AppTypography.bold,
@@ -227,13 +253,23 @@ class DetailedReportScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('OA Risk Assessment', style: AppTypography.labelSmall.copyWith(color: riskColor.withValues(alpha: 0.8))),
+                Text('oa_risk_assessment'.tr(), style: AppTypography.labelSmall.copyWith(color: riskColor.withValues(alpha: 0.8))),
                 const SizedBox(height: 4),
                 Text(
-                  '${(screening.riskLevel ?? 'low').toUpperCase()} RISK',
+                  '${(screening.riskLevel ?? 'low').replaceAll(RegExp(r'_?risk', caseSensitive: false), '').replaceAll('_', ' ').trim().toUpperCase()} RISK',
                   style: AppTypography.headlineSmall.copyWith(color: riskColor, fontWeight: AppTypography.bold),
                 ),
                 const SizedBox(height: 4),
+                if (screening.jointId != null) ...[
+                  Text(
+                    screening.jointId!.toUpperCase(),
+                    style: AppTypography.bodySmall.copyWith(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                ],
                 Text(dateStr, style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary)),
               ],
             ),
@@ -244,7 +280,14 @@ class DetailedReportScreen extends StatelessWidget {
                 '${((screening.confidence ?? 0) * 100).round()}%',
                 style: AppTypography.headlineLarge.copyWith(color: riskColor, fontWeight: AppTypography.bold),
               ),
-              Text('confidence', style: AppTypography.labelSmall.copyWith(color: AppColors.textTertiary)),
+              Text('confidence'.tr(), style: AppTypography.labelSmall.copyWith(color: AppColors.textTertiary)),
+              if (screening.mlUncertainty != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  'Uncertainty: ${(screening.mlUncertainty! * 100).round()}%',
+                  style: AppTypography.labelSmall.copyWith(color: AppColors.textTertiary),
+                ),
+              ],
             ],
           ),
         ],
@@ -253,54 +296,367 @@ class DetailedReportScreen extends StatelessWidget {
   }
 
   Widget _buildSymptomsCard() {
+    // Parse expanded symptoms if available
+    Map<String, dynamic> symptomsMap = {};
+    if (screening.symptomsMap != null && screening.symptomsMap!.isNotEmpty) {
+      try {
+        symptomsMap = jsonDecode(screening.symptomsMap!);
+      } catch (e) {
+        // Keep empty
+      }
+    }
+
+    // Parse functional assessment if available
+    Map<String, dynamic> functionalMap = {};
+    if (screening.functionalMap != null && screening.functionalMap!.isNotEmpty) {
+      try {
+        functionalMap = jsonDecode(screening.functionalMap!);
+      } catch (e) {
+        // Keep empty
+      }
+    }
+
     return CustomCard(
       variant: CardVariant.outlined,
       padding: const EdgeInsets.all(AppSpacing.cardPaddingMd),
       child: Column(
         children: [
-          _answerRow('Pain Level', '${screening.painLevel ?? 0} / 10', Icons.healing_outlined),
+          _answerRow('pain_level'.tr(), '${screening.painLevel ?? 0} / 10', Icons.healing_outlined),
           _divider(),
-          _answerRow('Morning Stiffness', _stiffnessLabel(screening.stiffnessDuration), Icons.schedule_outlined),
+          _answerRow('morning_stiffness'.tr(), _stiffnessLabel(screening.stiffnessDuration), Icons.schedule_outlined),
           _divider(),
-          _answerRow('Joint Swelling', screening.swelling == true ? 'Yes — swelling present' : 'No swelling', Icons.water_drop_outlined),
+          _answerRow('swelling'.tr(), screening.swelling == true ? 'swelling_present'.tr() : 'no_swelling'.tr(), Icons.water_drop_outlined),
           _divider(),
           _answerRow(
-            'Past Injury',
+            'past_injury'.tr(),
             screening.pastInjury != null && screening.pastInjury!.isNotEmpty
-                ? 'Yes — ${screening.pastInjury}'
-                : 'No prior injury',
+                ? 'yes'.tr() + ' — ${screening.pastInjury}'
+                : 'no_history_of_injury'.tr(),
             Icons.personal_injury_outlined,
+          ),
+          // Show MRI/KL Grade if available
+          if (screening.mriKlGrade != null && screening.mriKlGrade! > 0) ...[
+            _divider(),
+            _answerRow('kl_grade'.tr(), _klGradeLabel(screening.mriKlGrade!), Icons.description_outlined),
+          ],
+          // Show expanded symptoms if available
+          if (symptomsMap.isNotEmpty) ...[
+            _divider(),
+            _buildExpandedSymptoms(symptomsMap),
+          ],
+          // Show functional assessment if available
+          if (functionalMap.isNotEmpty) ...[
+            _divider(),
+            _buildFunctionalAssessment(functionalMap),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildExpandedSymptoms(Map<String, dynamic> symptomsMap) {
+    final items = <Widget>[];
+    
+    // Pain characteristics
+    final painChars = symptomsMap['pain_characteristics'] as Map<String, dynamic>?;
+    if (painChars != null) {
+      final selected = painChars.entries.where((e) => e.value == true).map((e) => e.key.toString().tr()).toList();
+      if (selected.isNotEmpty) {
+        items.add(_answerRow('pain_characteristics'.tr(), selected.join(', '), Icons.info_outline));
+        items.add(_divider());
+      }
+    }
+
+    // Stiffness triggers
+    final stiffnessTriggers = symptomsMap['stiffness_triggers'] as Map<String, dynamic>?;
+    if (stiffnessTriggers != null) {
+      final selected = stiffnessTriggers.entries.where((e) => e.value == true).map((e) => e.key.toString().tr()).toList();
+      if (selected.isNotEmpty) {
+        items.add(_answerRow('stiffness_triggers'.tr(), selected.join(', '), Icons.info_outline));
+        items.add(_divider());
+      }
+    }
+
+    // Other symptoms
+    final otherSymptoms = symptomsMap['other_symptoms'] as Map<String, dynamic>?;
+    if (otherSymptoms != null) {
+      final selected = otherSymptoms.entries.where((e) => e.value == true).map((e) => e.key.toString().tr()).toList();
+      if (selected.isNotEmpty) {
+        items.add(_answerRow('other_symptoms'.tr(), selected.join(', '), Icons.info_outline));
+        items.add(_divider());
+      }
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+          child: Text('expanded_symptoms'.tr(), style: AppTypography.labelSmall.copyWith(color: AppColors.primary)),
+        ),
+        ...items,
+      ],
+    );
+  }
+
+  Widget _buildFunctionalAssessment(Map<String, dynamic> functionalMap) {
+    final items = <Widget>[];
+    
+    functionalMap.forEach((key, value) {
+      if (value is int && value > 0) {
+        final label = _getDifficultyLabel(key, value);
+        items.add(_answerRow(key, label, Icons.accessibility_new));
+        items.add(_divider());
+      }
+    });
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+          child: Text('functional_assessment'.tr(), style: AppTypography.labelSmall.copyWith(color: AppColors.primary)),
+        ),
+        ...items,
+      ],
+    );
+  }
+
+  String _getDifficultyLabel(String key, int value) {
+    final labels = {
+      0: 'none'.tr(),
+      1: 'mild'.tr(),
+      2: 'moderate'.tr(),
+      3: 'severe'.tr(),
+    };
+    return '${labels[value] ?? value.toString()} (${value}/3)';
+  }
+
+  String _klGradeLabel(int grade) {
+    switch (grade) {
+      case 1: return 'grade_1_doubtful'.tr();
+      case 2: return 'grade_2_mild'.tr();
+      case 3: return 'grade_3_moderate'.tr();
+      case 4: return 'grade_4_severe'.tr();
+      default: return 'normal_none'.tr();
+    }
+  }
+
+  Widget _buildGaitCard() {
+    List<double>? gaitFeats;
+    try {
+      final decoded = jsonDecode(screening.gaitData!);
+      if (decoded is List) {
+        gaitFeats = decoded.map((e) => (e as num).toDouble()).toList();
+      }
+    } catch (e) {
+      debugPrint('Error decoding gait data: $e');
+    }
+
+    if (gaitFeats == null || gaitFeats.length < 44) {
+      return CustomCard(
+        variant: CardVariant.outlined,
+        padding: const EdgeInsets.all(AppSpacing.cardPaddingMd),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppColors.primarySurface,
+                borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+              ),
+              child: const Icon(Icons.directions_walk_rounded, color: AppColors.primary, size: 22),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('gait_data_recorded'.tr(), style: AppTypography.bodyMedium.copyWith(fontWeight: AppTypography.semiBold)),
+                  Text('accelerometer_data'.tr(), style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary)),
+                ],
+              ),
+            ),
+            const Icon(Icons.check_circle_rounded, color: AppColors.success, size: 20),
+          ],
+        ),
+      );
+    }
+
+    // Pull out some key metrics
+    final cadence = gaitFeats.isNotEmpty ? gaitFeats[0] : 0.0;
+    final strideTime = gaitFeats.length > 1 ? gaitFeats[1] : 0.0;
+    final piezoDominant = gaitFeats.length > 23 ? gaitFeats[23] : 0.0;
+    final emgRms = gaitFeats.length > 33 ? gaitFeats[33] : 0.0;
+
+    return CustomCard(
+      variant: CardVariant.outlined,
+      padding: const EdgeInsets.all(AppSpacing.cardPaddingMd),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.primarySurface,
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                ),
+                child: const Icon(Icons.analytics_rounded, color: AppColors.primary, size: 22),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Text('Sensor Analytics Data', style: AppTypography.bodyMedium.copyWith(fontWeight: AppTypography.semiBold)),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          const Divider(color: AppColors.border, height: 1),
+          const SizedBox(height: AppSpacing.md),
+          GridView.count(
+            crossAxisCount: 2,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            childAspectRatio: 2.5,
+            mainAxisSpacing: AppSpacing.sm,
+            crossAxisSpacing: AppSpacing.sm,
+            children: [
+              _metricCell('Cadence', cadence > 0 ? '${cadence.toStringAsFixed(1)} Hz' : '--'),
+              _metricCell('Stride Time', strideTime > 0 ? '${strideTime.toStringAsFixed(2)} s' : '--'),
+              _metricCell('Piezo Dominant Freq', '${piezoDominant.toStringAsFixed(0)} Hz'),
+              _metricCell('Muscle EMG (RMS)', emgRms.toStringAsFixed(3)),
+            ],
           ),
         ],
       ),
     );
   }
 
-  Widget _buildGaitCard() {
+  Widget _metricCell(String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(label, style: AppTypography.labelSmall.copyWith(color: AppColors.textSecondary)),
+        const SizedBox(height: 2),
+        Text(value, style: AppTypography.bodyMedium.copyWith(fontWeight: AppTypography.semiBold)),
+      ],
+    );
+  }
+
+  Widget _buildAdvancedMLCard() {
+    // Parse advanced features vector
+    List<double> advancedFeats = [];
+    try {
+      final decoded = jsonDecode(screening.advancedFeaturesVector!);
+      if (decoded is List) {
+        advancedFeats = decoded.map((e) => (e as num).toDouble()).toList();
+      }
+    } catch (e) {
+      debugPrint('Error decoding advanced features: $e');
+    }
+
+    // Extract key advanced features
+    final gaitVariability = screening.gaitVariability ?? 0.0;
+    final gaitAsymmetry = screening.gaitAsymmetry ?? 0.0;
+    final gaitSmoothness = screening.gaitSmoothness ?? 0.0;
+    final posturalStability = screening.posturalStability ?? 0.0;
+    final painFrequency = screening.painFrequency ?? 'N/A';
+    final activityLimitation = screening.activityLimitation ?? 'N/A';
+    final symptomDuration = screening.symptomDuration ?? 'N/A';
+
     return CustomCard(
       variant: CardVariant.outlined,
       padding: const EdgeInsets.all(AppSpacing.cardPaddingMd),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: AppColors.primarySurface,
-              borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-            ),
-            child: const Icon(Icons.directions_walk_rounded, color: AppColors.primary, size: 22),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.primarySurface,
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                ),
+                child: const Icon(Icons.psychology_outlined, color: AppColors.primary, size: 22),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Advanced ML Features', style: AppTypography.bodyMedium.copyWith(fontWeight: AppTypography.semiBold)),
+                    Text('203 features extracted', style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary)),
+                  ],
+                ),
+              ),
+              if (screening.mlUncertainty != null)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.warning.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusXs),
+                    border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
+                  ),
+                  child: Text(
+                    'Uncertainty: ${(screening.mlUncertainty! * 100).round()}%',
+                    style: AppTypography.labelSmall.copyWith(color: AppColors.warning),
+                  ),
+                ),
+            ],
           ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Gait Data Recorded', style: AppTypography.bodyMedium.copyWith(fontWeight: AppTypography.semiBold)),
-                Text('Accelerometer + gyroscope data captured during walk test', style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary)),
-              ],
-            ),
+          const SizedBox(height: AppSpacing.md),
+          const Divider(color: AppColors.border, height: 1),
+          const SizedBox(height: AppSpacing.md),
+          
+          // Gait Analysis Section
+          Text('Gait Analysis', style: AppTypography.labelMedium.copyWith(fontWeight: AppTypography.semiBold)),
+          const SizedBox(height: AppSpacing.sm),
+          GridView.count(
+            crossAxisCount: 2,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            childAspectRatio: 2.5,
+            mainAxisSpacing: AppSpacing.sm,
+            crossAxisSpacing: AppSpacing.sm,
+            children: [
+              _metricCell('Gait Variability', '${gaitVariability.toStringAsFixed(3)}'),
+              _metricCell('Gait Asymmetry', '${gaitAsymmetry.toStringAsFixed(3)}'),
+              _metricCell('Gait Smoothness', '${gaitSmoothness.toStringAsFixed(3)}'),
+              _metricCell('Postural Stability', '${posturalStability.toStringAsFixed(3)}'),
+            ],
           ),
-          const Icon(Icons.check_circle_rounded, color: AppColors.success, size: 20),
+          
+          const SizedBox(height: AppSpacing.md),
+          const Divider(color: AppColors.border, height: 1),
+          const SizedBox(height: AppSpacing.md),
+          
+          // Clinical Section
+          Text('Clinical Factors', style: AppTypography.labelMedium.copyWith(fontWeight: AppTypography.semiBold)),
+          const SizedBox(height: AppSpacing.sm),
+          GridView.count(
+            crossAxisCount: 2,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            childAspectRatio: 2.5,
+            mainAxisSpacing: AppSpacing.sm,
+            crossAxisSpacing: AppSpacing.sm,
+            children: [
+              _metricCell('Pain Frequency', painFrequency),
+              _metricCell('Activity Limitation', activityLimitation),
+              _metricCell('Symptom Duration', symptomDuration),
+              _metricCell('Medication Use', screening.medicationUse == true ? 'Yes' : 'No'),
+            ],
+          ),
+          
+          if (advancedFeats.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.md),
+            const Divider(color: AppColors.border, height: 1),
+            const SizedBox(height: AppSpacing.md),
+            Text('Feature Vector Size: ${advancedFeats.length}', style: AppTypography.labelSmall.copyWith(color: AppColors.textSecondary)),
+          ],
         ],
       ),
     );
@@ -317,7 +673,7 @@ class DetailedReportScreen extends StatelessWidget {
               children: [
                 const Icon(Icons.check_circle_outline, color: AppColors.success, size: 20),
                 const SizedBox(width: AppSpacing.md),
-                Text('No significant risk factors detected', style: AppTypography.bodySmall.copyWith(color: AppColors.success)),
+                Text('no_significant_risk_factors'.tr(), style: AppTypography.bodySmall.copyWith(color: AppColors.success)),
               ],
             )
           : Column(
@@ -360,7 +716,7 @@ class DetailedReportScreen extends StatelessWidget {
             children: [
               const Icon(Icons.psychology_outlined, color: AppColors.primary, size: 18),
               const SizedBox(width: AppSpacing.sm),
-              Text('AI Reasoning', style: AppTypography.labelMedium.copyWith(color: AppColors.primary, fontWeight: AppTypography.semiBold)),
+              Text('ai_reasoning'.tr(), style: AppTypography.labelMedium.copyWith(color: AppColors.primary, fontWeight: AppTypography.semiBold)),
             ],
           ),
           const SizedBox(height: AppSpacing.md),
@@ -425,11 +781,19 @@ class DetailedReportScreen extends StatelessWidget {
 
   Widget _answerRow(String label, String value, IconData icon) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Icon(icon, size: 16, color: AppColors.textTertiary),
         const SizedBox(width: AppSpacing.md),
         Expanded(child: Text(label, style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary))),
-        Text(value, style: AppTypography.bodySmall.copyWith(fontWeight: AppTypography.semiBold)),
+        const SizedBox(width: AppSpacing.sm),
+        Flexible(
+          child: Text(
+            value,
+            style: AppTypography.bodySmall.copyWith(fontWeight: AppTypography.semiBold),
+            textAlign: TextAlign.right,
+          ),
+        ),
       ],
     );
   }
@@ -441,10 +805,10 @@ class DetailedReportScreen extends StatelessWidget {
 
   String _stiffnessLabel(String? val) {
     switch (val) {
-      case '<30': return 'Less than 30 minutes';
-      case '30-60': return '30–60 minutes';
-      case '>60': return 'More than 60 minutes';
-      default: return 'No stiffness';
+      case '<30': return 'less_than_30_minutes'.tr();
+      case '30-60': return '30_60_minutes'.tr();
+      case '>60': return 'more_than_60_minutes'.tr();
+      default: return 'no_stiffness'.tr();
     }
   }
 
@@ -452,27 +816,228 @@ class DetailedReportScreen extends StatelessWidget {
     switch (riskLevel) {
       case 'high':
         return [
-          'Refer urgently to an orthopedic specialist',
-          'Consider X-ray or MRI imaging',
-          'Prescribe analgesics per clinical guidelines',
-          'Educate on joint protection techniques',
-          'Schedule follow-up within 2 weeks',
+          'refer_urgently_orthopedic'.tr(),
+          'consider_xray_mri'.tr(),
+          'prescribe_analgesics'.tr(),
+          'educate_joint_protection'.tr(),
+          'schedule_follow_up_2_weeks'.tr(),
         ];
       case 'medium':
         return [
-          'Consult physician within 1 month',
-          'Physiotherapy assessment recommended',
-          'Encourage weight management if BMI > 25',
-          'Prescribe low-impact exercise program',
-          'Follow-up screening in 3 months',
+          'consult_physician_1_month'.tr(),
+          'physiotherapy_recommended'.tr(),
+          'encourage_weight_management'.tr(),
+          'prescribe_low_impact_exercise'.tr(),
+          'follow_up_screening_3_months'.tr(),
         ];
       default:
         return [
-          'Maintain healthy lifestyle and regular exercise',
-          'Ensure adequate calcium and vitamin D intake',
-          'Schedule routine screening in 6–12 months',
-          'Educate on early OA symptoms to watch for',
+          'maintain_healthy_weight'.tr(),
+          'regular_physical_activity'.tr(),
+          'healthy_diet'.tr(),
+          'adequate_sleep'.tr(),
         ];
+    }
+  }
+
+  void _showRawDataDialog(BuildContext context) {
+    List<double> gaitFeats = [];
+    try {
+      final decoded = jsonDecode(screening.gaitData!);
+      if (decoded is List) {
+        gaitFeats = decoded.map((e) => (e as num).toDouble()).toList();
+      }
+    } catch (e) {
+      debugPrint('Error decoding gait data: $e');
+    }
+
+    // Assemble advanced 203-feature ML input vector
+    // Symptoms
+    final stiffnessVal = int.tryParse(screening.stiffnessDuration ?? '0') ?? 0;
+    final painLevel = (screening.painLevel ?? 0).toDouble();
+    final stiffnessDuration = stiffnessVal.toDouble();
+    final swelling = screening.swelling == true ? 1.0 : 0.0;
+    final pastInjury = (screening.pastInjury != null && screening.pastInjury!.isNotEmpty) ? 1.0 : 0.0;
+    final mriKlGrade = (screening.mriKlGrade ?? 0).toDouble();
+
+    // Advanced clinical features
+    final painFrequency = _encodePainFrequency(screening.painFrequency);
+    final activityLimitation = _encodeActivityLimitation(screening.activityLimitation);
+    final medicationUse = screening.medicationUse == true ? 1.0 : 0.0;
+    final symptomDuration = _encodeSymptomDuration(screening.symptomDuration);
+
+    // Demographics
+    final age = patient.age.toDouble();
+    final weightKg = patient.weightKg ?? 70.0;
+    final heightCm = patient.heightCm ?? 170.0;
+    double bmi = 0.0;
+    if (heightCm > 0) {
+      final heightM = heightCm / 100.0;
+      bmi = weightKg / (heightM * heightM);
+    }
+
+    // Advanced gait features
+    final gaitVariability = screening.gaitVariability ?? 0.1;
+    final gaitAsymmetry = screening.gaitAsymmetry ?? 0.05;
+    final gaitSmoothness = screening.gaitSmoothness ?? 0.9;
+    final posturalStability = screening.posturalStability ?? 0.8;
+
+    // Use advanced features vector if available, otherwise build from components
+    List<double> mlVector;
+    if (screening.advancedFeaturesVector != null) {
+      try {
+        final decoded = jsonDecode(screening.advancedFeaturesVector!);
+        if (decoded is List) {
+          mlVector = decoded.map((e) => (e as num).toDouble()).toList();
+        } else {
+          mlVector = _buildAdvancedFeatureVector(gaitFeats, painLevel, stiffnessDuration, swelling, pastInjury, mriKlGrade, age, weightKg, heightCm, bmi, painFrequency, activityLimitation, medicationUse, symptomDuration, gaitVariability, gaitAsymmetry, gaitSmoothness, posturalStability);
+        }
+      } catch (e) {
+        mlVector = _buildAdvancedFeatureVector(gaitFeats, painLevel, stiffnessDuration, swelling, pastInjury, mriKlGrade, age, weightKg, heightCm, bmi, painFrequency, activityLimitation, medicationUse, symptomDuration, gaitVariability, gaitAsymmetry, gaitSmoothness, posturalStability);
+      }
+    } else {
+      mlVector = _buildAdvancedFeatureVector(gaitFeats, painLevel, stiffnessDuration, swelling, pastInjury, mriKlGrade, age, weightKg, heightCm, bmi, painFrequency, activityLimitation, medicationUse, symptomDuration, gaitVariability, gaitAsymmetry, gaitSmoothness, posturalStability);
+    }
+    
+    final riskLabel = screening.riskLevel ?? 'low';
+    final resultJson = jsonEncode({
+      'features_203': mlVector,
+      'risk_label': riskLabel,
+      'confidence': screening.confidence,
+      'uncertainty': screening.mlUncertainty,
+      'model_type': 'advanced_ensemble',
+      'feature_breakdown': {
+        'gait_features': gaitFeats.length,
+        'clinical_features': 8,
+        'demographic_features': 4,
+        'advanced_gait_features': 4,
+        'total_features': mlVector.length
+      }
+    });
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        title: Text('Advanced ML Training Data', style: AppTypography.titleMedium),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Copy this JSON to train the Advanced ML model (${mlVector.length} features):', style: AppTypography.bodySmall),
+              const SizedBox(height: AppSpacing.md),
+              Container(
+                padding: const EdgeInsets.all(AppSpacing.sm),
+                color: AppColors.background,
+                child: SelectableText(resultJson, style: AppTypography.caption),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Text('Model: Advanced Ensemble (3 models)', style: AppTypography.labelSmall.copyWith(color: AppColors.primary)),
+              if (screening.mlUncertainty != null)
+                Text('Uncertainty: ${(screening.mlUncertainty! * 100).round()}%', style: AppTypography.labelSmall.copyWith(color: AppColors.warning)),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('close'.tr()),
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<double> _buildAdvancedFeatureVector(
+    List<double> gaitFeats,
+    double painLevel,
+    double stiffnessDuration,
+    double swelling,
+    double pastInjury,
+    double mriKlGrade,
+    double age,
+    double weightKg,
+    double heightCm,
+    double bmi,
+    double painFrequency,
+    double activityLimitation,
+    double medicationUse,
+    double symptomDuration,
+    double gaitVariability,
+    double gaitAsymmetry,
+    double gaitSmoothness,
+    double posturalStability,
+  ) {
+    // Build 203-feature vector based on advanced feature extraction
+    // This is a simplified version - actual extraction would be done by the advanced model
+    List<double> vector = [];
+    
+    // Add gait features (pad to expected size)
+    while (gaitFeats.length < 180) {
+      gaitFeats.add(0.0);
+    }
+    vector.addAll(gaitFeats.sublist(0, 180));
+    
+    // Add clinical features
+    vector.addAll([
+      painLevel,
+      stiffnessDuration,
+      swelling,
+      pastInjury,
+      mriKlGrade,
+      painFrequency,
+      activityLimitation,
+      medicationUse,
+      symptomDuration,
+    ]);
+    
+    // Add demographic features
+    vector.addAll([age, weightKg, heightCm, bmi]);
+    
+    // Add advanced gait features
+    vector.addAll([gaitVariability, gaitAsymmetry, gaitSmoothness, posturalStability]);
+    
+    // Pad to 203 features
+    while (vector.length < 203) {
+      vector.add(0.0);
+    }
+    
+    return vector.sublist(0, 203);
+  }
+
+  double _encodePainFrequency(String? frequency) {
+    if (frequency == null) return 0.0;
+    switch (frequency.toLowerCase()) {
+      case 'never': return 0.0;
+      case 'weekly': return 1.0;
+      case 'daily': return 2.0;
+      default: return 0.0;
+    }
+  }
+
+  double _encodeActivityLimitation(String? limitation) {
+    if (limitation == null) return 0.0;
+    switch (limitation.toLowerCase()) {
+      case 'none': return 0.0;
+      case 'mild': return 1.0;
+      case 'moderate': return 2.0;
+      case 'severe': return 3.0;
+      default: return 0.0;
+    }
+  }
+
+  double _encodeSymptomDuration(String? duration) {
+    if (duration == null) return 0.0;
+    switch (duration.toLowerCase()) {
+      case 'none': return 0.0;
+      case '<1_month': return 1.0;
+      case '1-3_months': return 2.0;
+      case '3-6_months': return 3.0;
+      case '6-12_months': return 4.0;
+      case '1-2_years': return 5.0;
+      case '>2_years': return 6.0;
+      default: return 0.0;
     }
   }
 }

@@ -1,9 +1,12 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../../providers/screening_provider.dart';
 import '../../providers/patient_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../services/tflite_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_spacing.dart';
@@ -24,18 +27,20 @@ class ProcessingScreen extends StatefulWidget {
 class _ProcessingScreenState extends State<ProcessingScreen>
     with SingleTickerProviderStateMixin {
   final TFLiteService _tfliteService = TFLiteService();
-  final List<ProcessingStep> _steps = [
-    ProcessingStep(label: 'Analyzing symptoms', status: StepStatus.inProgress),
-    ProcessingStep(label: 'Processing gait data', status: StepStatus.pending),
-    ProcessingStep(label: 'Calculating risk factors', status: StepStatus.pending),
-    ProcessingStep(label: 'Generating recommendations', status: StepStatus.pending),
-  ];
+  late List<ProcessingStep> _steps;
   bool _showSuccess = false;
   late AnimationController _checkmarkController;
 
   @override
   void initState() {
     super.initState();
+    _steps = [
+      ProcessingStep(label: 'analyzing_symptoms'.tr(), status: StepStatus.inProgress),
+      ProcessingStep(label: 'processing_gait_data'.tr(), status: StepStatus.pending),
+      ProcessingStep(label: 'extracting_features'.tr(), status: StepStatus.pending),
+      ProcessingStep(label: 'calculating_risk_factors'.tr(), status: StepStatus.pending),
+      ProcessingStep(label: 'generating_recommendations'.tr(), status: StepStatus.pending),
+    ];
     _checkmarkController = AnimationController(
       vsync: this,
       duration: AppMotion.slow,
@@ -51,69 +56,125 @@ class _ProcessingScreenState extends State<ProcessingScreen>
   }
 
   Future<void> _processScreening() async {
-    await Future.delayed(const Duration(seconds: 2));
-    _updateStep(0, StepStatus.completed);
+    try {
+      await Future.delayed(const Duration(seconds: 2));
+      _updateStep(0, StepStatus.completed);
 
-    await Future.delayed(const Duration(seconds: 2));
-    _updateStep(1, StepStatus.inProgress);
+      await Future.delayed(const Duration(seconds: 2));
+      _updateStep(1, StepStatus.inProgress);
 
-    await Future.delayed(const Duration(seconds: 2));
-    _updateStep(1, StepStatus.completed);
-    _updateStep(2, StepStatus.inProgress);
+      await Future.delayed(const Duration(seconds: 2));
+      _updateStep(1, StepStatus.completed);
+      _updateStep(2, StepStatus.inProgress);
 
-    if (!mounted) return;
-    final screeningProvider = Provider.of<ScreeningProvider>(context, listen: false);
+      await Future.delayed(const Duration(seconds: 2));
+      _updateStep(2, StepStatus.completed);
+      _updateStep(3, StepStatus.inProgress);
 
-    // Ensure we have a patient to run the screening against
-    if (screeningProvider.draftPatientId == null) {
-      if (mounted) Navigator.of(context).pop();
-      return;
-    }
+      if (!mounted) return;
+      final screeningProvider = Provider.of<ScreeningProvider>(context, listen: false);
 
-    // Load TFLite model
-    await _tfliteService.loadModel();
-
-    // Parse gait features if available
-    List<double> gaitFeatures = [];
-    if (screeningProvider.draftGaitData != null) {
-      try {
-        final parsed = screeningProvider.draftGaitData!.replaceAll('[', '').replaceAll(']', '').split(',');
-        gaitFeatures = parsed.map((e) => double.tryParse(e.trim()) ?? 0.0).toList();
-      } catch (e) {
-        // Handle parsing error
+      // Ensure we have a patient to run the screening against
+      if (screeningProvider.draftPatientId == null) {
+        if (mounted) Navigator.of(context).pop();
+        return;
       }
-    }
 
-    // Run AI prediction
-    final prediction = await _tfliteService.predictRisk(
-      painLevel: screeningProvider.draftPainLevel,
-      stiffnessDuration: screeningProvider.draftStiffnessDuration,
-      swelling: screeningProvider.draftSwelling,
-      pastInjury: screeningProvider.draftPastInjury ? screeningProvider.draftPastInjuryDetail : null,
-      gaitFeatures: gaitFeatures,
-    );
+      // Load TFLite model
+      await _tfliteService.loadModel();
 
-    if (!mounted) return;
-    _updateStep(2, StepStatus.completed);
-    _updateStep(3, StepStatus.inProgress);
+      // Parse gait features if available
+      List<double> gaitFeatures = [];
+      if (screeningProvider.draftGaitData != null) {
+        try {
+          final decoded = jsonDecode(screeningProvider.draftGaitData!);
+          if (decoded is Map<String, dynamic>) {
+            // Extract numeric values from the features JSON map
+            gaitFeatures = decoded.values
+                .whereType<num>()
+                .map((v) => v.toDouble())
+                .toList();
+          } else if (decoded is List) {
+            gaitFeatures = decoded
+                .whereType<num>()
+                .map((v) => v.toDouble())
+                .toList();
+          }
+        } catch (e) {
+          // Legacy fallback: plain comma-separated string
+          try {
+            final parsed = screeningProvider.draftGaitData!
+                .replaceAll('[', '')
+                .replaceAll(']', '')
+                .split(',');
+            gaitFeatures =
+                parsed.map((e) => double.tryParse(e.trim()) ?? 0.0).toList();
+          } catch (_) {
+            // ignore — gaitFeatures stays empty
+          }
+        }
+      }
 
-    await Future.delayed(const Duration(seconds: 1));
-    _updateStep(3, StepStatus.completed);
+      // Load patient to get demographics
+      final patientProvider = Provider.of<PatientProvider>(context, listen: false);
+      final patient = patientProvider.patients.firstWhere(
+        (p) => p.id == screeningProvider.draftPatientId,
+        orElse: () => patientProvider.selectedPatient ?? Patient(
+          name: 'Unknown', age: 50, gender: 'Unknown', weightKg: 70.0, heightCm: 170.0
+        )
+      );
+
+      // Run AI prediction
+      final prediction = await _tfliteService.predictRisk(
+        painLevel: screeningProvider.draftPainLevel,
+        stiffnessDuration: screeningProvider.draftStiffnessDuration,
+        swelling: screeningProvider.draftSwelling,
+        pastInjury: screeningProvider.draftPastInjury ? screeningProvider.draftPastInjuryDetail : null,
+        age: patient.age,
+        weightKg: patient.weightKg ?? 70.0,
+        heightCm: patient.heightCm ?? 170.0,
+        mriKlGrade: screeningProvider.draftMriKlGrade,
+        gaitFeatures: gaitFeatures,
+        symptomsMap: screeningProvider.draftSymptomsMap,
+        functionalMap: screeningProvider.draftFunctionalMap,
+      );
+
+      if (!mounted) return;
+      _updateStep(2, StepStatus.completed);
+      _updateStep(3, StepStatus.inProgress);
+
+      await Future.delayed(const Duration(seconds: 1));
+      _updateStep(3, StepStatus.completed);
+
+    // Generate contributing factors from questionnaire responses
+    final questionnaireFactors = screeningProvider.generateContributingFactors();
+    
+    // Combine backend factors with questionnaire factors
+    final allFactors = [
+      ...prediction.contributingFactors,
+      ...questionnaireFactors,
+    ];
 
     // Construct the final screening object first
     final newScreening = Screening(
       patientId: screeningProvider.draftPatientId!,
-      userId: 1, // Temporarily hardcoded until auth is integrated
+      userId: Provider.of<AuthProvider>(context, listen: false).currentUser?.id ?? 1,
       screeningDate: DateTime.now(),
+      jointId: screeningProvider.draftJointId,
+      side: screeningProvider.draftSide,
       painLevel: screeningProvider.draftPainLevel,
       stiffnessDuration: screeningProvider.draftStiffnessDuration,
       swelling: screeningProvider.draftSwelling,
       pastInjury: screeningProvider.draftPastInjury ? screeningProvider.draftPastInjuryDetail : null,
+      mriKlGrade: screeningProvider.draftMriKlGrade,
       gaitData: screeningProvider.draftGaitData,
+      symptomsMap: jsonEncode(screeningProvider.draftSymptomsMap),
+      functionalMap: jsonEncode(screeningProvider.draftFunctionalMap),
       riskLevel: prediction.riskLevel,
       confidence: prediction.confidence,
-      contributingFactors: prediction.contributingFactors.join(','),
+      contributingFactors: allFactors.join('|'),
       aiReasoning: prediction.reasoning,
+      mlUncertainty: prediction.uncertainty,
       doctorRecommendations: _generateRecommendations(prediction.riskLevel),
       synced: false,
     );
@@ -126,30 +187,44 @@ class _ProcessingScreenState extends State<ProcessingScreen>
 
     if (!mounted) return;
 
-    if (success) {
-      // Show success state before navigating
-      setState(() => _showSuccess = true);
-      await _checkmarkController.forward();
-      await Future.delayed(const Duration(milliseconds: 1500));
-      
-      if (mounted) {
-        // Navigate to report page instead of result page
-        final patientProvider = Provider.of<PatientProvider>(context, listen: false);
-        final patient = patientProvider.selectedPatient;
+      if (success) {
+        // Show success state before navigating
+        setState(() => _showSuccess = true);
+        await _checkmarkController.forward();
+        await Future.delayed(const Duration(milliseconds: 1500));
         
-        if (patient != null) {
-          context.push('/screening/report', extra: {
-            'screening': screeningProvider.currentScreening ?? newScreening,
+        if (mounted) {
+          final screeningToSend = screeningProvider.currentScreening ?? newScreening;
+          
+          context.pushReplacement('/screening/report', extra: {
+            'screening': screeningToSend,
             'patient': patient,
           });
-        } else {
-          // Fallback to result page if no patient
-          context.push('/screening/result', extra: screeningProvider.currentScreening ?? newScreening);
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(screeningProvider.errorMessage ?? 'Failed to save screening results.'),
+              backgroundColor: AppColors.error,
+              behavior: SnackBarBehavior.floating,
+            )
+          );
+          context.pop(); // Pop back to gait test but now user knows why
         }
       }
-    } else {
-      // Just navigate back without showing SnackBar to avoid lifecycle issues
-      context.pop();
+    } catch (e, stackTrace) {
+      debugPrint('Error during processing: $e\n$stackTrace');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('An unexpected error occurred during processing. Please try again.'),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+          )
+        );
+        context.pop();
+      }
     }
   }
 
@@ -164,12 +239,12 @@ class _ProcessingScreenState extends State<ProcessingScreen>
   String _generateRecommendations(String riskLevel) {
     switch (riskLevel.toLowerCase()) {
       case 'high':
-        return 'Immediate medical consultation recommended. Consider referral to orthopedic specialist. Avoid high-impact activities. Begin joint-friendly exercises under supervision.';
+        return 'rec_high'.tr();
       case 'medium':
-        return 'Regular monitoring advised. Start low-impact exercises like swimming or walking. Maintain healthy weight. Consider physiotherapy consultation. Use joint protection techniques.';
+        return 'rec_medium'.tr();
       case 'low':
       default:
-        return 'Continue regular health monitoring. Maintain healthy lifestyle with balanced diet and regular exercise. Practice good posture. Stay hydrated and maintain joint flexibility.';
+        return 'rec_low'.tr();
     }
   }
 
@@ -177,8 +252,8 @@ class _ProcessingScreenState extends State<ProcessingScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: const CustomAppBar(
-        title: 'Processing',
+      appBar: CustomAppBar(
+        title: 'processing'.tr(),
         centerTitle: false,
         showBackButton: true,
       ),
@@ -243,7 +318,7 @@ class _ProcessingScreenState extends State<ProcessingScreen>
           Column(
             children: [
               Text(
-                'Analyzing Results',
+                'analyzing_results'.tr(),
                 style: AppTypography.headlineSmall.copyWith(
                   fontWeight: AppTypography.bold,
                   color: AppColors.textPrimary,
@@ -252,7 +327,7 @@ class _ProcessingScreenState extends State<ProcessingScreen>
               ).animate().fadeIn(duration: AppMotion.slow),
               const SizedBox(height: AppSpacing.sm),
               Text(
-                'AI model is processing your screening data',
+                'ai_processing_description'.tr(),
                 style: AppTypography.bodySmall.copyWith(
                   color: AppColors.textSecondary,
                 ),
@@ -291,7 +366,7 @@ class _ProcessingScreenState extends State<ProcessingScreen>
 
           const SizedBox(height: AppSpacing.xl),
           Text(
-            'This may take a few moments…',
+            'this_may_take_few_moments'.tr(),
             style: AppTypography.labelSmall.copyWith(
               color: AppColors.textTertiary,
             ),
@@ -429,7 +504,7 @@ class _ProcessingScreenState extends State<ProcessingScreen>
               border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
             ),
             child: Text(
-              'Analysis Complete',
+              'analysis_complete'.tr(),
               style: AppTypography.titleMedium.copyWith(
                 fontWeight: AppTypography.semiBold,
                 color: AppColors.success,
@@ -439,7 +514,7 @@ class _ProcessingScreenState extends State<ProcessingScreen>
           ).animate().fadeIn(duration: AppMotion.slow, delay: 200.ms).scale(begin: const Offset(0.9, 0.9), end: const Offset(1.0, 1.0), duration: AppMotion.fast, curve: AppMotion.curvePop),
           const SizedBox(height: AppSpacing.md),
           Text(
-            'Preparing your results…',
+            'preparing_results'.tr(),
             style: AppTypography.bodyMedium.copyWith(
               color: AppColors.textSecondary,
             ),

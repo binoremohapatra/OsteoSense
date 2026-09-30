@@ -6,6 +6,8 @@ import 'sensor_service.dart';
 import 'sensor_data_source.dart';
 import 'gait_analyzer.dart';
 import 'tflite_service.dart' as tflite;
+import 'api_service.dart';
+import '../utils/feature_extraction_utils.dart';
 
 /// Unified sensor data pipeline for Gait Test
 /// Supports both simulated data and hardware (ESP32/Phone sensors)
@@ -45,6 +47,7 @@ class GaitSensorPipeline {
   
   // Processing
   SignalFeatures? _currentFeatures;
+  List<double>? _extracted44Features;
   MLPrediction? _currentPrediction;
   final List<MLPrediction> _predictionHistory = [];
   static const int _maxHistorySize = 20;
@@ -65,9 +68,11 @@ class GaitSensorPipeline {
   
   // Getters
   SignalSourceType get sourceType => _sourceType;
+  SensorDataSource? get hardwareSource => _hardwareSource;
   bool get isRecording => _isRecording;
   List<SignalSample> get signalBuffer => List.from(_signalBuffer);
   SignalFeatures? get currentFeatures => _currentFeatures;
+  List<double>? get extracted44Features => _extracted44Features;
   MLPrediction? get currentPrediction => _currentPrediction;
   List<MLPrediction> get predictionHistory => List.from(_predictionHistory);
   
@@ -80,7 +85,7 @@ class GaitSensorPipeline {
   List<double> get gyroZ => List.from(_gyroZ);
   List<double> get piezoData => List.from(_piezoData);
   List<double> get emgData => List.from(_emgData);
-  
+
   // Sensor availability
   bool get hasAccelerometer => _accelX.isNotEmpty;
   bool get hasGyroscope => _gyroX.isNotEmpty;
@@ -131,9 +136,15 @@ class GaitSensorPipeline {
     _clearBuffers();
     _updatePipelineStatus(0, PipelineStageStatus.receiving);
     
+    // Explicitly stop simulation if we're in hardware mode
+    if (_sourceType != SignalSourceType.simulated) {
+      _stopSimulation();
+    }
+    
     if (_sourceType == SignalSourceType.simulated) {
       await _startSimulation();
     } else {
+      // Hardware mode - use real sensor data only
       await _startHardwareRecording();
     }
   }
@@ -192,6 +203,11 @@ class GaitSensorPipeline {
   
   /// Generate simulated sample
   void _generateSimulatedSample() {
+    // Safety check: never generate simulated data in hardware mode
+    if (_sourceType != SignalSourceType.simulated) {
+      return;
+    }
+    
     final now = DateTime.now();
     final t = _simSampleCount / _simParams.sampleRate;
     
@@ -217,10 +233,10 @@ class GaitSensorPipeline {
     
     // Simulated piezo (joint vibration)
     final piezoValue = stepSignal * 0.3 + noise * 0.1;
-    
+
     // Simulated EMG (muscle activity)
     final emgValue = (stepSignal.abs() * 0.5) + noise * 0.2;
-    
+
     _addSampleToBuffer(sample, piezoValue, emgValue);
   }
   
@@ -259,10 +275,10 @@ class GaitSensorPipeline {
               userAccelY: userAccelData[idx + 1],
               userAccelZ: userAccelData[idx + 2],
             );
-            
+
             // No piezo/EMG from phone sensors
             _addSampleToBuffer(sample, 0.0, 0.0);
-            
+
             // Notify UI update (throttled)
             if (sampleCount % 10 == 0) {
               onDataUpdate?.call();
@@ -272,60 +288,87 @@ class GaitSensorPipeline {
       });
     } else {
       // Use BLE wearable source
+      // NOTE: initialize() was already called in BLEDeviceSelectorScreen when
+      // the user selected the device. Calling it again would try to device.connect()
+      // on an already-connected device which fails. So we only call startRecording().
       try {
-        await _hardwareSource!.initialize();
         await _hardwareSource!.startRecording();
         _updatePipelineStatus(1, PipelineStageStatus.receiving);
-        
+
+        // Temporary storage for syncing multi-sensor data
+        SensorData? latestAccel;
+        SensorData? latestGyro;
+        SensorData? latestPiezo;
+        SensorData? latestEMG;
+
         // Subscribe to accelerometer
         _accelSubscription = _hardwareSource!.accelerometerStream.listen((data) {
           if (!_isRecording) return;
-          
-          final sample = SignalSample(
-            timestamp: data.timestamp,
-            accelX: data.x,
-            accelY: data.y,
-            accelZ: data.z,
-            gyroX: 0, // Will be filled by gyroscope stream
-            gyroY: 0,
-            gyroZ: 0,
-            userAccelX: 0,
-            userAccelY: 0,
-            userAccelZ: 0,
-          );
-          
-          _addSampleToBuffer(sample, 0.0, 0.0);
-          onDataUpdate?.call();
+          latestAccel = data;
+          _tryCreateWearableSample(latestAccel, latestGyro, latestPiezo, latestEMG);
         });
-        
+
         // Subscribe to gyroscope
         _gyroSubscription = _hardwareSource!.gyroscopeStream.listen((data) {
-          if (!_isRecording || _signalBuffer.isEmpty) return;
-          
-          // Update last sample with gyroscope data
-          final lastSample = _signalBuffer.last;
-          final updatedSample = SignalSample(
-            timestamp: lastSample.timestamp,
-            accelX: lastSample.accelX,
-            accelY: lastSample.accelY,
-            accelZ: lastSample.accelZ,
-            gyroX: data.x,
-            gyroY: data.y,
-            gyroZ: data.z,
-            userAccelX: lastSample.userAccelX,
-            userAccelY: lastSample.userAccelY,
-            userAccelZ: lastSample.userAccelZ,
-          );
-          
-          _signalBuffer[_signalBuffer.length - 1] = updatedSample;
-          onDataUpdate?.call();
+          if (!_isRecording) return;
+          latestGyro = data;
+          _tryCreateWearableSample(latestAccel, latestGyro, latestPiezo, latestEMG);
         });
-        
+
+        // Subscribe to piezo (joint vibration) if available
+        if (_hardwareSource!.piezoStream != null) {
+          _hardwareSource!.piezoStream!.listen((data) {
+            if (!_isRecording) return;
+            latestPiezo = data;
+            _tryCreateWearableSample(latestAccel, latestGyro, latestPiezo, latestEMG);
+          });
+        }
+
+        // Subscribe to EMG (muscle activity) if available
+        if (_hardwareSource!.emgStream != null) {
+          _hardwareSource!.emgStream!.listen((data) {
+            if (!_isRecording) return;
+            latestEMG = data;
+            _tryCreateWearableSample(latestAccel, latestGyro, latestPiezo, latestEMG);
+          });
+        }
+
       } catch (e) {
         _updatePipelineStatus(0, PipelineStageStatus.error);
         debugPrint('Hardware recording error: $e');
       }
     }
+  }
+
+  /// Try to create a wearable sample when sensor data arrives.
+  /// Fires on every sensor packet — does not block on all sensors being present.
+  void _tryCreateWearableSample(
+    SensorData? accel,
+    SensorData? gyro,
+    SensorData? piezo,
+    SensorData? emg,
+  ) {
+    // Need at least accel OR gyro to create a meaningful sample
+    if (accel == null && gyro == null) return;
+
+    final piezoValue = piezo?.x ?? 0.0;
+    final emgValue = emg?.x ?? 0.0;
+
+    final sample = SignalSample(
+      timestamp: accel?.timestamp ?? gyro!.timestamp,
+      accelX: accel?.x ?? 0.0,
+      accelY: accel?.y ?? 0.0,
+      accelZ: accel?.z ?? 0.0,
+      gyroX: gyro?.x ?? 0.0,
+      gyroY: gyro?.y ?? 0.0,
+      gyroZ: gyro?.z ?? 0.0,
+      userAccelX: (accel?.x ?? 0.0) * 0.7,
+      userAccelY: (accel?.y ?? 0.0) * 0.7,
+      userAccelZ: (accel?.z ?? 0.0) * 0.7,
+    );
+
+    _addSampleToBuffer(sample, piezoValue, emgValue);
+    onDataUpdate?.call();
   }
   
   /// Stop hardware recording
@@ -334,11 +377,12 @@ class GaitSensorPipeline {
       await _hardwareSource!.stopRecording();
       await _accelSubscription?.cancel();
       await _gyroSubscription?.cancel();
+      // Note: piezo and EMG subscriptions are handled internally by BLE source
     } else {
       final sensorService = SensorService();
       sensorService.stopRecording();
     }
-    
+
     _updatePipelineStatus(1, PipelineStageStatus.ready);
   }
   
@@ -348,7 +392,7 @@ class GaitSensorPipeline {
     if (_signalBuffer.length > _maxBufferSize) {
       _signalBuffer.removeAt(0);
     }
-    
+
     // Update graph buffers
     _accelX.add(sample.accelX);
     _accelY.add(sample.accelY);
@@ -358,7 +402,7 @@ class GaitSensorPipeline {
     _gyroZ.add(sample.gyroZ);
     _piezoData.add(piezoValue);
     _emgData.add(emgValue);
-    
+
     // Trim graph buffers
     if (_accelX.length > _graphBufferSize) {
       _accelX.removeAt(0);
@@ -390,85 +434,34 @@ class GaitSensorPipeline {
         userAccelData.addAll([sample.userAccelX, sample.userAccelY, sample.userAccelZ]);
       }
       
-      // Calculate features
+      // Call our new DSP feature extraction to get the 44 features exactly like Python
+      _extracted44Features = FeatureExtractionUtils.extractAllFeatures(
+        _gyroX, _gyroY, _gyroZ, 
+        _piezoData, 
+        _emgData
+      );
+      
+      // Still populate UI features for the dashboard graphs
       final features = <String, dynamic>{};
       
-      // Accelerometer features
       if (accelData.isNotEmpty) {
-        final meanX = _calculateMean(_extractAxis(accelData, 0));
-        final meanY = _calculateMean(_extractAxis(accelData, 1));
-        final meanZ = _calculateMean(_extractAxis(accelData, 2));
-        
-        features['accel_mean_x'] = meanX;
-        features['accel_mean_y'] = meanY;
-        features['accel_mean_z'] = meanZ;
+        features['accel_mean_x'] = _calculateMean(_extractAxis(accelData, 0));
+        features['accel_mean_y'] = _calculateMean(_extractAxis(accelData, 1));
+        features['accel_mean_z'] = _calculateMean(_extractAxis(accelData, 2));
         features['accel_rms'] = _calculateRMS(accelData);
-        features['accel_std_x'] = _calculateStd(_extractAxis(accelData, 0));
-        features['accel_std_y'] = _calculateStd(_extractAxis(accelData, 1));
-        features['accel_std_z'] = _calculateStd(_extractAxis(accelData, 2));
       }
-      
-      // Gyroscope features
       if (gyroData.isNotEmpty) {
         features['gyro_mean_x'] = _calculateMean(_extractAxis(gyroData, 0));
         features['gyro_mean_y'] = _calculateMean(_extractAxis(gyroData, 1));
         features['gyro_mean_z'] = _calculateMean(_extractAxis(gyroData, 2));
         features['gyro_rms'] = _calculateRMS(gyroData);
-        features['gyro_std_x'] = _calculateStd(_extractAxis(gyroData, 0));
-        features['gyro_std_y'] = _calculateStd(_extractAxis(gyroData, 1));
-        features['gyro_std_z'] = _calculateStd(_extractAxis(gyroData, 2));
       }
-      
-      // User accelerometer features
-      if (userAccelData.isNotEmpty) {
-        features['user_accel_mean_x'] = _calculateMean(_extractAxis(userAccelData, 0));
-        features['user_accel_mean_y'] = _calculateMean(_extractAxis(userAccelData, 1));
-        features['user_accel_mean_z'] = _calculateMean(_extractAxis(userAccelData, 2));
-        features['user_accel_std_x'] = _calculateStd(_extractAxis(userAccelData, 0));
-        features['user_accel_std_y'] = _calculateStd(_extractAxis(userAccelData, 1));
-        features['user_accel_std_z'] = _calculateStd(_extractAxis(userAccelData, 2));
-      }
-      
-      // Gait-specific features
-      final accelSensorData = _signalBuffer.map((s) => SensorData(
-        x: s.userAccelX,
-        y: s.userAccelY,
-        z: s.userAccelZ,
-        timestamp: s.timestamp,
-      )).toList();
-      
-      final gyroSensorData = _signalBuffer.map((s) => SensorData(
-        x: s.gyroX,
-        y: s.gyroY,
-        z: s.gyroZ,
-        timestamp: s.timestamp,
-      )).toList();
-      
-      final gaitMetrics = GaitAnalyzer.analyzeGait(
-        accelSensorData,
-        gyroSensorData,
-        _recordingDuration ?? Duration.zero,
-      );
-      
-      features['estimated_steps'] = gaitMetrics.stepsDetected;
-      features['regularity_score'] = gaitMetrics.variance;
-      features['cadence'] = gaitMetrics.cadence;
-      features['stride'] = gaitMetrics.stride;
-      features['stability'] = gaitMetrics.stability;
-      
-      // Piezo features (if available)
-      if (_piezoData.isNotEmpty) {
-        features['piezo_rms'] = _calculateRMS(_piezoData);
-        features['piezo_peak'] = _piezoData.reduce((a, b) => a > b ? a : b);
-      }
-      
-      // EMG features (if available)
-      if (_emgData.isNotEmpty) {
-        features['emg_rms'] = _calculateRMS(_emgData);
-        features['emg_peak'] = _emgData.reduce((a, b) => a > b ? a : b);
-        features['emg_mean'] = _calculateMean(_emgData);
-      }
-      
+      features['estimated_steps'] = 0;
+      features['regularity_score'] = 0.0;
+      features['cadence'] = 0.0;
+      features['stride'] = 0.0;
+      features['stability'] = 0.0;
+
       _currentFeatures = SignalFeatures.fromMap(features);
       _updatePipelineStatus(2, PipelineStageStatus.ready);
       _updatePipelineStatus(3, PipelineStageStatus.ready);
@@ -482,7 +475,15 @@ class GaitSensorPipeline {
   }
   
   /// Run ML prediction
-  Future<void> runPrediction() async {
+  Future<void> runPrediction({
+    int painLevel = 0,
+    String stiffnessDuration = '0',
+    bool swelling = false,
+    String pastInjury = '',
+    int age = 50,
+    double weightKg = 70.0,
+    double heightCm = 170.0,
+  }) async {
     if (_currentFeatures == null) {
       debugPrint('No features available for prediction');
       return;
@@ -495,49 +496,82 @@ class GaitSensorPipeline {
       await tfliteService.loadModel();
       
       // Convert features to feature vector
-      final featureVector = [
-        _currentFeatures!.accelMeanX,
-        _currentFeatures!.accelMeanY,
-        _currentFeatures!.accelMeanZ,
-        _currentFeatures!.accelStdX,
-        _currentFeatures!.accelStdY,
-        _currentFeatures!.accelStdZ,
-        _currentFeatures!.accelRms,
-        _currentFeatures!.gyroMeanX,
-        _currentFeatures!.gyroMeanY,
-        _currentFeatures!.gyroMeanZ,
-        _currentFeatures!.gyroStdX,
-        _currentFeatures!.gyroStdY,
-        _currentFeatures!.gyroStdZ,
-        _currentFeatures!.gyroRms,
-        _currentFeatures!.userAccelMeanX,
-        _currentFeatures!.userAccelMeanY,
-        _currentFeatures!.userAccelMeanZ,
-        _currentFeatures!.userAccelStdX,
-        _currentFeatures!.userAccelStdY,
-        _currentFeatures!.userAccelStdZ,
-        _currentFeatures!.estimatedSteps.toDouble(),
-        _currentFeatures!.regularityScore,
-      ];
+      final featureVector = _extracted44Features ?? List.filled(44, 0.0);
       
       final startTime = DateTime.now();
       
-      // Run prediction
+      // 1. Run local prediction (TFLite Fallback)
+      // TFLite Service will expect 48 features (Multimodal)
       final prediction = await tfliteService.predictRisk(
-        painLevel: 5, // Default for testing
-        stiffnessDuration: '30',
-        swelling: false,
-        pastInjury: null,
+        painLevel: painLevel,
+        stiffnessDuration: stiffnessDuration,
+        swelling: swelling,
+        pastInjury: pastInjury,
+        age: age,
+        weightKg: weightKg,
+        heightCm: heightCm,
+        mriKlGrade: 0,
         gaitFeatures: featureVector,
+        piezoFeatures: null,
+        emgFeatures: null,
       );
+      
+      // 2. Run deployed API prediction
+      MLPrediction? serverPrediction;
+      try {
+        final apiService = ApiService();
+        final List<double> interleavedGyro = [];
+        final int gyroLen = _gyroX.length;
+        for (int i = 0; i < gyroLen; i++) {
+          interleavedGyro.add(_gyroX[i]);
+          interleavedGyro.add(i < _gyroY.length ? _gyroY[i] : 0.0);
+          interleavedGyro.add(i < _gyroZ.length ? _gyroZ[i] : 0.0);
+        }
+        
+        final response = await apiService.submitWearableDataToAI(
+          deviceId: 'mobile-app-01',
+          gyro: interleavedGyro,
+          piezo: _piezoData,
+          emg: _emgData,
+          painLevel: painLevel,
+          stiffnessDuration: stiffnessDuration,
+          swelling: swelling,
+          pastInjury: pastInjury.isNotEmpty,
+        );
+        // Convert server response to MLPrediction format
+        // top_contributing_features is a list of {feature: str, value: float} objects
+        final rawFeatures = response['top_contributing_features'] as List? ?? [];
+        final contributingFactors = rawFeatures.map((f) {
+          if (f is Map) return (f['feature'] as String?) ?? f.toString();
+          return f.toString();
+        }).toList();
+
+        serverPrediction = MLPrediction(
+          riskLevel: response['risk_label'] ?? 'unknown',
+          confidence: (response['risk_score'] as num?)?.toDouble() ?? 0.0,
+          contributingFactors: (response['top_contributing_features'] as List?)
+              ?.map((f) => '${f['feature']}: ${f['value']}')
+              .toList() ?? [],
+          reasoning: 'AI prediction from deployed server',
+          timestamp: DateTime.now(),
+          inputSourceType: _sourceType,
+          inferenceTimeMs: DateTime.now().difference(startTime).inMilliseconds,
+          modelVersion: response['model_used'] ?? 'remote_model_v1',
+        );
+      } catch (e) {
+        debugPrint('Failed to reach deployed AI server: $e');
+      }
       
       final inferenceTime = DateTime.now().difference(startTime).inMilliseconds;
       
-      final mlPrediction = MLPrediction.fromTFLite(
+      final localPrediction = MLPrediction.fromTFLite(
         prediction,
         _sourceType,
         inferenceTime,
       );
+      
+      // Use Server Prediction if available, else fallback to Local Prediction
+      final mlPrediction = serverPrediction ?? localPrediction;
       
       _currentPrediction = mlPrediction;
       _predictionHistory.add(mlPrediction);
@@ -568,6 +602,11 @@ class GaitSensorPipeline {
     _currentFeatures = null;
     _currentPrediction = null;
     _predictionHistory.clear();
+  }
+
+  /// Public method to clear buffers (for UI calls)
+  void clearBuffers() {
+    _clearBuffers();
   }
   
   /// Reset pipeline status

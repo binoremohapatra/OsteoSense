@@ -1,0 +1,442 @@
+﻿Analyzing app...                                                
+
+   info - Unnecessary 'this.' qualifier. Try removing 'this.' - lib\components\bento_stat\bento_stat_widget.dart:19:9 - unnecessary_this
+   info - Unnecessary 'this.' qualifier. Try removing 'this.' - lib\components\bento_stat\bento_stat_widget.dart:20:9 - unnecessary_this
+   info - Unnecessary 'this.' qualifier. Try removing 'this.' - lib\components\bento_stat\bento_stat_widget.dart:21:9 - unnecessary_this
+   info - Unnecessary 'this.' qualifier. Try removing 'this.' - lib\components\bento_stat\bento_stat_widget.dart:22:9 - unnecessary_this
+   info - Unnecessary 'this.' qualifier. Try removing 'this.' - lib\components\bento_stat\bento_stat_widget.dart:23:9 - unnecessary_this
+   info - Use an initializing formal to assign a parameter to a field. Try using an initialing formal ('this.subtitle') to initialize the field - lib\components\bento_stat\bento_stat_widget.dart:23:9 - prefer_initializing_formals
+   info - Use 'const' literals as arguments to constructors of '@immutable' classes. Try adding 'const' before the literal - lib\components\bento_stat\bento_stat_widget.dart:43:20 - prefer_const_literals_to_create_immutables
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\components\bento_stat\bento_stat_widget.dart:44:11 - prefer_const_constructors
+   info - Unnecessary 'this.' qualifier. Try removing 'this.' - lib\components\filter_chip\filter_chip_widget.dart:9:9 - unnecessary_this
+   info - Unnecessary 'this.' qualifier. Try removing 'this.' - lib\components\filter_chip\filter_chip_widget.dart:10:9 - unnecessary_this
+warning - Unused import: '../../flutter_flow/flutter_flow_util.dart'. Try removing the import directive - lib\components\nav_item\nav_item_widget.dart:4:8 - unused_import
+warning - Unused import: '../../theme/app_colors.dart'. Try removing the import directive - lib\components\nav_item\nav_item_widget.dart:5:8 - unused_import
+   info - Use 'const' for final variables initialized to a constant value. Try replacing 'final' with 'const' - lib\components\nav_item\nav_item_widget.dart:57:5 - prefer_const_declarations
+   info - Use 'const' for final variables initialized to a constant value. Try replacing 'final' with 'const' - lib\components\nav_item\nav_item_widget.dart:58:5 - prefer_const_declarations
+   info - Unnecessary 'this.' qualifier. Try removing 'this.' - lib\components\patient_card\patient_card_widget.dart:16:9 - unnecessary_this
+   info - Unnecessary 'this.' qualifier. Try removing 'this.' - lib\components\patient_card\patient_card_widget.dart:17:9 - unnecessary_this
+   info - Unnecessary 'this.' qualifier. Try removing 'this.' - lib\components\patient_card\patient_card_widget.dart:18:9 - unnecessary_this
+   info - Unnecessary 'this.' qualifier. Try removing 'this.' - lib\components\patient_card\patient_card_widget.dart:19:9 - unnecessary_this
+   info - Unnecessary 'this.' qualifier. Try removing 'this.' - lib\components\patient_card\patient_card_widget.dart:20:9 - unnecessary_this
+   info - Unnecessary 'this.' qualifier. Try removing 'this.' - lib\components\patient_card\patient_card_widget.dart:21:9 - unnecessary_this
+   info - Unnecessary 'this.' qualifier. Try removing 'this.' - lib\components\patient_card\patient_card_widget.dart:22:9 - unnecessary_this
+   info - Unnecessary 'this.' qualifier. Try removing 'this.' - lib\components\patient_card\patient_card_widget.dart:23:9 - unnecessary_this
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\components\patient_card\patient_card_widget.dart:75:30 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\components\patient_card\patient_card_widget.dart:98:34 - prefer_const_constructors
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement - lib\components\patient_card\patient_card_widget.dart:169:39 - deprecated_member_use
+   info - Unnecessary 'this.' qualifier. Try removing 'this.' - lib\components\patient_row\patient_row_widget.dart:25:9 - unnecessary_this
+   info - Unnecessary 'this.' qualifier. Try removing 'this.' - lib\components\patient_row\patient_row_widget.dart:26:9 - unnecessary_this
+   info - Unnecessary 'this.' qualifier. Try removing 'this.' - lib\components\patient_row\patient_row_widget.dart:27:9 - unnecessary_this
+   info - Unnecessary 'this.' qualifier. Try removing 'this.' - lib\components\patient_row\patient_row_widget.dart:28:9 - unnecessary_this
+   info - Unnecessary 'this.' qualifier. Try removing 'this.' - lib\components\patient_row\patient_row_widget.dart:29:9 - unnecessary_this
+   info - Unnecessary 'this.' qualifier. Try removing 'this.' - lib\components\patient_row\patient_row_widget.dart:30:9 - unnecessary_this
+   info - Unnecessary 'this.' qualifier. Try removing 'this.' - lib\components\patient_row\patient_row_widget.dart:31:9 - unnecessary_this
+   info - Unnecessary 'this.' qualifier. Try removing 'this.' - lib\components\patient_row\patient_row_widget.dart:32:9 - unnecessary_this
+   info - Unnecessary 'this.' qualifier. Try removing 'this.' - lib\components\patient_row\patient_row_widget.dart:33:9 - unnecessary_this
+   info - Use an initializing formal to assign a parameter to a field. Try using an initialing formal ('this.patientId') to initialize the field - lib\components\patient_row\patient_row_widget.dart:33:9 - prefer_initializing_formals
+   info - Use 'const' literals as arguments to constructors of '@immutable' classes. Try adding 'const' before the literal - lib\components\patient_row\patient_row_widget.dart:74:24 - prefer_const_literals_to_create_immutables
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\components\patient_row\patient_row_widget.dart:75:15 - prefer_const_constructors
+warning - Unused import: '../../theme/app_colors.dart'. Try removing the import directive - lib\components\quick_action\quick_action_widget.dart:5:8 - unused_import
+   info - Unnecessary 'this.' qualifier. Try removing 'this.' - lib\components\quick_action\quick_action_widget.dart:24:9 - unnecessary_this
+   info - Unnecessary 'this.' qualifier. Try removing 'this.' - lib\components\quick_action\quick_action_widget.dart:25:9 - unnecessary_this
+   info - Unnecessary 'this.' qualifier. Try removing 'this.' - lib\components\quick_action\quick_action_widget.dart:26:9 - unnecessary_this
+   info - Unnecessary 'this.' qualifier. Try removing 'this.' - lib\components\quick_action\quick_action_widget.dart:27:9 - unnecessary_this
+warning - The value of the local variable 'theme' isn't used. Try removing the variable or using it - lib\components\quick_action\quick_action_widget.dart:106:11 - unused_local_variable
+   info - Unnecessary 'this.' qualifier. Try removing 'this.' - lib\components\social_auth_tile\social_auth_tile_widget.dart:10:9 - unnecessary_this
+   info - Unnecessary 'this.' qualifier. Try removing 'this.' - lib\components\social_auth_tile\social_auth_tile_widget.dart:11:9 - unnecessary_this
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement - lib\components\sync_indicator\sync_indicator_widget.dart:25:29 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement - lib\components\sync_indicator\sync_indicator_widget.dart:26:27 - deprecated_member_use
+warning - Unused import: 'flutter_flow_util.dart'. Try removing the import directive - lib\flutter_flow\flutter_flow_widgets.dart:2:8 - unused_import
+warning - Unused import: 'package:flutter_localizations/flutter_localizations.dart'. Try removing the import directive - lib\main.dart:4:8 - unused_import
+warning - The value of the local variable 'notificationScheduler' isn't used. Try removing the variable or using it - lib\main.dart:41:9 - unused_local_variable
+   info - Unnecessary braces in a string interpolation. Try removing the braces - lib\providers\screening_provider.dart:490:42 - unnecessary_brace_in_string_interps
+   info - Unnecessary braces in a string interpolation. Try removing the braces - lib\providers\screening_provider.dart:492:44 - unnecessary_brace_in_string_interps
+   info - Unnecessary braces in a string interpolation. Try removing the braces - lib\providers\screening_provider.dart:515:35 - unnecessary_brace_in_string_interps
+   info - The import of 'package:flutter/foundation.dart' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/material.dart'. Try removing the import directive - lib\providers\settings_provider.dart:1:8 - unnecessary_import
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\agent\add_patient_screen.dart:89:13 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\agent\add_patient_screen.dart:90:13 - prefer_const_constructors
+warning - Unused import: 'dart:ui'. Try removing the import directive - lib\screens\agent\app_shell.dart:1:8 - unused_import
+warning - Unused import: 'package:go_router/go_router.dart'. Try removing the import directive - lib\screens\agent\app_shell.dart:3:8 - unused_import
+warning - Unused import: 'package:provider/provider.dart'. Try removing the import directive - lib\screens\agent\app_shell.dart:4:8 - unused_import
+warning - Unused import: '../../theme/app_colors.dart'. Try removing the import directive - lib\screens\agent\app_shell.dart:6:8 - unused_import
+warning - Unused import: '../../providers/auth_provider.dart'. Try removing the import directive - lib\screens\agent\app_shell.dart:7:8 - unused_import
+warning - The value of the local variable 'isOnline' isn't used. Try removing the variable or using it - lib\screens\agent\home_screen.dart:134:11 - unused_local_variable
+warning - The declaration 'navigateToAnalytics' isn't referenced. Try removing the declaration of 'navigateToAnalytics' - lib\screens\agent\home_screen.dart:197:15 - unused_element
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\agent\home_screen.dart:498:21 - prefer_const_constructors
+   info - Use 'const' for final variables initialized to a constant value. Try replacing 'final' with 'const' - lib\screens\agent\home_screen.dart:561:5 - prefer_const_declarations
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\agent\home_screen.dart:655:23 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\agent\home_screen.dart:664:23 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\agent\home_screen.dart:677:23 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\agent\home_screen.dart:710:17 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\agent\home_screen.dart:716:17 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\agent\home_screen.dart:722:17 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\agent\home_screen.dart:728:17 - prefer_const_constructors
+   info - Use 'const' literals as arguments to constructors of '@immutable' classes. Try adding 'const' before the literal - lib\screens\agent\home_screen.dart:746:20 - prefer_const_literals_to_create_immutables
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\agent\home_screen.dart:747:11 - prefer_const_constructors
+   info - The import of 'package:intl/intl.dart' is unnecessary because all of the used elements are also provided by the import of 'package:easy_localization/easy_localization.dart'. Try removing the import directive - lib\screens\agent\patient_profile_screen.dart:4:8 - unnecessary_import
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\agent\reports_screen.dart:107:28 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\agent\reports_screen.dart:116:23 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\agent\reports_screen.dart:123:23 - prefer_const_constructors
+   info - Use interpolation to compose strings and values. Try using string interpolation to build the composite string - lib\screens\agent\reports_screen.dart:295:23 - prefer_interpolation_to_compose_strings
+   info - Use interpolation to compose strings and values. Try using string interpolation to build the composite string - lib\screens\agent\reports_screen.dart:306:23 - prefer_interpolation_to_compose_strings
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\agent\reports_screen.dart:356:15 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\agent\reports_screen.dart:369:19 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\agent\reports_screen.dart:520:19 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\agent\reports_screen.dart:539:54 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\agent\reports_screen.dart:653:19 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\agent\reports_screen.dart:717:38 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\agent\reports_screen.dart:718:37 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\agent\reports_screen.dart:719:39 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\agent\reports_screen.dart:720:42 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\agent\reports_screen.dart:721:39 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\agent\reports_screen.dart:722:39 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\agent\reports_screen.dart:723:39 - prefer_const_constructors
+   info - 'Share' is deprecated and shouldn't be used. Use SharePlus instead. Try replacing the use of the deprecated member with the replacement - lib\screens\agent\reports_screen.dart:817:19 - deprecated_member_use
+   info - 'shareXFiles' is deprecated and shouldn't be used. Use SharePlus.instance.share() instead. Try replacing the use of the deprecated member with the replacement - lib\screens\agent\reports_screen.dart:817:25 - deprecated_member_use
+   info - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check - lib\screens\agent\reports_screen.dart:823:34 - use_build_context_synchronously
+   info - Use 'const' literals as arguments to constructors of '@immutable' classes. Try adding 'const' before the literal - lib\screens\agent\reports_screen.dart:883:20 - prefer_const_literals_to_create_immutables
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\agent\reports_screen.dart:884:11 - prefer_const_constructors
+   info - Use 'const' literals as arguments to constructors of '@immutable' classes. Try adding 'const' before the literal - lib\screens\agent\reports_screen.dart:921:20 - prefer_const_literals_to_create_immutables
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\agent\reports_screen.dart:922:11 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\agent\reports_screen.dart:1018:13 - prefer_const_constructors
+   info - 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor instead. This feature was deprecated after v3.31.0-2.0.pre. Try replacing the use of the deprecated member with the replacement - lib\screens\agent\settings_screen.dart:347:13 - deprecated_member_use
+   info - 'Share' is deprecated and shouldn't be used. Use SharePlus instead. Try replacing the use of the deprecated member with the replacement - lib\screens\agent\settings_screen.dart:386:15 - deprecated_member_use
+   info - 'shareXFiles' is deprecated and shouldn't be used. Use SharePlus.instance.share() instead. Try replacing the use of the deprecated member with the replacement - lib\screens\agent\settings_screen.dart:386:21 - deprecated_member_use
+   info - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check - lib\screens\agent\settings_screen.dart:448:17 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check - lib\screens\agent\settings_screen.dart:450:25 - use_build_context_synchronously
+warning - Unused import: '../../services/api_service.dart'. Try removing the import directive - lib\screens\dev\signal_test_dashboard.dart:11:8 - unused_import
+   info - The local variable '_extractAxis' starts with an underscore. Try renaming the variable to not start with an underscore - lib\screens\dev\signal_test_dashboard.dart:309:18 - no_leading_underscores_for_local_identifiers
+   info - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check - lib\screens\dev\signal_test_dashboard.dart:442:28 - use_build_context_synchronously
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\dev\signal_test_dashboard.dart:620:23 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\dev\signal_test_dashboard.dart:741:25 - prefer_const_constructors
+   info - Use 'const' literals as arguments to constructors of '@immutable' classes. Try adding 'const' before the literal - lib\screens\dev\signal_test_dashboard.dart:742:25 - prefer_const_literals_to_create_immutables
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\dev\signal_test_dashboard.dart:768:26 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\dev\signal_test_dashboard.dart:904:33 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\dev\signal_test_dashboard.dart:905:35 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\dev\signal_test_dashboard.dart:920:36 - prefer_const_constructors
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement - lib\screens\dev\signal_test_dashboard.dart:923:54 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement - lib\screens\dev\signal_test_dashboard.dart:1247:44 - deprecated_member_use
+warning - The value of the local variable 'json' isn't used. Try removing the variable or using it - lib\screens\dev\signal_test_dashboard.dart:1292:27 - unused_local_variable
+   info - The private field _multiSelectedChips could be 'final'. Try making the field 'final' - lib\screens\dev\ui_component_gallery_screen.dart:31:16 - prefer_final_fields
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\dev\ui_component_gallery_screen.dart:140:9 - prefer_const_constructors
+   info - Use 'const' literals as arguments to constructors of '@immutable' classes. Try adding 'const' before the literal - lib\screens\dev\ui_component_gallery_screen.dart:141:21 - prefer_const_literals_to_create_immutables
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\dev\ui_component_gallery_screen.dart:142:13 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\dev\ui_component_gallery_screen.dart:143:22 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\dev\ui_component_gallery_screen.dart:152:13 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\dev\ui_component_gallery_screen.dart:153:22 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\dev\ui_component_gallery_screen.dart:185:17 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\dev\ui_component_gallery_screen.dart:186:17 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\dev\ui_component_gallery_screen.dart:195:20 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\dev\ui_component_gallery_screen.dart:203:15 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\dev\ui_component_gallery_screen.dart:204:15 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\dev\ui_component_gallery_screen.dart:281:9 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\dev\ui_component_gallery_screen.dart:285:9 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\dev\ui_component_gallery_screen.dart:329:9 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\dev\ui_component_gallery_screen.dart:343:12 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\dev\ui_component_gallery_screen.dart:367:9 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\dev\ui_component_gallery_screen.dart:368:18 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\dev\ui_component_gallery_screen.dart:373:9 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\dev\ui_component_gallery_screen.dart:392:19 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\dev\ui_component_gallery_screen.dart:405:19 - prefer_const_constructors
+warning - Unused import: '../../widgets/common/index.dart'. Try removing the import directive - lib\screens\shared\ble_device_selector_screen.dart:9:8 - unused_import
+warning - Unused import: '../../services/ble_wearable_source.dart'. Try removing the import directive - lib\screens\shared\ble_device_selector_screen.dart:10:8 - unused_import
+warning - Unused import: '../../services/gait_sensor_pipeline.dart'. Try removing the import directive - lib\screens\shared\ble_device_selector_screen.dart:11:8 - unused_import
+warning - Unused import: '../../models/signal_test_models.dart'. Try removing the import directive - lib\screens\shared\ble_device_selector_screen.dart:14:8 - unused_import
+   info - Don't invoke 'print' in production code. Try using a logging framework - lib\screens\shared\ble_device_selector_screen.dart:105:7 - avoid_print
+   info - Don't invoke 'print' in production code. Try using a logging framework - lib\screens\shared\ble_device_selector_screen.dart:123:7 - avoid_print
+   info - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check - lib\screens\shared\ble_device_selector_screen.dart:144:23 - use_build_context_synchronously
+   info - Use interpolation to compose strings and values. Try using string interpolation to build the composite string - lib\screens\shared\ble_device_selector_screen.dart:157:27 - prefer_interpolation_to_compose_strings
+   info - The import of 'package:intl/intl.dart' is unnecessary because all of the used elements are also provided by the import of 'package:easy_localization/easy_localization.dart'. Try removing the import directive - lib\screens\shared\detailed_report_screen.dart:3:8 - unnecessary_import
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\shared\detailed_report_screen.dart:195:23 - prefer_const_constructors
+   info - Use interpolation to compose strings and values. Try using string interpolation to build the composite string - lib\screens\shared\detailed_report_screen.dart:333:19 - prefer_interpolation_to_compose_strings
+   info - Unnecessary braces in a string interpolation. Try removing the braces - lib\screens\shared\detailed_report_screen.dart:432:51 - unnecessary_brace_in_string_interps
+   info - Unnecessary use of string interpolation. Try replacing the string literal with the variable name - lib\screens\shared\detailed_report_screen.dart:625:47 - unnecessary_string_interpolations
+   info - Unnecessary use of string interpolation. Try replacing the string literal with the variable name - lib\screens\shared\detailed_report_screen.dart:626:45 - unnecessary_string_interpolations
+   info - Unnecessary use of string interpolation. Try replacing the string literal with the variable name - lib\screens\shared\detailed_report_screen.dart:627:46 - unnecessary_string_interpolations
+   info - Unnecessary use of string interpolation. Try replacing the string literal with the variable name - lib\screens\shared\detailed_report_screen.dart:628:49 - unnecessary_string_interpolations
+warning - The declaration '_showRawDataDialog' isn't referenced. Try removing the declaration of '_showRawDataDialog' - lib\screens\shared\detailed_report_screen.dart:843:8 - unused_element
+warning - Unused import: '../../theme/app_colors.dart'. Try removing the import directive - lib\screens\shared\forgot_password_screen.dart:5:8 - unused_import
+   info - Use interpolation to compose strings and values. Try using string interpolation to build the composite string - lib\screens\shared\functional_assessment_screen.dart:107:27 - prefer_interpolation_to_compose_strings
+warning - Unused import: 'package:lottie/lottie.dart'. Try removing the import directive - lib\screens\shared\gait_test_screen.dart:6:8 - unused_import
+warning - Unused import: 'processing_screen.dart'. Try removing the import directive - lib\screens\shared\gait_test_screen.dart:24:8 - unused_import
+   info - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check - lib\screens\shared\gait_test_screen.dart:140:62 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check - lib\screens\shared\gait_test_screen.dart:141:58 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check - lib\screens\shared\gait_test_screen.dart:175:5 - use_build_context_synchronously
+   info - Statements in an if should be enclosed in a block. Try wrapping the statement in a block - lib\screens\shared\gait_test_screen.dart:287:26 - curly_braces_in_flow_control_structures
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\shared\gait_test_screen.dart:405:25 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\shared\gait_test_screen.dart:414:25 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\shared\gait_test_screen.dart:554:15 - prefer_const_constructors
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement - lib\screens\shared\gait_test_screen.dart:594:44 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement - lib\screens\shared\gait_test_screen.dart:596:63 - deprecated_member_use
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\shared\gait_test_screen.dart:926:33 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\shared\gait_test_screen.dart:927:35 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\shared\gait_test_screen.dart:995:13 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\shared\gait_test_screen.dart:1050:19 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\shared\gait_test_screen.dart:1051:21 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\shared\gait_test_screen.dart:1080:15 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\shared\gait_test_screen.dart:1135:19 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\shared\gait_test_screen.dart:1136:21 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\shared\gait_test_screen.dart:1228:15 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\shared\gait_test_screen.dart:1275:27 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\shared\gait_test_screen.dart:1305:29 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\shared\gait_test_screen.dart:1378:17 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\shared\gait_test_screen.dart:1382:17 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\shared\gait_test_screen.dart:1386:17 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\shared\gait_test_screen.dart:1390:17 - prefer_const_constructors
+   info - Use 'const' for final variables initialized to a constant value. Try replacing 'final' with 'const' - lib\screens\shared\gait_test_screen.dart:1469:5 - prefer_const_declarations
+warning - The operand can't be 'null', so the condition is always 'true'. Remove the condition - lib\screens\shared\image_upload_screen.dart:79:53 - unnecessary_null_comparison
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\shared\image_upload_screen.dart:135:27 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\shared\image_upload_screen.dart:179:35 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\shared\image_upload_screen.dart:182:44 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\shared\joint_selection_screen.dart:199:31 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\shared\language_selection_screen.dart:21:17 - prefer_const_constructors
+   info - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check - lib\screens\shared\language_selection_screen.dart:257:15 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check - lib\screens\shared\language_selection_screen.dart:258:13 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check - lib\screens\shared\language_selection_screen.dart:260:13 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check - lib\screens\shared\login_screen.dart:76:9 - use_build_context_synchronously
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\shared\login_screen.dart:327:31 - prefer_const_constructors
+warning - Unused import: 'package:provider/provider.dart'. Try removing the import directive - lib\screens\shared\medical_history_screen.dart:4:8 - unused_import
+warning - Unused import: '../../providers/screening_provider.dart'. Try removing the import directive - lib\screens\shared\medical_history_screen.dart:6:8 - unused_import
+warning - Unused import: '../../providers/patient_provider.dart'. Try removing the import directive - lib\screens\shared\medical_history_screen.dart:7:8 - unused_import
+   info - Unnecessary use of string interpolation. Try replacing the string literal with the variable name - lib\screens\shared\medical_history_screen.dart:74:23 - unnecessary_string_interpolations
+   info - 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor instead. This feature was deprecated after v3.31.0-2.0.pre. Try replacing the use of the deprecated member with the replacement - lib\screens\shared\medical_history_screen.dart:147:13 - deprecated_member_use
+warning - Unused import: '../../theme/app_colors.dart'. Try removing the import directive - lib\screens\shared\onboarding_screen.dart:6:8 - unused_import
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\shared\pdf_preview_screen.dart:136:25 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\shared\pdf_preview_screen.dart:137:25 - prefer_const_constructors
+warning - Unused import: 'preventive_care_article_screen.dart'. Try removing the import directive - lib\screens\shared\preventive_care_category_screen.dart:9:8 - unused_import
+warning - Unused import: 'preventive_care_category_screen.dart'. Try removing the import directive - lib\screens\shared\preventive_care_home_screen.dart:9:8 - unused_import
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\shared\preventive_care_home_screen.dart:21:17 - prefer_const_constructors
+   info - Use 'const' literals as arguments to constructors of '@immutable' classes. Try adding 'const' before the literal - lib\screens\shared\preventive_care_home_screen.dart:22:17 - prefer_const_literals_to_create_immutables
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\shared\preventive_care_home_screen.dart:22:18 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\shared\preventive_care_home_screen.dart:22:37 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\shared\preventive_care_home_screen.dart:33:17 - prefer_const_constructors
+   info - Use 'const' literals as arguments to constructors of '@immutable' classes. Try adding 'const' before the literal - lib\screens\shared\preventive_care_home_screen.dart:34:17 - prefer_const_literals_to_create_immutables
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\shared\preventive_care_home_screen.dart:34:18 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\shared\preventive_care_home_screen.dart:34:37 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\shared\preventive_care_home_screen.dart:45:17 - prefer_const_constructors
+   info - Use 'const' literals as arguments to constructors of '@immutable' classes. Try adding 'const' before the literal - lib\screens\shared\preventive_care_home_screen.dart:46:17 - prefer_const_literals_to_create_immutables
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\shared\preventive_care_home_screen.dart:46:18 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\shared\preventive_care_home_screen.dart:46:37 - prefer_const_constructors
+warning - Unused import: '../../widgets/common/index.dart'. Try removing the import directive - lib\screens\shared\privacy_policy_screen.dart:6:8 - unused_import
+warning - Unused import: '../shared/risk_result_screen.dart'. Try removing the import directive - lib\screens\shared\processing_screen.dart:16:8 - unused_import
+   info - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check - lib\screens\shared\processing_screen.dart:119:60 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check - lib\screens\shared\processing_screen.dart:161:41 - use_build_context_synchronously
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\shared\processing_screen.dart:220:11 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\shared\processing_screen.dart:221:22 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\shared\processing_screen.dart:306:33 - prefer_const_constructors
+warning - Unused import: 'package:go_router/go_router.dart'. Try removing the import directive - lib\screens\shared\risk_result_screen.dart:4:8 - unused_import
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\shared\role_selection_screen.dart:20:17 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\shared\role_selection_screen.dart:383:20 - prefer_const_constructors
+warning - The operand can't be 'null', so the condition is always 'true'. Remove the condition - lib\screens\shared\select_patient_screen.dart:300:41 - unnecessary_null_comparison
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\shared\select_patient_screen.dart:301:27 - prefer_const_constructors
+warning - The operand can't be 'null', so the condition is always 'true'. Remove the condition - lib\screens\shared\select_patient_screen.dart:315:44 - unnecessary_null_comparison
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\shared\select_patient_screen.dart:335:27 - prefer_const_constructors
+warning - The value of the local variable 'authProvider' isn't used. Try removing the variable or using it - lib\screens\shared\signup_screen.dart:89:11 - unused_local_variable
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\shared\signup_screen.dart:96:17 - prefer_const_constructors
+   info - Use interpolation to compose strings and values. Try using string interpolation to build the composite string - lib\screens\shared\signup_screen.dart:246:34 - prefer_interpolation_to_compose_strings
+warning - Unused import: '../../providers/settings_provider.dart'. Try removing the import directive - lib\screens\shared\splash_screen.dart:7:8 - unused_import
+warning - Unused import: 'package:provider/provider.dart'. Try removing the import directive - lib\screens\shared\surgery_history_screen.dart:4:8 - unused_import
+warning - Unused import: '../../providers/screening_provider.dart'. Try removing the import directive - lib\screens\shared\surgery_history_screen.dart:6:8 - unused_import
+warning - The value of the field '_surgeryType' isn't used. Try removing the field, or using it - lib\screens\shared\surgery_history_screen.dart:31:11 - unused_field
+   info - Unnecessary use of string interpolation. Try replacing the string literal with the variable name - lib\screens\shared\surgery_history_screen.dart:70:23 - unnecessary_string_interpolations
+   info - 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor instead. This feature was deprecated after v3.31.0-2.0.pre. Try replacing the use of the deprecated member with the replacement - lib\screens\shared\surgery_history_screen.dart:92:29 - deprecated_member_use
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\screens\shared\surgery_history_screen.dart:108:35 - prefer_const_constructors
+   info - 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor instead. This feature was deprecated after v3.31.0-2.0.pre. Try replacing the use of the deprecated member with the replacement - lib\screens\shared\surgery_history_screen.dart:128:31 - deprecated_member_use
+warning - Unused import: 'gait_test_screen.dart'. Try removing the import directive - lib\screens\shared\symptom_questionnaire_screen.dart:16:8 - unused_import
+warning - The declaration '_buildQ4PastInjury' isn't referenced. Try removing the declaration of '_buildQ4PastInjury' - lib\screens\shared\symptom_questionnaire_screen.dart:630:10 - unused_element
+warning - The value of the local variable 'isLastPage' isn't used. Try removing the variable or using it - lib\screens\shared\symptom_questionnaire_screen.dart:806:11 - unused_local_variable
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement - lib\screens\shared\symptom_questionnaire_screen.dart:1002:50 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement - lib\screens\shared\symptom_questionnaire_screen.dart:1019:50 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement - lib\screens\shared\symptom_questionnaire_screen.dart:1036:50 - deprecated_member_use
+warning - Unused import: '../../widgets/common/index.dart'. Try removing the import directive - lib\screens\shared\terms_of_service_screen.dart:6:8 - unused_import
+warning - Unused import: '../shared/preventive_care_home_screen.dart'. Try removing the import directive - lib\screens\user\user_home_screen.dart:11:8 - unused_import
+warning - Unused import: '../shared/symptom_questionnaire_screen.dart'. Try removing the import directive - lib\screens\user\user_home_screen.dart:12:8 - unused_import
+   info - The member 'piezoStream' overrides an inherited member but isn't annotated with '@override'. Try adding the '@override' annotation - lib\services\ble_wearable_source.dart:68:26 - annotate_overrides
+   info - The member 'emgStream' overrides an inherited member but isn't annotated with '@override'. Try adding the '@override' annotation - lib\services\ble_wearable_source.dart:69:26 - annotate_overrides
+   info - The member 'batteryStream' overrides an inherited member but isn't annotated with '@override'. Try adding the '@override' annotation - lib\services\ble_wearable_source.dart:70:19 - annotate_overrides
+   info - The member 'deviceStatusStream' overrides an inherited member but isn't annotated with '@override'. Try adding the '@override' annotation - lib\services\ble_wearable_source.dart:72:33 - annotate_overrides
+   info - Don't invoke 'print' in production code. Try using a logging framework - lib\services\ble_wearable_source.dart:108:11 - avoid_print
+   info - Don't invoke 'print' in production code. Try using a logging framework - lib\services\ble_wearable_source.dart:117:15 - avoid_print
+   info - Don't invoke 'print' in production code. Try using a logging framework - lib\services\ble_wearable_source.dart:121:15 - avoid_print
+   info - Don't invoke 'print' in production code. Try using a logging framework - lib\services\ble_wearable_source.dart:125:15 - avoid_print
+   info - Don't invoke 'print' in production code. Try using a logging framework - lib\services\ble_wearable_source.dart:129:15 - avoid_print
+   info - Don't invoke 'print' in production code. Try using a logging framework - lib\services\ble_wearable_source.dart:133:15 - avoid_print
+   info - Don't invoke 'print' in production code. Try using a logging framework - lib\services\ble_wearable_source.dart:137:15 - avoid_print
+   info - Don't invoke 'print' in production code. Try using a logging framework - lib\services\ble_wearable_source.dart:149:7 - avoid_print
+   info - Don't invoke 'print' in production code. Try using a logging framework - lib\services\ble_wearable_source.dart:153:7 - avoid_print
+   info - Don't invoke 'print' in production code. Try using a logging framework - lib\services\ble_wearable_source.dart:177:29 - avoid_print
+   info - Don't invoke 'print' in production code. Try using a logging framework - lib\services\ble_wearable_source.dart:190:29 - avoid_print
+   info - Don't invoke 'print' in production code. Try using a logging framework - lib\services\ble_wearable_source.dart:203:29 - avoid_print
+   info - Don't invoke 'print' in production code. Try using a logging framework - lib\services\ble_wearable_source.dart:216:29 - avoid_print
+   info - Don't invoke 'print' in production code. Try using a logging framework - lib\services\ble_wearable_source.dart:227:29 - avoid_print
+   info - Don't invoke 'print' in production code. Try using a logging framework - lib\services\ble_wearable_source.dart:238:29 - avoid_print
+   info - Don't invoke 'print' in production code. Try using a logging framework - lib\services\ble_wearable_source.dart:242:5 - avoid_print
+   info - Don't invoke 'print' in production code. Try using a logging framework - lib\services\ble_wearable_source.dart:276:5 - avoid_print
+   info - Don't invoke 'print' in production code. Try using a logging framework - lib\services\ble_wearable_source.dart:312:7 - avoid_print
+   info - Don't invoke 'print' in production code. Try using a logging framework - lib\services\ble_wearable_source.dart:335:7 - avoid_print
+   info - Don't invoke 'print' in production code. Try using a logging framework - lib\services\ble_wearable_source.dart:369:7 - avoid_print
+   info - Don't invoke 'print' in production code. Try using a logging framework - lib\services\ble_wearable_source.dart:403:7 - avoid_print
+   info - Don't invoke 'print' in production code. Try using a logging framework - lib\services\ble_wearable_source.dart:429:7 - avoid_print
+   info - Don't invoke 'print' in production code. Try using a logging framework - lib\services\ble_wearable_source.dart:442:7 - avoid_print
+   info - Don't invoke 'print' in production code. Try using a logging framework - lib\services\ble_wearable_source.dart:449:7 - avoid_print
+   info - The import of 'package:sqflite/sqlite_api.dart' is unnecessary because all of the used elements are also provided by the import of 'package:sqflite/sqflite.dart'. Try removing the import directive - lib\services\database_helper.dart:2:8 - unnecessary_import
+warning - Unused import: 'gait_analyzer.dart'. Try removing the import directive - lib\services\gait_sensor_pipeline.dart:7:8 - unused_import
+warning - The '!' will have no effect because the receiver can't be null. Try removing the '!' operator - lib\services\gait_sensor_pipeline.dart:182:48 - unnecessary_non_null_assertion
+warning - The value of the local variable 'contributingFactors' isn't used. Try removing the variable or using it - lib\services\gait_sensor_pipeline.dart:544:15 - unused_local_variable
+warning - The declaration '_calculateStd' isn't referenced. Try removing the declaration of '_calculateStd' - lib\services\gait_sensor_pipeline.dart:646:10 - unused_element
+   info - Empty catch block. Try adding statements to the block, adding a comment to the block, or removing the 'catch' clause - lib\services\location_service.dart:57:19 - empty_catches
+   info - Empty catch block. Try adding statements to the block, adding a comment to the block, or removing the 'catch' clause - lib\services\location_service.dart:78:17 - empty_catches
+   info - The imported package 'image' isn't a dependency of the importing package. Try adding a dependency for 'image' in the 'pubspec.yaml' file - lib\services\medical_image_service.dart:6:8 - depend_on_referenced_packages
+   info - Statements in an if should be enclosed in a block. Try wrapping the statement in a block - lib\services\medical_image_service.dart:212:9 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block. Try wrapping the statement in a block - lib\services\medical_image_service.dart:214:9 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block. Try wrapping the statement in a block - lib\services\medical_image_service.dart:216:9 - curly_braces_in_flow_control_structures
+   info - Use 'const' for final variables initialized to a constant value. Try replacing 'final' with 'const' - lib\services\medical_image_service.dart:525:5 - prefer_const_declarations
+   info - Unnecessary use of string interpolation. Try replacing the string literal with the variable name - lib\services\pdf_generator_service.dart:157:36 - unnecessary_string_interpolations
+   info - Unnecessary use of string interpolation. Try replacing the string literal with the variable name - lib\services\pdf_generator_service.dart:158:34 - unnecessary_string_interpolations
+   info - Unnecessary use of string interpolation. Try replacing the string literal with the variable name - lib\services\pdf_generator_service.dart:159:35 - unnecessary_string_interpolations
+   info - Unnecessary use of string interpolation. Try replacing the string literal with the variable name - lib\services\pdf_generator_service.dart:160:38 - unnecessary_string_interpolations
+   info - Don't invoke 'print' in production code. Try using a logging framework - lib\services\permission_service.dart:142:9 - avoid_print
+   info - Don't invoke 'print' in production code. Try using a logging framework - lib\services\permission_service.dart:145:9 - avoid_print
+   info - Don't invoke 'print' in production code. Try using a logging framework - lib\services\permission_service.dart:148:9 - avoid_print
+   info - Don't invoke 'print' in production code. Try using a logging framework - lib\services\permission_service.dart:152:7 - avoid_print
+   info - Don't invoke 'print' in production code. Try using a logging framework - lib\services\phone_sensor_source.dart:68:9 - avoid_print
+   info - Don't invoke 'print' in production code. Try using a logging framework - lib\services\phone_sensor_source.dart:87:9 - avoid_print
+   info - Statements in an if should be enclosed in a block. Try wrapping the statement in a block - lib\services\tflite_service.dart:210:32 - curly_braces_in_flow_control_structures
+   info - Statements in a while should be enclosed in a block. Try wrapping the statement in a block - lib\utils\dsp_utils.dart:98:31 - curly_braces_in_flow_control_structures
+   info - Statements in a while should be enclosed in a block. Try wrapping the statement in a block - lib\utils\dsp_utils.dart:101:31 - curly_braces_in_flow_control_structures
+   info - The constant name 'GYRO_FS' isn't a lowerCamelCase identifier. Try changing the name to follow the lowerCamelCase style - lib\utils\feature_extraction_utils.dart:5:20 - constant_identifier_names
+   info - The constant name 'PIEZO_FS' isn't a lowerCamelCase identifier. Try changing the name to follow the lowerCamelCase style - lib\utils\feature_extraction_utils.dart:6:20 - constant_identifier_names
+   info - The constant name 'EMG_FS' isn't a lowerCamelCase identifier. Try changing the name to follow the lowerCamelCase style - lib\utils\feature_extraction_utils.dart:7:20 - constant_identifier_names
+   info - Statements in a for should be enclosed in a block. Try wrapping the statement in a block - lib\utils\feature_extraction_utils.dart:214:42 - curly_braces_in_flow_control_structures
+   info - Statements in a for should be enclosed in a block. Try wrapping the statement in a block - lib\utils\feature_extraction_utils.dart:240:42 - curly_braces_in_flow_control_structures
+   info - Don't invoke 'print' in production code. Try using a logging framework - lib\widgets\common\animated_counter.dart:79:5 - avoid_print
+   info - Don't invoke 'print' in production code. Try using a logging framework - lib\widgets\common\animated_counter.dart:100:7 - avoid_print
+   info - Don't invoke 'print' in production code. Try using a logging framework - lib\widgets\common\animated_risk_gauge.dart:49:5 - avoid_print
+   info - Use 'const' literals as arguments to constructors of '@immutable' classes. Try adding 'const' before the literal - lib\widgets\common\custom_card.dart:170:22 - prefer_const_literals_to_create_immutables
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\widgets\common\custom_card.dart:171:13 - prefer_const_constructors
+   info - Use 'const' literals as arguments to constructors of '@immutable' classes. Try adding 'const' before the literal - lib\widgets\common\custom_card.dart:229:24 - prefer_const_literals_to_create_immutables
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\widgets\common\custom_card.dart:230:15 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\widgets\common\custom_card.dart:250:13 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\widgets\common\custom_card.dart:256:13 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - lib\widgets\common\custom_card.dart:332:13 - prefer_const_constructors
+   info - Don't invoke 'print' in production code. Try using a logging framework - lib\widgets\common\pulsing_fab.dart:43:5 - avoid_print
+warning - Unused import: 'package:go_router/go_router.dart'. Try removing the import directive - lib\widgets\ff\ff_patient_row.dart:3:8 - unused_import
+warning - Unused import: 'dart:io'. Try removing the import directive - test\local_image_test.dart:1:8 - unused_import
+   info - Can't use a relative path to import a library in 'lib'. Try fixing the relative path or changing the import to a 'package:' import - test\local_image_test.dart:3:8 - avoid_relative_lib_imports
+   info - Don't invoke 'print' in production code. Try using a logging framework - test\local_image_test.dart:23:5 - avoid_print
+   info - Don't invoke 'print' in production code. Try using a logging framework - test\local_image_test.dart:24:5 - avoid_print
+   info - Don't invoke 'print' in production code. Try using a logging framework - test\local_image_test.dart:25:5 - avoid_print
+   info - Use interpolation to compose strings and values. Try using string interpolation to build the composite string - test\local_image_test.dart:25:11 - prefer_interpolation_to_compose_strings
+   info - Don't invoke 'print' in production code. Try using a logging framework - test\local_image_test.dart:26:5 - avoid_print
+   info - Don't invoke 'print' in production code. Try using a logging framework - test\local_image_test.dart:29:5 - avoid_print
+   info - Don't invoke 'print' in production code. Try using a logging framework - test\local_image_test.dart:30:5 - avoid_print
+   info - Use interpolation to compose strings and values. Try using string interpolation to build the composite string - test\local_image_test.dart:30:11 - prefer_interpolation_to_compose_strings
+   info - Don't invoke 'print' in production code. Try using a logging framework - test\local_image_test.dart:31:5 - avoid_print
+   info - Use interpolation to compose strings and values. Try using string interpolation to build the composite string - test\local_image_test.dart:31:11 - prefer_interpolation_to_compose_strings
+   info - Don't invoke 'print' in production code. Try using a logging framework - test\local_image_test.dart:32:5 - avoid_print
+   info - Use interpolation to compose strings and values. Try using string interpolation to build the composite string - test\local_image_test.dart:32:11 - prefer_interpolation_to_compose_strings
+   info - Don't invoke 'print' in production code. Try using a logging framework - test\local_image_test.dart:33:5 - avoid_print
+   info - Use interpolation to compose strings and values. Try using string interpolation to build the composite string - test\local_image_test.dart:33:11 - prefer_interpolation_to_compose_strings
+   info - Don't invoke 'print' in production code. Try using a logging framework - test\local_image_test.dart:34:5 - avoid_print
+   info - Use interpolation to compose strings and values. Try using string interpolation to build the composite string - test\local_image_test.dart:34:11 - prefer_interpolation_to_compose_strings
+   info - Don't invoke 'print' in production code. Try using a logging framework - test\local_image_test.dart:35:5 - avoid_print
+   info - Use interpolation to compose strings and values. Try using string interpolation to build the composite string - test\local_image_test.dart:35:11 - prefer_interpolation_to_compose_strings
+   info - Use interpolation to compose strings and values. Try using string interpolation to build the composite string - test\local_image_test.dart:35:50 - prefer_interpolation_to_compose_strings
+   info - Use interpolation to compose strings and values. Try using string interpolation to build the composite string - test\local_image_test.dart:35:90 - prefer_interpolation_to_compose_strings
+   info - Use interpolation to compose strings and values. Try using string interpolation to build the composite string - test\local_image_test.dart:35:130 - prefer_interpolation_to_compose_strings
+   info - Don't invoke 'print' in production code. Try using a logging framework - test\local_image_test.dart:40:5 - avoid_print
+   info - Don't invoke 'print' in production code. Try using a logging framework - test\local_image_test.dart:41:5 - avoid_print
+   info - Don't invoke 'print' in production code. Try using a logging framework - test\local_image_test.dart:42:5 - avoid_print
+   info - Use interpolation to compose strings and values. Try using string interpolation to build the composite string - test\local_image_test.dart:42:11 - prefer_interpolation_to_compose_strings
+   info - Use interpolation to compose strings and values. Try using string interpolation to build the composite string - test\local_image_test.dart:42:44 - prefer_interpolation_to_compose_strings
+   info - Statements in an if should be enclosed in a block. Try wrapping the statement in a block - test\local_image_test.dart:48:25 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block. Try wrapping the statement in a block - test\local_image_test.dart:49:30 - curly_braces_in_flow_control_structures
+   info - Use interpolation to compose strings and values. Try using string interpolation to build the composite string - test\local_image_test.dart:54:24 - prefer_interpolation_to_compose_strings
+warning - Dead code. Try removing the code, or fixing the code before it so that it can be reached - test\local_image_test.dart:58:20 - dead_code
+warning - Dead code. Try removing the code, or fixing the code before it so that it can be reached - test\local_image_test.dart:58:35 - dead_code
+warning - Dead code. Try removing the code, or fixing the code before it so that it can be reached - test\local_image_test.dart:59:25 - dead_code
+   info - Don't invoke 'print' in production code. Try using a logging framework - test\local_image_test.dart:64:5 - avoid_print
+   info - Don't invoke 'print' in production code. Try using a logging framework - test\local_image_test.dart:65:5 - avoid_print
+   info - Don't invoke 'print' in production code. Try using a logging framework - test\local_image_test.dart:66:5 - avoid_print
+   info - Use interpolation to compose strings and values. Try using string interpolation to build the composite string - test\local_image_test.dart:66:11 - prefer_interpolation_to_compose_strings
+   info - Use interpolation to compose strings and values. Try using string interpolation to build the composite string - test\local_image_test.dart:66:57 - prefer_interpolation_to_compose_strings
+   info - Don't invoke 'print' in production code. Try using a logging framework - test\local_image_test.dart:67:5 - avoid_print
+   info - Don't invoke 'print' in production code. Try using a logging framework - test\local_image_test.dart:68:27 - avoid_print
+   info - Use interpolation to compose strings and values. Try using string interpolation to build the composite string - test\local_image_test.dart:68:33 - prefer_interpolation_to_compose_strings
+   info - Don't invoke 'print' in production code. Try using a logging framework - test\local_image_test.dart:71:5 - avoid_print
+   info - Don't invoke 'print' in production code. Try using a logging framework - test\local_image_test.dart:72:5 - avoid_print
+   info - Don't invoke 'print' in production code. Try using a logging framework - test\local_image_test.dart:73:5 - avoid_print
+   info - Use interpolation to compose strings and values. Try using string interpolation to build the composite string - test\local_image_test.dart:73:11 - prefer_interpolation_to_compose_strings
+   info - Don't invoke 'print' in production code. Try using a logging framework - test\local_image_test.dart:75:5 - avoid_print
+   info - Use interpolation to compose strings and values. Try using string interpolation to build the composite string - test\local_image_test.dart:75:11 - prefer_interpolation_to_compose_strings
+   info - Use interpolation to compose strings and values. Try using string interpolation to build the composite string - test\local_image_test.dart:75:49 - prefer_interpolation_to_compose_strings
+   info - Don't invoke 'print' in production code. Try using a logging framework - test\local_image_test.dart:76:5 - avoid_print
+   info - Use interpolation to compose strings and values. Try using string interpolation to build the composite string - test\local_image_test.dart:76:11 - prefer_interpolation_to_compose_strings
+   info - Don't invoke 'print' in production code. Try using a logging framework - test\local_image_test.dart:77:5 - avoid_print
+   info - Use interpolation to compose strings and values. Try using string interpolation to build the composite string - test\local_image_test.dart:77:11 - prefer_interpolation_to_compose_strings
+   info - Don't invoke 'print' in production code. Try using a logging framework - test\local_image_test.dart:78:5 - avoid_print
+   info - Don't invoke 'print' in production code. Try using a logging framework - test\local_image_test.dart:79:5 - avoid_print
+   info - Use interpolation to compose strings and values. Try using string interpolation to build the composite string - test\local_image_test.dart:79:11 - prefer_interpolation_to_compose_strings
+   info - Don't invoke 'print' in production code. Try using a logging framework - test\local_image_test.dart:80:5 - avoid_print
+   info - Use interpolation to compose strings and values. Try using string interpolation to build the composite string - test\local_image_test.dart:80:11 - prefer_interpolation_to_compose_strings
+   info - Don't invoke 'print' in production code. Try using a logging framework - test\local_image_test.dart:81:5 - avoid_print
+   info - Use interpolation to compose strings and values. Try using string interpolation to build the composite string - test\local_image_test.dart:81:11 - prefer_interpolation_to_compose_strings
+   info - Don't invoke 'print' in production code. Try using a logging framework - test\local_image_test.dart:82:5 - avoid_print
+   info - Use interpolation to compose strings and values. Try using string interpolation to build the composite string - test\local_image_test.dart:82:11 - prefer_interpolation_to_compose_strings
+   info - Don't invoke 'print' in production code. Try using a logging framework - test\local_image_test.dart:83:5 - avoid_print
+   info - Don't invoke 'print' in production code. Try using a logging framework - test\local_image_test.dart:84:35 - avoid_print
+   info - Use interpolation to compose strings and values. Try using string interpolation to build the composite string - test\local_image_test.dart:84:41 - prefer_interpolation_to_compose_strings
+   info - Don't invoke 'print' in production code. Try using a logging framework - test\local_image_test.dart:89:5 - avoid_print
+   info - Don't invoke 'print' in production code. Try using a logging framework - test\local_image_test.dart:90:5 - avoid_print
+   info - Don't invoke 'print' in production code. Try using a logging framework - test\local_image_test.dart:91:5 - avoid_print
+   info - Don't invoke 'print' in production code. Try using a logging framework - test\local_image_test.dart:92:5 - avoid_print
+   info - Don't invoke 'print' in production code. Try using a logging framework - test\local_image_test.dart:93:5 - avoid_print
+   info - Use interpolation to compose strings and values. Try using string interpolation to build the composite string - test\local_image_test.dart:93:11 - prefer_interpolation_to_compose_strings
+   info - Don't invoke 'print' in production code. Try using a logging framework - test\local_image_test.dart:94:5 - avoid_print
+   info - Use interpolation to compose strings and values. Try using string interpolation to build the composite string - test\local_image_test.dart:94:11 - prefer_interpolation_to_compose_strings
+   info - Don't invoke 'print' in production code. Try using a logging framework - test\local_image_test.dart:95:5 - avoid_print
+   info - Don't invoke 'print' in production code. Try using a logging framework - test\local_image_test.dart:96:5 - avoid_print
+   info - Use interpolation to compose strings and values. Try using string interpolation to build the composite string - test\local_image_test.dart:96:11 - prefer_interpolation_to_compose_strings
+   info - Don't invoke 'print' in production code. Try using a logging framework - test\local_image_test.dart:97:5 - avoid_print
+   info - Use interpolation to compose strings and values. Try using string interpolation to build the composite string - test\local_image_test.dart:97:11 - prefer_interpolation_to_compose_strings
+   info - Don't invoke 'print' in production code. Try using a logging framework - test\local_image_test.dart:98:5 - avoid_print
+warning - Unused import: 'dart:convert'. Try removing the import directive - test_auth.dart:2:8 - unused_import
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - test_auth.dart:8:21 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - test_auth.dart:9:21 - prefer_const_constructors
+   info - Use interpolation to compose strings and values. Try using string interpolation to build the composite string - test_auth.dart:12:17 - prefer_interpolation_to_compose_strings
+   info - Use 'const' for final variables initialized to a constant value. Try replacing 'final' with 'const' - test_auth.dart:13:3 - prefer_const_declarations
+   info - Don't invoke 'print' in production code. Try using a logging framework - test_auth.dart:16:5 - avoid_print
+   info - Don't invoke 'print' in production code. Try using a logging framework - test_auth.dart:22:5 - avoid_print
+   info - Use interpolation to compose strings and values. Try using string interpolation to build the composite string - test_auth.dart:22:11 - prefer_interpolation_to_compose_strings
+   info - Don't invoke 'print' in production code. Try using a logging framework - test_auth.dart:24:5 - avoid_print
+   info - Don't invoke 'print' in production code. Try using a logging framework - test_auth.dart:29:5 - avoid_print
+   info - Use interpolation to compose strings and values. Try using string interpolation to build the composite string - test_auth.dart:29:11 - prefer_interpolation_to_compose_strings
+   info - Don't invoke 'print' in production code. Try using a logging framework - test_auth.dart:31:5 - avoid_print
+   info - Use interpolation to compose strings and values. Try using string interpolation to build the composite string - test_auth.dart:31:11 - prefer_interpolation_to_compose_strings
+   info - Don't invoke 'print' in production code. Try using a logging framework - test_auth.dart:32:5 - avoid_print
+   info - Use interpolation to compose strings and values. Try using string interpolation to build the composite string - test_auth.dart:32:11 - prefer_interpolation_to_compose_strings
+warning - Unused import: 'dart:convert'. Try removing the import directive - test_login.dart:2:8 - unused_import
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - test_login.dart:8:21 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation - test_login.dart:9:21 - prefer_const_constructors
+   info - Don't invoke 'print' in production code. Try using a logging framework - test_login.dart:13:5 - avoid_print
+   info - Don't invoke 'print' in production code. Try using a logging framework - test_login.dart:18:5 - avoid_print
+   info - Use interpolation to compose strings and values. Try using string interpolation to build the composite string - test_login.dart:18:11 - prefer_interpolation_to_compose_strings
+   info - Don't invoke 'print' in production code. Try using a logging framework - test_login.dart:20:5 - avoid_print
+   info - Use interpolation to compose strings and values. Try using string interpolation to build the composite string - test_login.dart:20:11 - prefer_interpolation_to_compose_strings
+   info - Don't invoke 'print' in production code. Try using a logging framework - test_login.dart:21:5 - avoid_print
+   info - Use interpolation to compose strings and values. Try using string interpolation to build the composite string - test_login.dart:21:11 - prefer_interpolation_to_compose_strings
+   info - Don't invoke 'print' in production code. Try using a logging framework - test_login.dart:22:5 - avoid_print
+   info - Use interpolation to compose strings and values. Try using string interpolation to build the composite string - test_login.dart:22:11 - prefer_interpolation_to_compose_strings
+   info - Don't invoke 'print' in production code. Try using a logging framework - test_login.dart:23:5 - avoid_print
+   info - Use interpolation to compose strings and values. Try using string interpolation to build the composite string - test_login.dart:23:11 - prefer_interpolation_to_compose_strings
+   info - Don't invoke 'print' in production code. Try using a logging framework - test_login.dart:25:5 - avoid_print
+   info - Use interpolation to compose strings and values. Try using string interpolation to build the composite string - test_login.dart:25:11 - prefer_interpolation_to_compose_strings
+
+flutter : 432 issues found. (ran in 4.8s)
+At line:1 char:1
++ flutter analyze --no-pub 2>&1 | Out-File "d:\OsteoSense\analyze_outpu ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (432 issues found. (ran in 4.8s):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 

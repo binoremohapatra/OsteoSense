@@ -37,8 +37,8 @@ const registerSchema = z.preprocess(
       .string({ required_error: 'Password is required' })
       .min(6, 'Password must be at least 6 characters'),
     role: z.enum(['agent', 'user', 'admin']).optional().default('agent'),
-    healthCenterId: z.string().trim().optional(),
-    location: z.string().trim().optional(),
+    healthCenterId: z.string().trim().nullable().optional(),
+    location: z.string().trim().nullable().optional(),
   })
 );
 
@@ -58,4 +58,12 @@ const logoutSchema = z.object({
   refreshToken: z.string({ required_error: 'refreshToken is required' }).min(1),
 });
 
-module.exports = { registerSchema, loginSchema, refreshSchema, logoutSchema };
+const resetPasswordSchema = z.preprocess(
+  preprocessAuth,
+  z.object({
+    phoneNumber: phoneNumberSchema,
+    newPassword: z.string({ required_error: 'New password is required' }).min(6, 'Password must be at least 6 characters'),
+  })
+);
+
+module.exports = { registerSchema, loginSchema, refreshSchema, logoutSchema, resetPasswordSchema };

@@ -218,14 +218,12 @@ class _BreathingLogo extends StatelessWidget {
         ],
       ),
       child: Center(
-        child: ShaderMask(
-          shaderCallback: (bounds) => AppColors.primaryGradient.createShader(
-            Rect.fromLTWH(0, 0, bounds.width, bounds.height),
-          ),
-          child: const Icon(
-            Icons.health_and_safety,
-            size: 64,
-            color: Colors.white,
+        child: ClipOval(
+          child: Image.asset(
+            'assets/icons/app_icon.png',
+            width: 120,
+            height: 120,
+            fit: BoxFit.cover,
           ),
         ),
       ),

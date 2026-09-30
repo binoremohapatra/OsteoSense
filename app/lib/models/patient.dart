@@ -8,6 +8,8 @@ class Patient {
   final String? village;
   final String? address;
   final String? occupation;
+  final double? weightKg;
+  final double? heightCm;
   final DateTime createdAt;
   final DateTime updatedAt;
   final bool synced;
@@ -22,11 +24,20 @@ class Patient {
     this.village,
     this.address,
     this.occupation,
+    this.weightKg,
+    this.heightCm,
     DateTime? createdAt,
     DateTime? updatedAt,
     this.synced = false,
   })  : createdAt = createdAt ?? DateTime.now(),
         updatedAt = updatedAt ?? DateTime.now();
+
+  /// Computed BMI — returns null when weight or height is missing.
+  double? get bmi {
+    if (weightKg == null || heightCm == null || heightCm! <= 0) return null;
+    final heightM = heightCm! / 100.0;
+    return weightKg! / (heightM * heightM);
+  }
 
   Map<String, dynamic> toMap() {
     return {
@@ -39,6 +50,8 @@ class Patient {
       'village': village,
       'address': address,
       'occupation': occupation,
+      'weight_kg': weightKg,
+      'height_cm': heightCm,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
       'synced': synced ? 1 : 0,
@@ -56,6 +69,8 @@ class Patient {
       village: map['village'] as String?,
       address: map['address'] as String?,
       occupation: map['occupation'] as String?,
+      weightKg: (map['weight_kg'] as num?)?.toDouble(),
+      heightCm: (map['height_cm'] as num?)?.toDouble(),
       createdAt: DateTime.parse(map['created_at'] as String),
       updatedAt: DateTime.parse(map['updated_at'] as String),
       synced: (map['synced'] as int) == 1,
@@ -72,6 +87,8 @@ class Patient {
     String? village,
     String? address,
     String? occupation,
+    double? weightKg,
+    double? heightCm,
     DateTime? createdAt,
     DateTime? updatedAt,
     bool? synced,
@@ -86,6 +103,8 @@ class Patient {
       village: village ?? this.village,
       address: address ?? this.address,
       occupation: occupation ?? this.occupation,
+      weightKg: weightKg ?? this.weightKg,
+      heightCm: heightCm ?? this.heightCm,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       synced: synced ?? this.synced,

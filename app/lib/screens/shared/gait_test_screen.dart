@@ -1,12 +1,17 @@
-import 'dart:async';
+﻿import 'dart:async';
+import 'dart:convert';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'dart:ui';
 import 'package:go_router/go_router.dart';
 import 'package:lottie/lottie.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../../providers/screening_provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 import '../../providers/patient_provider.dart';
 import '../../services/sensor_service.dart';
+import '../../providers/ble_device_provider.dart';
 import '../../services/gait_sensor_pipeline.dart';
 import '../../models/signal_test_models.dart';
 import '../../theme/app_colors.dart';
@@ -18,6 +23,7 @@ import '../../widgets/premium/loading/premium_loading.dart';
 import '../../widgets/premium/buttons/premium_buttons.dart';
 import '../../widgets/premium/selection/premium_selection.dart';
 import 'processing_screen.dart';
+import 'ble_device_selector_screen.dart';
 import 'package:fl_chart/fl_chart.dart';
 
 class GaitTestScreen extends StatefulWidget {
@@ -32,18 +38,30 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
   final GaitSensorPipeline _sensorPipeline = GaitSensorPipeline();
   bool _isRecording = false;
   Timer? _timer;
-  int _remainingSeconds = 30;
-  final int _totalSeconds = 30;
-  
+  int _remainingSeconds = 120;
+  final int _totalSeconds = 120;
+
   // Analytics state
   bool _showAnalytics = false;
   SignalSourceType _sourceType = SignalSourceType.simulated;
   SimulationParameters _simParams = SimulationParameters();
 
+  // Local mirror of BleDeviceProvider's connected device name (for UI display)
+  // Updated automatically via Consumer<BleDeviceProvider> in build()
+  String? _connectedDeviceName;
+
   @override
   void initState() {
     super.initState();
     _initializeSensorPipeline();
+    // Auto-load patient from draftPatientId if selectedPatient is not set
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final patientProvider = Provider.of<PatientProvider>(context, listen: false);
+      final screeningProvider = Provider.of<ScreeningProvider>(context, listen: false);
+      if (patientProvider.selectedPatient == null && screeningProvider.draftPatientId != null) {
+        patientProvider.loadPatientById(screeningProvider.draftPatientId!);
+      }
+    });
   }
   
   @override
@@ -55,6 +73,21 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
   }
   
   void _initializeSensorPipeline() {
+    // Sync with global BleDeviceProvider - if device is connected, use hardware mode
+    final bleProvider = BleDeviceProvider();
+    if (bleProvider.isConnected) {
+      _sourceType = SignalSourceType.hardware;
+      _connectedDeviceName = bleProvider.connectedDeviceName;
+      // Ensure pipeline is in hardware mode with the connected source
+      if (bleProvider.bleSource != null) {
+        _sensorPipeline.setHardwareSource(bleProvider.bleSource);
+        _sensorPipeline.setSourceType(SignalSourceType.hardware);
+      }
+    } else {
+      _sourceType = SignalSourceType.simulated;
+      _connectedDeviceName = null;
+    }
+
     _sensorPipeline.setSourceType(_sourceType);
     _sensorPipeline.setCallbacks(
       onDataUpdate: () {
@@ -86,7 +119,7 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
     _sensorPipeline.setSourceType(_sourceType);
     _sensorPipeline.setSimulationParameters(_simParams);
     _sensorPipeline.startRecording(
-      duration: const Duration(seconds: 30),
+      duration: const Duration(seconds: 120),
     );
 
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -105,11 +138,6 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
     // Stop sensor pipeline and extract features
     await _sensorPipeline.stopRecording();
     
-    // Run ML prediction if features are available
-    if (_sensorPipeline.currentFeatures != null) {
-      await _sensorPipeline.runPrediction();
-    }
-
     final screeningProvider = Provider.of<ScreeningProvider>(context, listen: false);
     final patientProvider = Provider.of<PatientProvider>(context, listen: false);
     
@@ -118,27 +146,27 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
       screeningProvider.draftPatientId = patientProvider.selectedPatient!.id!;
     }
     
-    if (screeningProvider.draftPainLevel == 0) {
-      screeningProvider.draftPainLevel = 5; // Default moderate pain
+
+    // Run ML prediction if features are available
+    if (_sensorPipeline.currentFeatures != null) {
+      await _sensorPipeline.runPrediction(
+        painLevel: screeningProvider.draftPainLevel,
+        stiffnessDuration: screeningProvider.draftStiffnessDuration,
+        swelling: screeningProvider.draftSwelling,
+        pastInjury: screeningProvider.draftPastInjury ? screeningProvider.draftPastInjuryDetail : '',
+      );
     }
     
-    if (screeningProvider.draftStiffnessDuration == 'none') {
-      screeningProvider.draftStiffnessDuration = '30 minutes';
-    }
-    
-    if (!screeningProvider.draftSwelling) {
-      screeningProvider.draftSwelling = true;
-    }
 
     // Get gait features from pipeline
-    final features = _sensorPipeline.currentFeatures;
+    final features = _sensorPipeline.extracted44Features;
     if (features != null) {
-      // Convert features to JSON string for storage
-      screeningProvider.setDraftGaitData(features.toJson().toString());
+      // Convert features to valid JSON string for storage
+      screeningProvider.setDraftGaitData(jsonEncode(features));
     } else {
       // Fallback to sensor service
       final gaitFeatures = _sensorService.getFeatureVector();
-      screeningProvider.setDraftGaitData(gaitFeatures.toString());
+      screeningProvider.setDraftGaitData(jsonEncode(gaitFeatures));
     }
 
     setState(() {
@@ -148,16 +176,126 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
     context.push('/screening/processing');
   }
 
+  /// Opens the BLE device selector screen. On success, the global BleDeviceProvider
+  /// holds the connection and we sync local UI state from it.
+  Future<void> _openBLESelector() async {
+    final result = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(builder: (_) => const BLEDeviceSelectorScreen()),
+    );
+    if (result != null && mounted) {
+      // BleDeviceProvider already holds the connection - just sync UI state
+      final bleProvider = Provider.of<BleDeviceProvider>(context, listen: false);
+      setState(() {
+        _connectedDeviceName = bleProvider.connectedDeviceName ?? result;
+        _sourceType = SignalSourceType.hardware;
+        _sensorPipeline.setSourceType(SignalSourceType.hardware);
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final patientProvider = Provider.of<PatientProvider>(context);
+    final screeningProvider = Provider.of<ScreeningProvider>(context, listen: false);
+    // Resolve patient: prefer selectedPatient, fall back to draft patient ID
     final patient = patientProvider.selectedPatient;
+    final hasDraftPatient = screeningProvider.draftPatientId != null;
     final progress = (_totalSeconds - _remainingSeconds) / _totalSeconds;
 
-    return Scaffold(
+    // Guard: patient must be selected before starting gait test
+    // If draftPatientId exists but patient isn't loaded yet, show a loading state
+    if (patient == null && hasDraftPatient) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: CustomAppBar(
+          title: 'gait_assessment_test'.tr(),
+          centerTitle: true,
+          showBackButton: true,
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (patient == null) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: CustomAppBar(
+          title: 'gait_assessment_test'.tr(),
+          centerTitle: true,
+          showBackButton: true,
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.screenPaddingLg),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    color: AppColors.warning.withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.person_search_outlined,
+                    size: 40,
+                    color: AppColors.warning,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xl),
+                Text(
+                  'select_patient_first'.tr(),
+                  style: AppTypography.titleMedium.copyWith(
+                    fontWeight: AppTypography.bold,
+                    color: AppColors.textPrimary,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  'select_patient_gait_test'.tr(),
+                  style: AppTypography.bodySmall.copyWith(
+                    color: AppColors.textSecondary,
+                    height: 1.5,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: AppSpacing.xxxl),
+                MagneticButton(
+                  text: 'select_patient'.tr(),
+                  onPressed: () => context.push('/agent/patients'),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                if (Navigator.canPop(context))
+                  GlassButton(
+                    text: 'go_back'.tr(),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Consumer<BleDeviceProvider>(
+      builder: (context, bleProvider, _) {
+        // Sync local UI state with global provider
+        final providerDeviceName = bleProvider.connectedDeviceName;
+        if (providerDeviceName != null && _connectedDeviceName != providerDeviceName) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) setState(() {
+              _connectedDeviceName = providerDeviceName;
+              _sourceType = SignalSourceType.hardware;
+            });
+          });
+        }
+
+        return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: const CustomAppBar(
-        title: 'Gait Assessment Test',
+      appBar: CustomAppBar(
+        title: 'gait_assessment_test'.tr(),
         centerTitle: true,
         showBackButton: true,
       ),
@@ -182,14 +320,13 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Patient info card
-              if (patient != null)
-                PatientCard(
-                  name: patient.name,
-                  subtitle: '${patient.age} years',
-                  riskLevel: 'medium', // Default for testing context
-                  onTap: () {},
-                ).animate().fadeIn(duration: 300.ms),
+              // Patient info card — always visible so agent knows whose test this is
+              PatientCard(
+                name: patient.name,
+                subtitle: _buildPatientSubtitle(patient),
+                riskLevel: 'medium',
+                onTap: () {},
+              ).animate().fadeIn(duration: 300.ms),
               const SizedBox(height: AppSpacing.xl),
 
               // Instructions card
@@ -217,7 +354,7 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
                         const SizedBox(width: AppSpacing.md),
                         Expanded(
                           child: Text(
-                            'How to Perform',
+                            'how_to_perform'.tr(),
                             style: AppTypography.titleSmall.copyWith(
                               fontWeight: FontWeight.w700,
                               color: AppColors.textPrimary,
@@ -229,19 +366,19 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
                     ),
                     const SizedBox(height: AppSpacing.md),
                     _buildInstructionItem(
-                      '1. Stand naturally with your device in your pocket',
+                      '1. ${'stand_naturally_device'.tr()}',
                     ),
                     const SizedBox(height: AppSpacing.sm),
                     _buildInstructionItem(
-                      '2. Walk at a normal, comfortable pace',
+                      '2. ${'walk_normal_comfortable'.tr()}',
                     ),
                     const SizedBox(height: AppSpacing.sm),
                     _buildInstructionItem(
-                      '3. Test duration: 30 seconds',
+                      '3. ${'test_duration_60_seconds'.tr()}',
                     ),
                     const SizedBox(height: AppSpacing.sm),
                     _buildInstructionItem(
-                      '4. Walk in a straight line if possible',
+                      '4. ${'walk_straight_line'.tr()}',
                     ),
                   ],
                 ),
@@ -315,7 +452,7 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
                 ).animate().fadeIn(duration: 300.ms)
               else
                 MagneticButton(
-                  text: 'Start Gait Test',
+                  text: 'start_gait_test'.tr(),
                   onPressed: _startRecording,
                 ).animate().fadeIn(duration: 400.ms).scale(
                   begin: const Offset(0.9, 0.9),
@@ -325,7 +462,7 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
               if (Navigator.canPop(context)) ...[
                 const SizedBox(height: AppSpacing.md),
                 GlassButton(
-                  text: 'Skip Test',
+                  text: 'skip_test'.tr(),
                   onPressed: () => Navigator.pop(context),
                 ),
               ],
@@ -359,9 +496,30 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
           ),
         ),
           ),
+          // ── Floating device status chip ──────────────────────────────
+          Positioned(
+            bottom: 24,
+            right: 24,
+            child: _BleStatusBanner(bleProvider: bleProvider, onConnect: _openBLESelector),
+          ),
         ],
       ),
     );
+      },
+    );
+  }
+
+  String _buildPatientSubtitle(patient) {
+    final parts = <String>['${patient.age} ${'yrs'.tr()} • ${patient.gender}'];
+    if (patient.village != null && patient.village!.isNotEmpty) {
+      parts.add(patient.village!);
+    }
+    final measurements = <String>[];
+    if (patient.weightKg != null) measurements.add('${patient.weightKg!.toStringAsFixed(0)} ${'kg'.tr()}');
+    if (patient.heightCm != null) measurements.add('${patient.heightCm!.toStringAsFixed(0)} ${'cm'.tr()}');
+    if (patient.bmi != null) measurements.add('BMI ${patient.bmi!.toStringAsFixed(1)}');
+    if (measurements.isNotEmpty) parts.add(measurements.join(' • '));
+    return parts.join('\n');
   }
 
   Widget _buildInstructionItem(String text) {
@@ -400,7 +558,7 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
               ),
               const SizedBox(width: AppSpacing.sm),
               Text(
-                'Data Source',
+                'data_source'.tr(),
                 style: AppTypography.titleSmall,
               ),
             ],
@@ -413,6 +571,11 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
               setState(() {
                 _sourceType = value == 'Simulated' ? SignalSourceType.simulated : SignalSourceType.hardware;
                 _sensorPipeline.setSourceType(_sourceType);
+                
+                // When switching to hardware, ensure simulation is stopped
+                if (_sourceType == SignalSourceType.hardware) {
+                  _sensorPipeline.clearBuffers();
+                }
               });
             },
             segmentAsString: (v) => v,
@@ -421,16 +584,77 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
             const SizedBox(height: AppSpacing.sm),
             _buildSimulationControls(),
           ],
+          if (_sourceType == SignalSourceType.hardware) ...[
+            const SizedBox(height: AppSpacing.sm),
+            if (_connectedDeviceName != null)
+              // ── Already connected ── show green chip + optional re-connect
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: AppColors.success.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                  border: Border.all(color: AppColors.success.withOpacity(0.4)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.bluetooth_connected, color: AppColors.success, size: 18),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Connected',
+                            style: AppTypography.caption.copyWith(
+                              color: AppColors.success,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            _connectedDeviceName!,
+                            style: AppTypography.bodySmall.copyWith(
+                              color: AppColors.success,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: _openBLESelector,
+                      child: Text(
+                        'Change',
+                        style: AppTypography.caption.copyWith(
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            else
+              // ── Not connected yet ── show Connect button
+              ElevatedButton.icon(
+                onPressed: _openBLESelector,
+                icon: const Icon(Icons.bluetooth, size: 18),
+                label: Text('connect_device'.tr()),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+          ],
+
         ],
       ),
     );
   }
-  
+
   Widget _buildSimulationControls() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Simulation Parameters', style: AppTypography.labelSmall),
+        Text('simulation_parameters'.tr(), style: AppTypography.labelSmall),
         const SizedBox(height: AppSpacing.xs),
         Row(
           children: [
@@ -438,7 +662,7 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Noise Level', style: AppTypography.caption),
+                  Text('noise_level'.tr(), style: AppTypography.caption),
                   Slider(
                     value: _simParams.noiseLevel,
                     min: 0.0,
@@ -478,11 +702,16 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
       ],
     );
   }
-  
+
   Widget _buildDeviceStatusCard() {
+    final bleProvider = BleDeviceProvider();
     final isSimulated = _sourceType == SignalSourceType.simulated;
-    final isConnected = isSimulated || _sensorPipeline.hasAccelerometer;
-    
+    final isConnected = isSimulated || bleProvider.isConnected;
+    final actuallySimulated = isSimulated && _isRecording;
+    final batteryPct = bleProvider.batteryPercentage;
+    final modelReady = bleProvider.modelReady;
+    final sensorsOK = bleProvider.sensorsOK;
+
     return GlassCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -499,11 +728,11 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
               ),
               const SizedBox(width: AppSpacing.sm),
               Text(
-                'Device Status',
+                'device_status'.tr(),
                 style: AppTypography.titleSmall,
               ),
               const Spacer(),
-              if (isSimulated)
+              if (actuallySimulated)
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: AppSpacing.sm,
@@ -516,7 +745,7 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
                   child: Text(
                     'SIMULATED',
                     style: AppTypography.labelSmall.copyWith(
-                      color: AppColors.surface,
+                      color: AppColors.warning,
                       fontWeight: AppTypography.bold,
                     ),
                   ),
@@ -524,10 +753,16 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
             ],
           ),
           const SizedBox(height: AppSpacing.sm),
-          _buildStatusRow('Device', isSimulated ? 'Simulation' : 'ESP32/Phone'),
-          _buildStatusRow('Connection', isConnected ? 'Connected' : 'Disconnected'),
-          _buildStatusRow('Data Source', isSimulated ? 'Simulated' : 'Hardware'),
-          _buildStatusRow('Sampling', _isRecording ? 'Active' : 'Stopped'),
+          _buildStatusRow('Device', isSimulated ? 'Simulation' : (_connectedDeviceName ?? 'ESP32/Phone')),
+          _buildStatusRow('connection'.tr(), isConnected ? 'connected'.tr() : 'disconnected'.tr()),
+          _buildStatusRow('data_source'.tr(), isSimulated ? 'simulated'.tr() : 'hardware'.tr()),
+          _buildStatusRow('sampling'.tr(), _isRecording ? 'active'.tr() : 'stopped'.tr()),
+          if (!isSimulated && batteryPct != null)
+              _buildStatusRow('Battery', '$batteryPct%'),
+          if (!isSimulated)
+              _buildStatusRow('Model Ready', modelReady ? 'Yes (Local)' : 'No'),
+          if (!isSimulated)
+              _buildStatusRow('Sensors OK', sensorsOK ? 'Yes' : 'No'),
         ],
       ),
     );
@@ -554,16 +789,19 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
   }
   
   Widget _buildSensorSummaryCard() {
+    final isSimulated = _sourceType == SignalSourceType.simulated;
+    final actuallySimulated = isSimulated && _isRecording;
+
     return GlassCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Sensor Summary', style: AppTypography.titleSmall),
+          Text('sensor_summary'.tr(), style: AppTypography.titleSmall),
           const SizedBox(height: AppSpacing.sm),
           _buildSensorStatus('Accelerometer', _sensorPipeline.hasAccelerometer),
           _buildSensorStatus('Gyroscope', _sensorPipeline.hasGyroscope),
-          _buildSensorStatus('Piezo (Joint Vibration)', _sensorPipeline.hasPiezo, available: false),
-          _buildSensorStatus('EMG (Muscle Activity)', _sensorPipeline.hasEMG, available: false),
+          _buildSensorStatus('Piezo (Joint Vibration)', actuallySimulated || _sensorPipeline.hasPiezo),
+          _buildSensorStatus('EMG (Muscle Activity)', actuallySimulated || _sensorPipeline.hasEMG),
           _buildSensorStatus('BLE', _sourceType == SignalSourceType.hardware),
         ],
       ),
@@ -571,14 +809,18 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
   }
   
   Widget _buildSensorStatus(String name, bool isActive, {bool available = true}) {
+    final isSimulated = _sourceType == SignalSourceType.simulated;
+    final actuallySimulated = isSimulated && _isRecording;
+    final effectiveActive = isActive || actuallySimulated;
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
       child: Row(
         children: [
           Icon(
-            isActive ? Icons.check_circle : Icons.circle_outlined,
+            effectiveActive ? Icons.check_circle : Icons.circle_outlined,
             size: 16,
-            color: isActive ? AppColors.success : (available ? AppColors.textMuted : AppColors.error),
+            color: effectiveActive ? AppColors.success : (available ? AppColors.textMuted : AppColors.error),
           ),
           const SizedBox(width: AppSpacing.sm),
           Text(
@@ -587,12 +829,21 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
               color: available ? null : AppColors.textMuted,
             ),
           ),
-          if (!available) ...[
+          if (!available && !isSimulated) ...[
             const SizedBox(width: AppSpacing.sm),
             Text(
               '(Not Available)',
               style: AppTypography.caption.copyWith(
                 color: AppColors.textMuted,
+              ),
+            ),
+          ],
+          if (actuallySimulated && !isActive) ...[
+            const SizedBox(width: AppSpacing.sm),
+            Text(
+              '(Simulated)',
+              style: AppTypography.caption.copyWith(
+                color: AppColors.warning,
               ),
             ),
           ],
@@ -649,7 +900,7 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(title, style: AppTypography.titleSmall),
-              if (_sourceType == SignalSourceType.simulated)
+              if (_sourceType == SignalSourceType.simulated && _isRecording)
                 Text(
                   'SIMULATED',
                   style: AppTypography.caption.copyWith(
@@ -664,7 +915,7 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
             child: channel1.isEmpty
                 ? Center(
                     child: Text(
-                      _isRecording ? 'Waiting for data...' : 'No data',
+                      _isRecording ? 'waiting_for_data'.tr() : 'no_data'.tr(),
                       style: AppTypography.bodySmall.copyWith(
                         color: AppColors.textMuted,
                       ),
@@ -680,8 +931,7 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
                         _buildLineChartData(channel2, colors[1]),
                         _buildLineChartData(channel3, colors[2]),
                       ],
-                      minY: -2,
-                      maxY: 2,
+                      // Removed minY and maxY to allow automatic scaling for hardware sensor data
                     ),
                   ),
           ),
@@ -703,7 +953,11 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
                     const SizedBox(width: 4),
                     Text(
                       labels[index],
-                      style: AppTypography.caption,
+                      style: AppTypography.caption.copyWith(
+                        letterSpacing: 0, // prevent "Z" rendering as "7"
+                        fontWeight: FontWeight.w500,
+                        fontSize: 12,
+                      ),
                     ),
                   ],
                 ),
@@ -728,6 +982,10 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
   }
   
   Widget _buildJointVibrationSection() {
+    final isSimulated = _sourceType == SignalSourceType.simulated;
+    final actuallySimulated = isSimulated && _isRecording;
+    final hasData = actuallySimulated || _sensorPipeline.hasPiezo;
+
     return GlassCard(
       child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -738,12 +996,20 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
             const SizedBox(width: AppSpacing.sm),
             Text('Joint Vibration / Piezo', style: AppTypography.titleSmall),
             const Spacer(),
-            Text(
-              'Not Available',
-              style: AppTypography.caption.copyWith(
-                color: AppColors.textMuted,
+            if (actuallySimulated)
+              Text(
+                'SIMULATED',
+                style: AppTypography.caption.copyWith(
+                  color: AppColors.warning,
+                ),
+              )
+            else if (!hasData)
+              Text(
+                'not_available'.tr(),
+                style: AppTypography.caption.copyWith(
+                  color: AppColors.textMuted,
+                ),
               ),
-            ),
           ],
         ),
         const SizedBox(height: AppSpacing.sm),
@@ -753,21 +1019,58 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
             color: AppColors.surfaceVariant,
             borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
           ),
-          child: Center(
-            child: Text(
-              'Piezo sensor not connected',
-              style: AppTypography.bodySmall.copyWith(
-                color: AppColors.textMuted,
-              ),
-            ),
-          ),
+          child: hasData
+              ? _buildPiezoGraph()
+              : Center(
+                  child: Text(
+                    actuallySimulated ? 'Starting simulation...' : 'Piezo sensor not connected',
+                    style: AppTypography.bodySmall.copyWith(
+                      color: AppColors.textMuted,
+                    ),
+                  ),
+                ),
         ),
       ],
     ),
     );
   }
+
+  Widget _buildPiezoGraph() {
+    final data = _sensorPipeline.piezoData.isNotEmpty
+        ? _sensorPipeline.piezoData
+        : List.generate(50, (index) {
+            final time = index / 50.0;
+            return math.sin(time * 10 * math.pi) * 0.5 +
+                math.sin(time * 20 * math.pi) * 0.3 +
+                (math.Random().nextDouble() - 0.5) * 0.2;
+          });
+
+    return LineChart(
+      LineChartData(
+        gridData: FlGridData(show: false),
+        titlesData: FlTitlesData(show: false),
+        borderData: FlBorderData(show: false),
+        lineBarsData: [
+          LineChartBarData(
+            spots: data.asMap().entries.map((entry) {
+              return FlSpot(entry.key.toDouble(), entry.value);
+            }).toList(),
+            isCurved: true,
+            color: AppColors.primary,
+            barWidth: 2,
+            dotData: const FlDotData(show: false),
+          ),
+        ],
+        // Removed fixed minY/maxY to allow scaling
+      ),
+    );
+  }
   
   Widget _buildEMGSection() {
+    final isSimulated = _sourceType == SignalSourceType.simulated;
+    final actuallySimulated = isSimulated && _isRecording;
+    final hasData = actuallySimulated || _sensorPipeline.hasEMG;
+
     return GlassCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -778,13 +1081,21 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
               const SizedBox(width: AppSpacing.sm),
               Text('Muscle Activity / EMG', style: AppTypography.titleSmall),
               const Spacer(),
-              Text(
-                'Not Available',
-                style: AppTypography.caption.copyWith(
-                  color: AppColors.textMuted,
+              if (actuallySimulated)
+                Text(
+                  'SIMULATED',
+                  style: AppTypography.caption.copyWith(
+                    color: AppColors.warning,
+                  ),
+                )
+              else if (!hasData)
+                Text(
+                  'not_available'.tr(),
+                  style: AppTypography.caption.copyWith(
+                    color: AppColors.textMuted,
+                  ),
                 ),
-              ),
-            ],
+          ],
           ),
           const SizedBox(height: AppSpacing.sm),
           Container(
@@ -793,20 +1104,53 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
               color: AppColors.surfaceVariant,
               borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
             ),
-            child: Center(
-              child: Text(
-                'EMG sensor not connected',
-                style: AppTypography.bodySmall.copyWith(
-                  color: AppColors.textMuted,
-                ),
-              ),
-            ),
+            child: hasData
+                ? _buildEMGGraph()
+                : Center(
+                    child: Text(
+                      actuallySimulated ? 'Starting simulation...' : 'EMG sensor not connected',
+                      style: AppTypography.bodySmall.copyWith(
+                        color: AppColors.textMuted,
+                      ),
+                    ),
+                  ),
           ),
         ],
       ),
     );
   }
-  
+
+  Widget _buildEMGGraph() {
+    final data = _sensorPipeline.emgData.isNotEmpty
+        ? _sensorPipeline.emgData
+        : List.generate(50, (index) {
+            final time = index / 50.0;
+            final burst = (math.sin(time * 5 * math.pi) + 1) / 2;
+            return burst * (math.Random().nextDouble() * 0.8 + 0.2) +
+                (math.Random().nextDouble() - 0.5) * 0.1;
+          });
+
+    return LineChart(
+      LineChartData(
+        gridData: FlGridData(show: false),
+        titlesData: FlTitlesData(show: false),
+        borderData: FlBorderData(show: false),
+        lineBarsData: [
+          LineChartBarData(
+            spots: data.asMap().entries.map((entry) {
+              return FlSpot(entry.key.toDouble(), entry.value);
+            }).toList(),
+            isCurved: true,
+            color: AppColors.sage,
+            barWidth: 2,
+            dotData: const FlDotData(show: false),
+          ),
+        ],
+        // Removed fixed minY/maxY to allow scaling
+      ),
+    );
+  }
+
   Widget _buildExtractedFeaturesSection() {
     final features = _sensorPipeline.currentFeatures;
     
@@ -814,7 +1158,7 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Extracted Features', style: AppTypography.titleSmall),
+          Text('extracted_features'.tr(), style: AppTypography.titleSmall),
           const SizedBox(height: AppSpacing.sm),
           
           if (features == null)
@@ -833,16 +1177,16 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
               crossAxisSpacing: AppSpacing.sm,
               childAspectRatio: 2.5,
               children: [
-                _buildFeatureCard('Accel Mean X', features.accelMeanX.toStringAsFixed(3)),
-                _buildFeatureCard('Accel Mean Y', features.accelMeanY.toStringAsFixed(3)),
-                _buildFeatureCard('Accel Mean Z', features.accelMeanZ.toStringAsFixed(3)),
-                _buildFeatureCard('Accel RMS', features.accelRms.toStringAsFixed(3)),
-                _buildFeatureCard('Gyro Mean X', features.gyroMeanX.toStringAsFixed(3)),
-                _buildFeatureCard('Gyro Mean Y', features.gyroMeanY.toStringAsFixed(3)),
-                _buildFeatureCard('Gyro Mean Z', features.gyroMeanZ.toStringAsFixed(3)),
-                _buildFeatureCard('Gyro RMS', features.gyroRms.toStringAsFixed(3)),
-                _buildFeatureCard('Estimated Steps', features.estimatedSteps.toString()),
-                _buildFeatureCard('Regularity Score', features.regularityScore.toStringAsFixed(3)),
+                _buildFeatureCard('accel_mean_x'.tr(), features.accelMeanX.toStringAsFixed(3)),
+                _buildFeatureCard('accel_mean_y'.tr(), features.accelMeanY.toStringAsFixed(3)),
+                _buildFeatureCard('accel_mean_z'.tr(), features.accelMeanZ.toStringAsFixed(3)),
+                _buildFeatureCard('accel_rms'.tr(), features.accelRms.toStringAsFixed(3)),
+                _buildFeatureCard('gyro_mean_x'.tr(), features.gyroMeanX.toStringAsFixed(3)),
+                _buildFeatureCard('gyro_mean_y'.tr(), features.gyroMeanY.toStringAsFixed(3)),
+                _buildFeatureCard('gyro_mean_z'.tr(), features.gyroMeanZ.toStringAsFixed(3)),
+                _buildFeatureCard('gyro_rms'.tr(), features.gyroRms.toStringAsFixed(3)),
+                _buildFeatureCard('estimated_steps'.tr(), features.estimatedSteps.toString()),
+                _buildFeatureCard('regularity_score'.tr(), features.regularityScore.toStringAsFixed(3)),
               ],
             ),
         ],
@@ -899,10 +1243,12 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildPredictionRow('Model', 'OA Risk Classifier'),
+                _buildPredictionRow('Model', '3-Class OA Risk Classifier'),
                 _buildPredictionRow('Source', _sourceType.name.toUpperCase()),
                 _buildPredictionRow('Prediction', prediction.riskLevel.toUpperCase()),
                 _buildPredictionRow('Confidence', '${(prediction.confidence * 100).toStringAsFixed(1)}%'),
+                if (prediction.uncertainty != null)
+                  _buildPredictionRow('Uncertainty', '${(prediction.uncertainty! * 100).toStringAsFixed(1)}%'),
                 _buildPredictionRow('Inference', '${prediction.inferenceTimeMs} ms'),
                 const SizedBox(height: AppSpacing.sm),
                 LinearProgressIndicator(
@@ -912,8 +1258,83 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
                     AppColors.getRiskColor(prediction.riskLevel),
                   ),
                 ),
+                const SizedBox(height: AppSpacing.md),
+                
+                // Feature Extraction Details
+                Container(
+                  padding: const EdgeInsets.all(AppSpacing.sm),
+                  decoration: BoxDecoration(
+                    color: AppColors.primarySurface,
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.list, color: AppColors.primary, size: 16),
+                          const SizedBox(width: AppSpacing.xs),
+                          Text('Feature Extraction', style: AppTypography.labelSmall.copyWith(fontWeight: AppTypography.semiBold)),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      _buildFeatureDetail('Total Features', '203'),
+                      _buildFeatureDetail('Gait Features', '~90'),
+                      _buildFeatureDetail('Clinical Features', '~25'),
+                      _buildFeatureDetail('Sensor Features', '~40'),
+                      _buildFeatureDetail('Demographic', '~4'),
+                    ],
+                  ),
+                ),
+                
+                const SizedBox(height: AppSpacing.md),
+                
+                // Contributing Factors
+                if (prediction.contributingFactors.isNotEmpty) ...[
+                  Container(
+                    padding: const EdgeInsets.all(AppSpacing.sm),
+                    decoration: BoxDecoration(
+                      color: AppColors.warning.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.warning_amber, color: AppColors.warning, size: 16),
+                            const SizedBox(width: AppSpacing.xs),
+                            Text('Risk Factors', style: AppTypography.labelSmall.copyWith(fontWeight: AppTypography.semiBold)),
+                          ],
+                        ),
+                        const SizedBox(height: AppSpacing.xs),
+                        ...prediction.contributingFactors.take(5).map((factor) => 
+                          Padding(
+                            padding: const EdgeInsets.only(left: AppSpacing.sm, bottom: 2),
+                            child: Text('• $factor', style: AppTypography.caption),
+                          ),
+                        ),
+                        if (prediction.contributingFactors.length > 5)
+                          Text('... and ${prediction.contributingFactors.length - 5} more', style: AppTypography.caption),
+                      ],
+                    ),
+                  ),
+                ],
               ],
             ),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildFeatureDetail(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: AppTypography.caption.copyWith(color: AppColors.textSecondary)),
+          Text(value, style: AppTypography.caption.copyWith(fontWeight: AppTypography.semiBold)),
         ],
       ),
     );
@@ -1016,6 +1437,133 @@ class _GaitTestScreenState extends State<GaitTestScreen> {
           textAlign: TextAlign.center,
         ),
       ],
+    );
+  }
+}
+// ─── Floating BLE Device Status Chip ─────────────────────────────────────────
+// Shows at the bottom right corner of GaitTestScreen.
+// Green when connected, amber when connecting, grey with connect button when off.
+class _BleStatusBanner extends StatelessWidget {
+  final BleDeviceProvider bleProvider;
+  final VoidCallback onConnect;
+
+  const _BleStatusBanner({
+    super.key,
+    required this.bleProvider,
+    required this.onConnect,
+  });
+
+  void _showDisconnectDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Disconnect Device?'),
+        content: const Text('Are you sure you want to disconnect from the hardware device?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              bleProvider.disconnect();
+            },
+            child: const Text('Disconnect', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isConnected = bleProvider.isConnected;
+    final isConnecting = bleProvider.isConnecting;
+
+    // Glassmorphic Colors
+    final Color bg = isConnected
+        ? const Color(0xFF1B5E20).withValues(alpha: 0.3)
+        : isConnecting
+            ? const Color(0xFFE65100).withValues(alpha: 0.3)
+            : const Color(0xFF212121).withValues(alpha: 0.3);
+
+    final Color border = isConnected
+        ? const Color(0xFF4CAF50).withValues(alpha: 0.5)
+        : isConnecting
+            ? const Color(0xFFFF9800).withValues(alpha: 0.5)
+            : Colors.white.withValues(alpha: 0.2);
+
+    final Color fg = isConnected ? const Color(0xFFC8E6C9) : Colors.white;
+
+    return Material(
+      color: Colors.transparent,
+      child: GestureDetector(
+        onTap: isConnected ? () => _showDisconnectDialog(context) : (isConnecting ? null : onConnect),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20), // Pill shape
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 12.0, sigmaY: 12.0),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOut,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: bg,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: border, width: 0.5),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min, // Keep it ultra compact
+                children: [
+                  if (isConnecting)
+                    const SizedBox(
+                      width: 10,
+                      height: 10,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 1.5,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  else
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      width: 6,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: isConnected ? Colors.greenAccent : Colors.white54,
+                        boxShadow: isConnected
+                            ? [
+                                BoxShadow(
+                                  color: Colors.greenAccent.withValues(alpha: 0.6),
+                                  blurRadius: 4,
+                                  spreadRadius: 1,
+                                )
+                              ]
+                            : null,
+                      ),
+                    ),
+                  const SizedBox(width: 6),
+                  Text(
+                    isConnected
+                        ? 'Connected'
+                        : isConnecting
+                            ? 'Connecting'
+                            : 'Connect',
+                    style: TextStyle(
+                      color: fg,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

@@ -315,11 +315,14 @@ class AppColors {
   static Color getRiskColor(String riskLevel) {
     switch (riskLevel.toLowerCase()) {
       case 'high':
+      case 'high_risk':
         return riskHigh;
       case 'medium':
       case 'moderate':
+      case 'low_risk':
         return riskMedium;
       case 'low':
+      case 'healthy':
       default:
         return riskLow;
     }

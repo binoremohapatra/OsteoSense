@@ -68,9 +68,7 @@ class AnalyticsService {
         final date = DateTime.parse(dateStr);
         
         if (date.isAfter(cutoffDate)) {
-          final key = period == 'week'
-              ? '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}'
-              : '${date.year}-${date.month.toString().padLeft(2, '0')}';
+          final key = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
           dateCount[key] = (dateCount[key] ?? 0) + 1;
         }
       }
@@ -109,7 +107,7 @@ class AnalyticsService {
 
   /// Get joint affection statistics
   /// Returns distribution of screenings by joint type
-  /// Note: This is based on contributing factors from AI analysis
+  /// Now uses the joint_id field directly from screenings
   Future<Map<String, int>> getJointAffection() async {
     try {
       final screeningsData = await _db.query('screenings');
@@ -117,37 +115,63 @@ class AnalyticsService {
       int knee = 0;
       int hip = 0;
       int ankle = 0;
+      int shoulder = 0;
+      int elbow = 0;
+      int wrist = 0;
       int other = 0;
 
       for (var data in screeningsData) {
-        final factors = data['contributing_factors'] as String?;
-        if (factors != null) {
-          final lowerFactors = factors.toLowerCase();
-          if (lowerFactors.contains('knee')) {
-            knee++;
-          }
-          if (lowerFactors.contains('hip')) {
-            hip++;
-          }
-          if (lowerFactors.contains('ankle')) {
-            ankle++;
-          }
-          if (!lowerFactors.contains('knee') && 
-              !lowerFactors.contains('hip') && 
-              !lowerFactors.contains('ankle')) {
-            other++;
+        final jointId = data['joint_id'] as String?;
+        if (jointId != null) {
+          switch (jointId.toLowerCase()) {
+            case 'knee':
+              knee++;
+              break;
+            case 'hip':
+              hip++;
+              break;
+            case 'ankle':
+              ankle++;
+              break;
+            case 'shoulder':
+              shoulder++;
+              break;
+            case 'elbow':
+              elbow++;
+              break;
+            case 'wrist':
+              wrist++;
+              break;
+            default:
+              other++;
           }
         } else {
           other++;
         }
       }
 
-      return {'knee': knee, 'hip': hip, 'ankle': ankle, 'other': other};
+      return {
+        'knee': knee,
+        'hip': hip,
+        'ankle': ankle,
+        'shoulder': shoulder,
+        'elbow': elbow,
+        'wrist': wrist,
+        'other': other,
+      };
     } catch (e) {
       if (kDebugMode) {
         print('Error getting joint affection: $e');
       }
-      return {'knee': 0, 'hip': 0, 'ankle': 0, 'other': 0};
+      return {
+        'knee': 0,
+        'hip': 0,
+        'ankle': 0,
+        'shoulder': 0,
+        'elbow': 0,
+        'wrist': 0,
+        'other': 0,
+      };
     }
   }
 
@@ -361,12 +385,13 @@ class AnalyticsService {
 
       if (format == 'csv') {
         final buffer = StringBuffer();
-        buffer.writeln('Date,Patient ID,Risk Level,Confidence,Pain Level,Stiffness,Swelling,Past Injury');
+        buffer.writeln('Date,Patient ID,Joint ID,Risk Level,Confidence,Pain Level,Stiffness,Swelling,Past Injury');
         
         for (var data in screeningsData) {
           buffer.writeln(
             '${data['screening_date']},'
             '${data['patient_id']},'
+            '${data['joint_id']},'
             '${data['risk_level']},'
             '${data['confidence']},'
             '${data['pain_level']},'

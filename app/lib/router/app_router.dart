@@ -9,8 +9,10 @@ import '../screens/shared/language_selection_screen.dart';
 import '../screens/shared/role_selection_screen.dart';
 import '../screens/shared/login_screen.dart';
 import '../screens/shared/signup_screen.dart';
+import '../screens/shared/forgot_password_screen.dart';
 import '../screens/agent/home_screen.dart';
 import '../screens/agent/patient_list_screen.dart';
+import '../screens/agent/patient_profile_screen.dart';
 import '../screens/agent/profile_screen.dart';
 import '../screens/user/user_home_screen.dart';
 import '../screens/shared/onboarding_screen.dart';
@@ -25,6 +27,13 @@ import '../screens/shared/pdf_preview_screen.dart';
 import '../screens/shared/preventive_care_home_screen.dart';
 import '../screens/shared/preventive_care_category_screen.dart';
 import '../screens/shared/preventive_care_article_screen.dart';
+import '../screens/shared/select_patient_screen.dart';
+import '../screens/shared/joint_selection_screen.dart';
+import '../screens/shared/medical_history_screen.dart';
+import '../screens/shared/surgery_history_screen.dart';
+import '../screens/shared/functional_assessment_screen.dart';
+import '../screens/shared/image_upload_screen.dart';
+import '../screens/shared/assessment_overview_screen.dart';
 import '../models/patient.dart';
 import '../models/screening.dart';
 
@@ -224,6 +233,13 @@ final appRouter = GoRouter(
       ),
     ),
     GoRoute(
+      path: '/language-selection',
+      pageBuilder: (context, state) => CalmFadeTransitionPage(
+        key: state.pageKey,
+        child: const LanguageSelectionScreen(),
+      ),
+    ),
+    GoRoute(
       path: '/onboarding',
       pageBuilder: (context, state) => CalmFadeTransitionPage(
         key: state.pageKey,
@@ -241,11 +257,18 @@ final appRouter = GoRouter(
       path: '/login',
       pageBuilder: (context, state) {
         final role = state.uri.queryParameters['role'] ?? 'agent';
-        return SharedAxisTransition(
+        return CalmFadeTransitionPage(
           key: state.pageKey,
           child: LoginScreen(role: role),
         );
       },
+    ),
+    GoRoute(
+      path: '/forgot-password',
+      pageBuilder: (context, state) => CalmFadeTransitionPage(
+        key: state.pageKey,
+        child: const ForgotPasswordScreen(),
+      ),
     ),
     GoRoute(
       path: '/signup',
@@ -284,6 +307,16 @@ final appRouter = GoRouter(
         key: state.pageKey,
         child: const PatientListScreen(),
       ),
+    ),
+    GoRoute(
+      path: '/agent/patient/:id',
+      pageBuilder: (context, state) {
+        final patientId = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
+        return SharedAxisTransition(
+          key: state.pageKey,
+          child: PatientProfileScreen(patientId: patientId),
+        );
+      },
     ),
     GoRoute(
       path: '/user/home',
@@ -331,16 +364,98 @@ final appRouter = GoRouter(
       ),
     ),
     GoRoute(
+      path: '/screening/select-patient',
+      pageBuilder: (context, state) => SlideUpTransitionPage(
+        key: state.pageKey,
+        child: const SelectPatientScreen(),
+      ),
+    ),
+    GoRoute(
+      path: '/screening/select-joint',
+      pageBuilder: (context, state) {
+        final patientId = (state.extra as int?) ?? 0;
+        return SlideUpTransitionPage(
+          key: state.pageKey,
+          child: JointSelectionScreen(patientId: patientId),
+        );
+      },
+    ),
+    GoRoute(
+      path: '/screening/medical_history',
+      pageBuilder: (context, state) {
+        final data = state.extra as Map<String, dynamic>? ?? {};
+        final patientId = data['patientId'] as int? ?? 0;
+        final jointId = data['jointId'] as String? ?? 'Unknown';
+        final side = data['side'] as String? ?? 'N/A';
+        return SlideUpTransitionPage(
+          key: state.pageKey,
+          child: MedicalHistoryScreen(
+            patientId: patientId,
+            jointId: jointId,
+            side: side,
+          ),
+        );
+      },
+    ),
+    GoRoute(
+      path: '/screening/surgery_history',
+      pageBuilder: (context, state) {
+        final data = state.extra as Map<String, dynamic>? ?? {};
+        final patientId = data['patientId'] as int? ?? 0;
+        final jointId = data['jointId'] as String? ?? 'Unknown';
+        final side = data['side'] as String? ?? 'N/A';
+        return SlideUpTransitionPage(
+          key: state.pageKey,
+          child: SurgeryHistoryScreen(
+            patientId: patientId,
+            jointId: jointId,
+            side: side,
+          ),
+        );
+      },
+    ),
+    GoRoute(
       path: '/screening/symptoms',
       pageBuilder: (context, state) {
         // Guard against null extra — GoRouter can re-evaluate routes during
         // a frame rebuild even when this route is not the active one.
-        final patientId = (state.extra as int?) ?? 0;
+        int patientId = 0;
+        String? jointId;
+        
+        if (state.extra is int) {
+          patientId = state.extra as int;
+        } else if (state.extra is Map<String, dynamic>) {
+          final data = state.extra as Map<String, dynamic>;
+          patientId = data['patientId'] as int? ?? 0;
+          jointId = data['jointId'] as String?;
+        }
+        
         return SlideUpTransitionPage(
           key: state.pageKey,
-          child: SymptomQuestionnaireScreen(patientId: patientId),
+          child: SymptomQuestionnaireScreen(patientId: patientId, jointId: jointId),
         );
       },
+    ),
+    GoRoute(
+      path: '/screening/functional_assessment',
+      pageBuilder: (context, state) => SlideUpTransitionPage(
+        key: state.pageKey,
+        child: const FunctionalAssessmentScreen(),
+      ),
+    ),
+    GoRoute(
+      path: '/screening/image_upload',
+      pageBuilder: (context, state) => SlideUpTransitionPage(
+        key: state.pageKey,
+        child: const ImageUploadScreen(),
+      ),
+    ),
+    GoRoute(
+      path: '/screening/overview',
+      pageBuilder: (context, state) => SlideUpTransitionPage(
+        key: state.pageKey,
+        child: const AssessmentOverviewScreen(),
+      ),
     ),
     GoRoute(
       path: '/screening/gait',

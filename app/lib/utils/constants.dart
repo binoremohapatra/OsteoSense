@@ -6,7 +6,13 @@ class AppConstants {
   // API Configuration (environment-switchable for emulator/device)
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'https://osteosense.onrender.com/api/v1',
+    defaultValue: 'https://osteosense-tt0q.onrender.com/api/v1',
+  );
+  
+  // AI Microservice URL (FastAPI /sessions)
+  static const String aiBaseUrl = String.fromEnvironment(
+    'AI_BASE_URL',
+    defaultValue: 'https://osteo-sense-ai-service-808g.onrender.com', // Change this to your deployed URL
   );
   // No longer need apiVersion separately since it's in baseUrl
   
