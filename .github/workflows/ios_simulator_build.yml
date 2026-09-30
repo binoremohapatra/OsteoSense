@@ -32,24 +32,22 @@ jobs:
           flutter config --enable-swift-package-manager
           flutter build ios --config-only --simulator --no-codesign || true
           ruby -i -pe 'gsub(/use_frameworks!/, "use_frameworks! :linkage => :static\n  use_modular_headers!")' ios/Podfile
-          ruby -i -pe 'gsub(/flutter_additional_ios_build_settings\(target\)/, "flutter_additional_ios_build_settings(target)\n      target.build_configurations.each do |config|\n        config.build_settings[\"ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES\"] = \"YES\"\n      end")' ios/Podfile
+          ruby -i -pe 'gsub(/flutter_additional_ios_build_settings\(target\)/, "flutter_additional_ios_build_settings(target)\n      target.build_configurations.each do |config|\n        config.build_settings[\"ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES\"] = \"YES\"\n        config.build_settings[\"CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES\"] = \"YES\"\n      end")' ios/Podfile
           cat ios/Podfile
 
-      - name: Build unsigned iOS App for Real Devices
+      - name: Build iOS Simulator App
         working-directory: ./app
-        run: flutter build ios --release --no-codesign
+        run: flutter build ios --simulator --no-codesign
 
-      - name: Package into IPA for Sideloading
+      - name: Compress Simulator App
         working-directory: ./app
         run: |
-          cd build/ios/iphoneos
-          mkdir Payload
-          cp -r Runner.app Payload/
-          zip -r app-sideload.ipa Payload
+          cd build/ios/iphonesimulator
+          zip -r Runner.app.zip Runner.app
 
-      - name: Upload iOS IPA Artifact
+      - name: Upload iOS App Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ios-app-unsigned-ipa
-          path: app/build/ios/iphoneos/app-sideload.ipa
+          name: ios-simulator-app
+          path: app/build/ios/iphonesimulator/Runner.app.zip
           retention-days: 7
