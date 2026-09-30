@@ -36,14 +36,17 @@ app.use(
 );
 
 // CORS - origins defined in CORS_ORIGINS env var (comma-separated)
+// TEMPORARY: Allow all origins for web UI deployment testing
+// TODO: Restrict to specific origins in production after Vercel deployment verified
 app.use(
   cors({
     origin: (origin, callback) => {
       // Allow non-browser tools (curl/Postman/mobile app native fetch) with no Origin header.
-      if (!origin || env.CORS_ORIGINS.includes(origin)) {
+      if (!origin) {
         return callback(null, true);
       }
-      return callback(new Error(`CORS: origin ${origin} not allowed`));
+      // Allow all origins temporarily for Vercel deployment
+      return callback(null, true);
     },
     credentials: true,
   })
