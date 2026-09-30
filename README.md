@@ -1,5 +1,9 @@
 # OsteoSense
 
+[![Download APK](https://img.shields.io/badge/⬇️_Download_APK-v1.0.0-green?style=for-the-badge&logo=android)](https://github.com/binoremohapatra/OsteoSense/releases/latest)
+[![WandB Dashboard](https://img.shields.io/badge/WandB-AI_Proof_Live-yellow?style=for-the-badge&logo=weightsandbiases)](https://wandb.ai/mohapatrabinore9-adgips/OsteoSense-AI-Evaluation)
+[![Flutter](https://img.shields.io/badge/Flutter-3.0+-blue?style=for-the-badge&logo=flutter)](https://flutter.dev)
+
 AI-assisted osteoarthritis (OA) risk screening for healthcare workers in rural
 and remote areas of India's North Eastern Region.
 
