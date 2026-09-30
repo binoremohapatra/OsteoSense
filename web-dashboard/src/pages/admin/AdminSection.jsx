@@ -8,7 +8,6 @@ import {
   CheckCircle2,
   AlertTriangle,
   UserPlus,
-  RefreshCw,
   Lock,
   Server,
   Activity,
@@ -162,9 +161,6 @@ export default function AdminSection() {
           </p>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
-          <button className="btn btn-ghost" onClick={fetchAllAdminData}>
-            <RefreshCw size={15} /> Refresh
-          </button>
           <button className="btn btn-primary" onClick={() => setShowAddAdminModal(true)}>
             <UserPlus size={16} /> Add Administrator
           </button>

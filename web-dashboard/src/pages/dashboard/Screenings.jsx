@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Plus } from 'lucide-react';
 import { patientsApi, screeningsApi } from '../../api/services';
 import { useAuth } from '../../context/AuthContext';
 import RiskBadge from '../../components/RiskBadge';
@@ -64,9 +63,7 @@ export default function Screenings() {
           <h1>Screenings</h1>
           <p>Every OA risk screening you’ve submitted, newest first.</p>
         </div>
-        <button className="btn btn-primary" onClick={() => navigate('/dashboard/screenings/new')}>
-          <Plus size={16} /> New screening
-        </button>
+
       </div>
 
       <div className="filters-row">
@@ -91,7 +88,6 @@ export default function Screenings() {
         <EmptyState
           title="No screenings found"
           message="Try a different filter, or run a new screening."
-          action={<button className="btn btn-primary" onClick={() => navigate('/dashboard/screenings/new')}>New screening</button>}
         />
       ) : (
         <div className="table-wrap">

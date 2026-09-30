@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, Pencil, Trash2, Stethoscope } from 'lucide-react';
+import { Search, Pencil, Trash2, Stethoscope } from 'lucide-react';
 import { patientsApi } from '../../api/services';
 import { getPatientAssignment, assignmentLabel } from '../../services/assignmentService';
 import { useAuth } from '../../context/AuthContext';
@@ -87,9 +87,7 @@ export default function Patients() {
           <h1>Patients</h1>
           <p>This login’s records, with workers attached automatically from village and location.</p>
         </div>
-        <button className="btn btn-primary" onClick={() => setModalPatient(null)}>
-          <Plus size={16} /> Add patient
-        </button>
+
       </div>
 
       <div className="filters-row">
@@ -124,7 +122,6 @@ export default function Patients() {
         <EmptyState
           title="No patients found"
           message="Add your first patient to start screening."
-          action={<button className="btn btn-primary" onClick={() => setModalPatient(null)}>Add patient</button>}
         />
       ) : (
         <div className="table-wrap">
